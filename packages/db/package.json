@@ -1,0 +1,25 @@
+{
+  "name": "@erp/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./src/testing/embedded.ts"
+  },
+  "scripts": {
+    "migrate": "tsx src/cli.ts",
+    "leads:export": "tsx src/leads-cli.ts"
+  },
+  "dependencies": {
+    "@erp/audit": "*",
+    "@erp/events": "*",
+    "@erp/identity": "*",
+    "@erp/kernel": "*",
+    "@erp/ledger": "*",
+    "@erp/money": "*",
+    "@erp/numbering": "*",
+    "@erp/tenancy": "*",
+    "pg": "^8.23.1"
+  }
+}

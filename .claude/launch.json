@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "site-and-api", "runtimeExecutable": "node", "runtimeArgs": ["scripts/dev-all.mjs"], "port": 8080 },
+    { "name": "site", "runtimeExecutable": "node", "runtimeArgs": ["scripts/serve-site.mjs"], "port": 8080 },
+    { "name": "uaap", "runtimeExecutable": "services/uaap/.venv/Scripts/python.exe", "runtimeArgs": ["services/uaap/scripts/run_dev.py"], "port": 8090 }
+  ]
+}

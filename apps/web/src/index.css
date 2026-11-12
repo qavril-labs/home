@@ -1,0 +1,135 @@
+@import "../../../design/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  body {
+    background-color: var(--q-page);
+    color: var(--q-text);
+    font-family: var(--q-font-body);
+    margin: 0;
+    padding: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--q-font-display);
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--q-cyan);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Neo-brutal button base */
+  .neo-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-family: var(--q-font-body);
+    font-size: 0.95rem;
+    padding: 0.6rem 1.25rem;
+    border: var(--q-line);
+    border-radius: var(--q-radius-button);
+    box-shadow: var(--q-shadow-sm);
+    transition: transform var(--q-fast) var(--q-ease), box-shadow var(--q-fast) var(--q-ease);
+    cursor: pointer;
+    text-decoration: none;
+    user-select: none;
+  }
+
+  .neo-btn:hover:not(:disabled) {
+    transform: translate(-2px, -2px);
+    box-shadow: var(--q-shadow-hover);
+  }
+
+  .neo-btn:active:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: var(--q-shadow-sm);
+  }
+
+  .neo-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    filter: grayscale(0.5);
+  }
+
+  /* Neo-brutal card base */
+  .neo-card {
+    background-color: var(--q-panel);
+    border: var(--q-line);
+    border-radius: 0px;
+    box-shadow: var(--q-shadow-sm);
+    padding: 1rem;
+    position: relative;
+    min-width: 0;
+  }
+
+  .neo-card-featured {
+    box-shadow: var(--q-shadow);
+  }
+
+  .neo-card-hover {
+    transition: transform var(--q-fast) var(--q-ease), box-shadow var(--q-fast) var(--q-ease);
+  }
+
+  .neo-card-hover:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: var(--q-shadow-hover);
+  }
+
+  /* Table styling with inner card scroll and sticky header */
+  .neo-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .neo-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.925rem;
+  }
+
+  .neo-table th {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    font-weight: 700;
+    border-bottom: var(--q-line);
+    background-color: var(--q-page);
+    color: var(--q-text);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+  }
+
+  .neo-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--q-grid);
+  }
+
+  .neo-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .neo-table tr:hover td {
+    background-color: color-mix(in srgb, var(--q-lime) 10%, transparent);
+  }
+}

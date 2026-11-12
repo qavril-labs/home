@@ -1,0 +1,107 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uaap"
+version = "0.1.0a4"
+description = "QAVRIL LABS Universal AI Agent Platform - A4: Tool Registry & Execution Boundary"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115",
+  "pydantic>=2.7",
+  "pydantic-settings>=2.3",
+  "httpx>=0.27",
+  "jsonschema>=4.22",
+  "langgraph>=0.2.0",
+  "langchain-core>=0.3.0",
+  "uvicorn>=0.30",
+  "psycopg[binary]>=3.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.5",
+  "mypy>=1.10",
+  "types-jsonschema",
+  "import-linter>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra -p no:langsmith"
+markers = ["live: requires a real provider and credentials; disabled in A2"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "C4", "SIM"]
+ignore = ["S101"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "S311"]
+# Agent cards are prose data (use cases, edge cases, messages); long lines read better unwrapped.
+"src/uaap/agents/finance.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src", "tests"]
+plugins = []
+
+[[tool.mypy.overrides]]
+module = "jsonschema.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+
+[tool.importlinter]
+root_package = "uaap"
+
+[[tool.importlinter.contracts]]
+name = "API layer must not import concrete provider implementations"
+type = "forbidden"
+source_modules = ["uaap.api"]
+forbidden_modules = ["uaap.gateway.providers.ollama", "uaap.gateway.providers.fake_server"]
+# The API reaches the concrete provider only through `uaap.gateway.factory` (the composition seam).
+ignore_imports = ["uaap.gateway.factory -> uaap.gateway.providers.ollama"]
+
+[[tool.importlinter.contracts]]
+name = "Gateway core must not import the API layer"
+type = "forbidden"
+source_modules = ["uaap.gateway"]
+forbidden_modules = ["uaap.api"]
+
+
+[[tool.importlinter.contracts]]
+name = "Only the tool layer and the API composition root may import product adapters"
+type = "forbidden"
+source_modules = ["uaap.runtime", "uaap.gateway", "uaap.obs"]
+forbidden_modules = ["uaap.tools.adapters"]
+
+[[tool.importlinter.contracts]]
+name = "Product adapters never import the API layer or model providers"
+type = "forbidden"
+source_modules = ["uaap.tools.adapters"]
+forbidden_modules = ["uaap.api", "uaap.gateway.providers"]
+
+[[tool.importlinter.contracts]]
+name = "Agents reach products only through the runner and models only through the gateway client"
+type = "forbidden"
+source_modules = ["uaap.agents"]
+forbidden_modules = ["uaap.tools.adapters", "uaap.tools.executor", "uaap.gateway.providers", "uaap.api"]
+allow_indirect_imports = true

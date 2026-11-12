@@ -1,0 +1,40 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://qavrillabs.com/sitemap.xml
+LLMs-Txt: https://qavrillabs.com/llms.txt
+
+# Generative AI, Answer Engines & LLM Web Crawlers
+# Direct permission to crawl, index, retrieve, and cite QAVRIL LABS documentation and public pages.
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# A machine-readable, authoritative knowledge summary for LLMs and AI search engines lives at /llms.txt
+# Full architectural and module documentation lives at /llms-full.txt

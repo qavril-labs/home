@@ -1,0 +1,108 @@
+// Detail for each AI bot page. The activity feeds are sample entries that show the kind of record a bot keeps.
+
+export const BOT_DETAIL = {
+  pip: {
+    tagline: "Keeps every sales conversation moving, so no quote goes cold.",
+    works_with: ["CRM and pipeline", "Sales and invoicing", "Email drafts"],
+    features: ["Watches each open quote and deal", "Writes follow-ups in your tone", "Suggests the next step for every deal", "Logs every touch against the customer"],
+    functions: ["Draft a follow-up email", "Propose a call or a visit", "Mark a deal as quiet", "Summarise the customer's history in one paragraph"],
+    workflow: ["Notices a quote with no reply after three days", "Drafts a short follow-up that refers to the quote", "Places the draft in your approval queue", "After you approve, sends it and logs the touch"],
+    activity: [
+      ["09:10", "Quote Q-2041 has no reply after 3 days", "Draft ready for approval"],
+      ["09:14", "Deal with Kamau Stores has been quiet for 10 days", "Suggested a call on Thursday"],
+      ["11:02", "Follow-up to Blue Hills Cafe approved", "Sent and logged"],
+      ["15:40", "Customer asked about delivery times", "Answer drafted from the price list"],
+    ],
+  },
+  "ledger-lou": {
+    tagline: "Checks the month before you close it, and points at what needs a look.",
+    works_with: ["General ledger", "Bank lines", "Open invoices and bills"],
+    features: ["Matches bank lines to open invoices and bills", "Flags entries posted after a close", "Builds the month-end checklist", "Explains each flag in plain words"],
+    functions: ["Build a reconciliation list", "Flag an unusual entry for review", "Prepare the close checklist", "Compare this month with the last three"],
+    workflow: ["Reads the bank lines for the month", "Matches each line to an invoice or bill", "Lists what did not match, with the likely reason", "Hands the checklist to the accountant"],
+    activity: [
+      ["08:00", "Bank line 42,000 unmatched", "Likely a payment for invoice INV-318"],
+      ["08:05", "Entry posted after the April close", "Flagged for review"],
+      ["10:30", "Checklist for May prepared", "12 of 15 items done"],
+      ["17:00", "Reconciliation 96% matched", "Three lines left for review"],
+    ],
+  },
+  "restock-rex": {
+    tagline: "Watches the shelves so you do not run out of your best sellers.",
+    works_with: ["Inventory", "Purchasing", "Sales history"],
+    features: ["Tracks sales speed for each item", "Moves expiring stock to the front", "Groups small orders for one supplier", "Proposes purchase orders before stock runs out"],
+    functions: ["Propose a purchase order", "Flag an item near its reorder point", "Suggest a transfer between shops", "Mark a slow mover"],
+    workflow: ["Checks stock and sales speed every morning", "Finds items nearing their reorder point", "Groups them by supplier into one proposed order", "Waits for a manager to approve each order"],
+    activity: [
+      ["06:00", "Milk will run out in 2 days at current speed", "Order proposed to Dairy Co"],
+      ["06:02", "Batch of yoghurt expires Friday", "Moved to the front of the queue"],
+      ["10:15", "Three small orders grouped", "One proposed order for approval"],
+      ["14:00", "Slow mover: spice set, no sales in 60 days", "Suggested a discount"],
+    ],
+  },
+  "chase-chloe": {
+    tagline: "Polite, persistent and never rude. Reminders that get paid.",
+    works_with: ["Receivables", "Customer statements", "Email and SMS"],
+    features: ["Reminders that match each customer's history", "Escalates at 14 and 30 days", "Creates a call task for the owner", "Stops when the payment arrives"],
+    functions: ["Send a reminder at 3 days late", "Send a firmer reminder at 14 days", "Create a call task at 30 days", "Pause reminders for a customer"],
+    workflow: ["Checks each invoice against its due date", "Sends the reminder that fits the days overdue", "Escalates to a call task when needed", "Stops the moment a payment clears the invoice"],
+    activity: [
+      ["08:30", "INV-377 is 3 days late", "Friendly reminder sent"],
+      ["08:31", "INV-352 is 14 days late", "Firmer reminder drafted for approval"],
+      ["12:10", "Payment received for INV-352", "Reminders stopped"],
+      ["16:45", "INV-301 is 30 days late", "Call task created for the owner"],
+    ],
+  },
+  "forecast-finn": {
+    tagline: "Shows where your cash is heading, and why, before it gets there.",
+    works_with: ["Bank lines", "Receivables and payables", "Payroll dates"],
+    features: ["Forecasts cash for the coming weeks", "Shows the assumptions behind each figure", "Warns when cash drops below your floor", "Shows what changes the forecast most"],
+    functions: ["Refresh the forecast each morning", "Test a 'what if' on payments", "Set a cash floor", "Explain the biggest change this week"],
+    workflow: ["Reads incoming and outgoing payments", "Adds the known bills and payroll dates", "Projects the balance for the next weeks", "Warns early if the balance is heading below the floor"],
+    activity: [
+      ["07:00", "Forecast refreshed for 8 weeks", "Balance stays above the floor"],
+      ["07:01", "Biggest change: late payment from Blue Hills", "Moves the week 3 balance down"],
+      ["09:00", "Payroll date in 5 days", "Balance covers it with margin"],
+      ["18:00", "Warning: week 6 may dip below floor", "Suggested a reminder to the largest debtor"],
+    ],
+  },
+  "guard-gus": {
+    tagline: "Watches the money trail for double payments and odd amounts.",
+    works_with: ["Bills and payments", "Expenses", "Discounts"],
+    features: ["Flags a bill paid twice", "Flags unusual discounts", "Flags expenses outside the usual pattern", "Explains every flag with the evidence"],
+    functions: ["Flag a duplicate payment", "Flag a discount above your limit", "Flag an unusual expense", "Mark a flag as reviewed"],
+    workflow: ["Compares each payment with recent payments", "Looks for the same amount, supplier and date", "Flags anything that matches a pattern worth a look", "Waits for a person to review; never blocks on its own"],
+    activity: [
+      ["10:12", "Bill BL-881 paid twice (same supplier, same amount)", "Flagged with both payment references"],
+      ["11:40", "Discount of 60% on a sale", "Above your 20% limit, flagged"],
+      ["13:05", "Fuel expense three times the usual", "Flagged for a receipt check"],
+      ["15:30", "Flag reviewed and cleared", "Logged with the reviewer's name"],
+    ],
+  },
+  "ticket-tess": {
+    tagline: "Answers the common questions in seconds, and knows when to call a person.",
+    works_with: ["Knowledge base", "Orders and deliveries", "Refunds"],
+    features: ["Answers order-status questions", "Hands over when unsure", "Routes refunds to a person", "Asks for feedback after delivery"],
+    functions: ["Check an order's status", "Answer from the knowledge base", "Route a refund request", "Send a feedback request"],
+    workflow: ["Reads the customer's question", "Answers from the approved knowledge base", "Hands over to a person when the answer is not clear", "Records the conversation against the customer"],
+    activity: [
+      ["09:02", "Customer asked where order 5530 is", "Answered with the delivery status"],
+      ["09:20", "Refund request for a damaged item", "Routed to the support team"],
+      ["12:45", "Question about a price not in the knowledge base", "Handed over to a person"],
+      ["17:30", "Delivery confirmed to a customer", "Feedback request sent"],
+    ],
+  },
+  "onboard-ola": {
+    tagline: "A new starter is ready on day one, and a leaver's access ends on time.",
+    works_with: ["Employee records", "Access and roles", "Equipment list"],
+    features: ["Creates the starter's record and role", "Assigns the first-week checklist", "Removes access on the last day", "Keeps a record of every access change"],
+    functions: ["Create a starter record", "Assign a checklist", "Schedule access removal", "Remind the manager of open tasks"],
+    workflow: ["Reads the new starter's details from the offer", "Creates the record and the right role", "Assigns the first-week checklist to the manager", "Removes access on the last working day, with a manager's approval"],
+    activity: [
+      ["08:00", "New starter Amina joins Monday", "Record and role created"],
+      ["08:01", "First-week checklist assigned to the manager", "Sent for confirmation"],
+      ["12:00", "Laptop and card on the equipment list", "Marked as ready"],
+      ["17:00", "Leaver's access set to end Friday", "Waiting for manager approval"],
+    ],
+  },
+};

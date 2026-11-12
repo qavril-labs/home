@@ -1,0 +1,185 @@
+{
+  "chromeVersion": "156.0.8078.80",
+  "viewports": [
+    {
+      "viewport": "360x800",
+      "desc": "Mobile Small (Galaxy S8)",
+      "file": "homepage-360x800.png",
+      "sizeKb": "303.3",
+      "status": "PASS"
+    },
+    {
+      "viewport": "390x844",
+      "desc": "Mobile Modern (iPhone 12-16)",
+      "file": "homepage-390x844.png",
+      "sizeKb": "340.5",
+      "status": "PASS"
+    },
+    {
+      "viewport": "768x1024",
+      "desc": "Tablet Portrait (iPad)",
+      "file": "homepage-768x1024.png",
+      "sizeKb": "622.4",
+      "status": "PASS"
+    },
+    {
+      "viewport": "1024x768",
+      "desc": "Tablet Landscape / Laptop",
+      "file": "homepage-1024x768.png",
+      "sizeKb": "638.3",
+      "status": "PASS"
+    },
+    {
+      "viewport": "1440x900",
+      "desc": "Desktop Standard",
+      "file": "homepage-1440x900.png",
+      "sizeKb": "955.9",
+      "status": "PASS"
+    },
+    {
+      "viewport": "1920x1080",
+      "desc": "Large Desktop 1080p",
+      "file": "homepage-1920x1080.png",
+      "sizeKb": "1412.8",
+      "status": "PASS"
+    }
+  ],
+  "pageCategories": [
+    {
+      "route": "/products/general-ledger.html",
+      "label": "Product: General Ledger",
+      "file": "page-products-general-ledger.png",
+      "sizeKb": "300.7",
+      "status": "PASS"
+    },
+    {
+      "route": "/industries/construction.html",
+      "label": "Industry: Construction",
+      "file": "page-industries-construction.png",
+      "sizeKb": "330.5",
+      "status": "PASS"
+    },
+    {
+      "route": "/case-studies/cafe-three-outlets.html",
+      "label": "Case Study: Three-Outlet Café",
+      "file": "page-case-studies-cafe.png",
+      "sizeKb": "325.4",
+      "status": "PASS"
+    },
+    {
+      "route": "/bots/recon.html",
+      "label": "Bot Profile: Recon Bot",
+      "file": "page-bots-recon.png",
+      "sizeKb": "54.6",
+      "status": "PASS"
+    },
+    {
+      "route": "/pricing.html",
+      "label": "Company: Pricing",
+      "file": "page-pricing.png",
+      "sizeKb": "516.7",
+      "status": "PASS"
+    },
+    {
+      "route": "/about.html",
+      "label": "Company: About & Studios",
+      "file": "page-about.png",
+      "sizeKb": "438.4",
+      "status": "PASS"
+    },
+    {
+      "route": "/404.html",
+      "label": "System: 404 Not Found",
+      "file": "page-404.png",
+      "sizeKb": "279.7",
+      "status": "PASS"
+    },
+    {
+      "route": "/book.html",
+      "label": "Intake: Demo & Trial Booking",
+      "file": "page-book.png",
+      "sizeKb": "325.5",
+      "status": "PASS"
+    }
+  ],
+  "studios": [
+    {
+      "studio": "Studio 01",
+      "name": "Finance & Autonomous Core",
+      "route": "/products.html",
+      "file": "studio-01-finance-core.png",
+      "sizeKb": "417.4",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 02",
+      "name": "Construction & Engineering",
+      "route": "/industries/construction.html",
+      "file": "studio-02-construction.png",
+      "sizeKb": "330.5",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 03",
+      "name": "Real Estate & Property",
+      "route": "/industries/property.html",
+      "file": "studio-03-property.png",
+      "sizeKb": "319.6",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 04",
+      "name": "Retail & Restaurant POS",
+      "route": "/products/pos.html",
+      "file": "studio-04-pos.png",
+      "sizeKb": "332.0",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 05",
+      "name": "Automotive & Mobility",
+      "route": "/products/projects-field-service.html",
+      "file": "studio-05-automotive-field-service.png",
+      "sizeKb": "327.0",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 06",
+      "name": "Logistics & Quick Commerce",
+      "route": "/industries/logistics.html",
+      "file": "studio-06-logistics.png",
+      "sizeKb": "327.3",
+      "status": "PASS"
+    },
+    {
+      "studio": "Studio 07",
+      "name": "AI Agentic Swarm & Bots",
+      "route": "/products/ai-agents.html",
+      "file": "studio-07-ai-agents.png",
+      "sizeKb": "334.2",
+      "status": "PASS"
+    }
+  ],
+  "interactions": {
+    "theme": {
+      "status": "PASS",
+      "details": "Toggled 'light' -> 'dark' -> localStorage verified"
+    },
+    "mobileMenu": {
+      "status": "PASS",
+      "details": "Toggle open + Escape key close + aria-expanded synchronization"
+    },
+    "modal": {
+      "status": "PASS",
+      "details": "Home resolves 'privacy.html', subpage resolves '../privacy.html', modal lifecycle verified"
+    },
+    "formFallback": {
+      "status": "PASS",
+      "details": "Requests are not connected on this page yet. Email connect@qavrillabs.com with your details and we will reply."
+    }
+  },
+  "consoleErrors": [],
+  "consoleWarnings": [],
+  "exceptions": [],
+  "completedAt": "2026-11-09T09:02:57.694Z"
+}

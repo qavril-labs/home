@@ -1,0 +1,30 @@
+# Production Security & Caching Headers for QAVRIL LABS
+# Applicable to Cloudflare Pages, Netlify, and compatible edge hosts.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://api.qavrillabs.com; frame-ancestors 'none';
+  X-XSS-Protection: 1; mode=block
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+# Cache control for HTML pages (revalidate frequently)
+/*.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Cache control for static assets (long-term cache with version hashing)
+/styles.css
+  Cache-Control: public, max-age=31536000, immutable
+/subpage.css
+  Cache-Control: public, max-age=31536000, immutable
+/main.js
+  Cache-Control: public, max-age=31536000, immutable
+/scene3d.js
+  Cache-Control: public, max-age=31536000, immutable
+/og-image.png
+  Cache-Control: public, max-age=86400
+/favicon.svg
+  Cache-Control: public, max-age=86400
+

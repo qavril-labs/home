@@ -1,0 +1,50 @@
+{
+  "app": {
+    "title": "QAVRIL LABS",
+    "subtitle": "Autonomous ERP Platform",
+    "greeting": "Good to see you",
+    "company_notice": "Every number below comes straight from your ledger."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "contacts": "Contacts (MDM-01)",
+    "items": "Items (MDM-02)",
+    "import": "CSV Import (PLT-14)",
+    "gallery": "Component Gallery",
+    "signout": "Sign out"
+  },
+  "kpis": {
+    "cash": "Cash and bank",
+    "sales": "Sales to date",
+    "expenses": "Expenses to date",
+    "profit": "Profit to date"
+  },
+  "status": {
+    "good": "All good",
+    "watch": "Worth a look",
+    "act": "Needs you",
+    "idle": "Waiting for data"
+  },
+  "actions": {
+    "record_sale": "Record a sale",
+    "record_expense": "Record an expense",
+    "post_ledger": "Post to ledger",
+    "approve": "Approve",
+    "review": "Review",
+    "save": "Save changes",
+    "cancel": "Cancel",
+    "undo": "Undo",
+    "delete": "Delete",
+    "archive": "Archive"
+  },
+  "empty": {
+    "dashboard": "Nothing posted yet. Record your first sale and watch the dashboard light up.",
+    "contacts": "No contacts added yet. Add your first customer or supplier to link orders.",
+    "items": "No items in catalog. Add product items to start tracking stock."
+  },
+  "words": {
+    "workspace": "workspace",
+    "business": "business",
+    "entry": "entry"
+  }
+}

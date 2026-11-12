@@ -1,0 +1,43 @@
+node_modules/
+dist/
+coverage/
+.env
+*.log
+.embedded-postgres-data/
+leads*.csv
+
+# --- Secrets and credentials (added for UAAP A2) ---
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+*credentials*
+*apiKey*
+*api_key*
+
+# --- Databases and data files ---
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.db
+*.dump
+
+# --- Python (services/uaap) ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# UAAP local dev admin key
+services/uaap/.dev-admin-key
+services/uaap/.dev-env
+
+# --- Lane worktrees (Claude Code and Antigravity subfolders) ---
+.worktrees/
