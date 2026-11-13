@@ -382,4 +382,250 @@
       }, { passive: true });
     }
   }
+
+  // --- Interactive Product Studios Navigator ---
+  var studioNavigator = document.getElementById("studio-navigator");
+  if (studioNavigator) {
+    var studiosData = {
+      "1": {
+        badge: "Studio 01 · Production Ready",
+        title: "Finance & Autonomous Core",
+        desc: "Immutable double-entry general ledger, multi-currency accounts, automated sales invoicing, purchasing, and fiscal period locks.",
+        link: "products.html",
+        capabilities: [
+          "✓ Multi-currency exchange rate lock",
+          "✓ Deterministic period closures",
+          "✓ Cryptographic audit log stream"
+        ]
+      },
+      "2": {
+        badge: "Studio 02 · Production Ready",
+        title: "Construction & Engineering (EPC)",
+        desc: "Work Breakdown Structures (WBS), Bill of Quantities (BOQ) estimation, progress billing milestones, retention tracking, and subcontractor pay applications.",
+        link: "industries/construction.html",
+        capabilities: [
+          "✓ BOQ unit rate variance models",
+          "✓ Retention release escrow ledger",
+          "✓ AIA G702/G703 milestone billing"
+        ]
+      },
+      "3": {
+        badge: "Studio 03 · Production Ready",
+        title: "Real Estate & Property Management",
+        desc: "Unit tenant leasing, post-dated cheque (PDC) vault management, lease contract renewals, service charge allocations, and contractor dispatch.",
+        link: "industries/property.html",
+        capabilities: [
+          "✓ Automated PDC banking cycles",
+          "✓ Unit maintenance work order routing",
+          "✓ Multi-building lease schedule audit"
+        ]
+      },
+      "4": {
+        badge: "Studio 04 · Production Ready",
+        title: "Retail & Restaurant POS Suite",
+        desc: "Ultra-fast offline-resilient register checkout, kitchen display systems (KDS), table seating, split-check billing, and real-time inventory decrement.",
+        link: "products/pos.html",
+        capabilities: [
+          "✓ Zero-downtime offline sync",
+          "✓ Real-time table status & kitchen ticketing",
+          "✓ Per-item modifier and barcode scan"
+        ]
+      },
+      "5": {
+        badge: "Studio 05 · Production Ready",
+        title: "Automotive & Mobility Operations",
+        desc: "Vehicle garage workshop job cards, VIN tracking, technician bay allocation, vehicle service history, and spare parts requisition.",
+        link: "products/projects-field-service.html",
+        capabilities: [
+          "✓ VIN-indexed diagnostic history",
+          "✓ Real-time service bay scheduling",
+          "✓ Technician time billing & parts match"
+        ]
+      },
+      "6": {
+        badge: "Studio 06 · Production Ready",
+        title: "Logistics & Quick Commerce Hub",
+        desc: "Dark store inventory dispatch, batch expiry tracking, driver manifest routing, proof of delivery, and multi-hub stock balancing.",
+        link: "industries/logistics.html",
+        capabilities: [
+          "✓ FEFO batch & expiration dispatch",
+          "✓ Dynamic driver route allocation",
+          "✓ Real-time multi-depot stock sync"
+        ]
+      },
+      "7": {
+        badge: "Studio 07 · Core Runtime",
+        title: "Universal AI Agent Platform (UAAP)",
+        desc: "Stateful agent graph runtime, Human-in-the-Loop approvals with single-use cryptographic token hashes, and 8 specialized autonomous bot workers.",
+        link: "products/ai-agents.html",
+        capabilities: [
+          "✓ 5-tier security permission sandboxes",
+          "✓ Cryptographic single-use approval tokens",
+          "✓ Zero-touch ledger reconciliation"
+        ]
+      }
+    };
+
+    var tabButtons = studioNavigator.querySelectorAll(".studio-tab-btn");
+    var badgeEl = document.getElementById("studio-panel-badge");
+    var titleEl = document.getElementById("studio-panel-title");
+    var descEl = document.getElementById("studio-panel-desc");
+    var linkEl = document.getElementById("studio-panel-link");
+    var listEl = document.getElementById("studio-panel-list");
+
+    tabButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        tabButtons.forEach(function (b) {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
+
+        var studioId = btn.getAttribute("data-studio");
+        var data = studiosData[studioId];
+        if (data) {
+          if (badgeEl) badgeEl.textContent = data.badge;
+          if (titleEl) titleEl.textContent = data.title;
+          if (descEl) descEl.textContent = data.desc;
+          if (linkEl) {
+            linkEl.href = data.link;
+            linkEl.textContent = "Explore studio documentation →";
+          }
+          if (listEl) {
+            listEl.innerHTML = data.capabilities.map(function (cap) {
+              return "<li>" + cap + "</li>";
+            }).join("");
+          }
+        }
+      });
+    });
+  }
+
+  // --- Interactive Live Ledger & Bot Simulation Sandbox ---
+  var simSandbox = document.getElementById("ledger-simulation");
+  if (simSandbox) {
+    var scenarios = {
+      pos: {
+        token: "#tx-8f49a2",
+        dr: "$142.50",
+        cr: "$142.50",
+        rows: [
+          { acc: "1010 - Undeposited Cash Funds", dr: "$142.50", cr: "-" },
+          { acc: "4010 - Counter Retail Sales", dr: "-", cr: "$130.00" },
+          { acc: "2210 - Sales Tax Payable", dr: "-", cr: "$12.50" }
+        ],
+        logs: [
+          { time: "[11:42:01.004]", bot: "Restock Rex", msg: "Checked inventory shelf 4B: Reorder threshold reached.", hash: "hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+          { time: "[11:42:01.412]", bot: "Ledger Lou", msg: "Verified double-entry invariant: sum(Dr) == sum(Cr). Status: OK.", hash: "hash: 8f49a26312a03e198b472e340a1b89efbc901a4231bca03f00129bc7190ad312" }
+        ]
+      },
+      milestone: {
+        token: "#tx-c71b04",
+        dr: "$12,450.00",
+        cr: "$12,450.00",
+        rows: [
+          { acc: "1200 - Accounts Receivable (EPC Client)", dr: "$12,450.00", cr: "-" },
+          { acc: "4100 - Contract Revenue (Milestone 3)", dr: "-", cr: "$11,205.00" },
+          { acc: "1350 - Retention Escrow Receivable (10%)", dr: "-", cr: "$1,245.00" }
+        ],
+        logs: [
+          { time: "[11:42:15.820]", bot: "Ledger Lou", msg: "Evaluated AIA G702 milestone claim: Architect signature token verified.", hash: "hash: c71b044e99f1a044bc2a89345091ef660a92cd84712030aa4938174628ef9012" },
+          { time: "[11:42:16.002]", bot: "Guard Gus", msg: "Retention rate within statutory 10% bounds. Lock engaged.", hash: "hash: a102948bbca1209e74f49231809da47214736f882a0b4198274619cd8821a003" }
+        ]
+      },
+      fx: {
+        token: "#tx-994fa1",
+        dr: "$5,350.00",
+        cr: "$5,350.00",
+        rows: [
+          { acc: "1030 - EUR Operating Treasury (€5,000 @ 1.07)", dr: "$5,350.00", cr: "-" },
+          { acc: "1200 - Overseas Customer Invoices", dr: "-", cr: "$5,350.00" }
+        ],
+        logs: [
+          { time: "[11:42:28.110]", bot: "Forecast Finn", msg: "Locked daily ECB fix exchange rate EUR/USD @ 1.0700.", hash: "hash: 994fa12128cba477263541890cdba76625184910293481726481947264910384" },
+          { time: "[11:42:28.320]", bot: "Ledger Lou", msg: "Triangulated base currency post: Realized FX gain/loss = $0.00.", hash: "hash: 77a0bc4389172649102847192649182746192847192649182746192847192847" }
+        ]
+      },
+      reconcile: {
+        token: "#tx-3a9d77",
+        dr: "$8,900.00",
+        cr: "$8,900.00",
+        rows: [
+          { acc: "1020 - Operating Checking Bank", dr: "$8,900.00", cr: "-" },
+          { acc: "1200 - Accounts Receivable Clearing", dr: "-", cr: "$8,900.00" }
+        ],
+        logs: [
+          { time: "[11:42:40.012]", bot: "Chase Chloe", msg: "Received Stripe wire payout #po_9841. Matched to 4 client invoices.", hash: "hash: 3a9d776491028471926491827461928471926491827461928471928471928471" },
+          { time: "[11:42:40.450]", bot: "Guard Gus", msg: "Zero unreconciled remainder. Auto-cleared in general ledger.", hash: "hash: 5541908273645192847192649182746192847192649182746192847192847192" }
+        ]
+      }
+    };
+
+    var scenarioButtons = simSandbox.querySelectorAll(".sim-scenario-btn");
+    var tableBody = document.getElementById("sim-table-body");
+    var drTotal = document.getElementById("sim-dr-total");
+    var crTotal = document.getElementById("sim-cr-total");
+    var logStream = document.getElementById("sim-log-stream");
+    var tokenBadge = simSandbox.querySelector(".terminal-token");
+    var currentScenario = "pos";
+
+    function renderScenario(scKey) {
+      currentScenario = scKey;
+      var sc = scenarios[scKey];
+      if (!sc) return;
+
+      if (tokenBadge) tokenBadge.textContent = "TOKEN: " + sc.token;
+      if (drTotal) drTotal.textContent = sc.dr;
+      if (crTotal) crTotal.textContent = sc.cr;
+
+      if (tableBody) {
+        tableBody.innerHTML = sc.rows.map(function (r) {
+          var drClass = r.dr !== "-" ? "num dr" : "num";
+          var crClass = r.cr !== "-" ? "num cr" : "num";
+          return "<tr><td>" + r.acc + "</td><td class=\"" + drClass + "\">" + r.dr + "</td><td class=\"" + crClass + "\">" + r.cr + "</td></tr>";
+        }).join("");
+      }
+
+      if (logStream) {
+        logStream.innerHTML = sc.logs.map(function (l) {
+          return "<div class=\"log-row\"><span class=\"log-time\">" + l.time + "</span> <span class=\"log-bot\">" + l.bot + "</span> <span class=\"log-msg\">" + l.msg + "</span><span class=\"log-hash\">" + l.hash + "</span></div>";
+        }).join("");
+      }
+    }
+
+    scenarioButtons.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        scenarioButtons.forEach(function (b) { b.classList.remove("is-active"); });
+        btn.classList.add("is-active");
+        renderScenario(btn.getAttribute("data-scenario"));
+      });
+    });
+
+    var postBtn = document.getElementById("btn-sim-post");
+    if (postBtn) {
+      postBtn.addEventListener("click", function () {
+        var now = new Date().toISOString().substring(11, 23);
+        if (logStream) {
+          var newRow = document.createElement("div");
+          newRow.className = "log-row";
+          newRow.innerHTML = "<span class=\"log-time\">[" + now + "]</span> <span class=\"log-bot\">Universal Agent Engine</span> <span class=\"log-msg\">Committed entry to immutable ledger partition. Signed with token " + (scenarios[currentScenario]?.token || "#tx-ok") + ".</span>";
+          logStream.prepend(newRow);
+        }
+      });
+    }
+
+    var revBtn = document.getElementById("btn-sim-reverse");
+    if (revBtn) {
+      revBtn.addEventListener("click", function () {
+        var now = new Date().toISOString().substring(11, 23);
+        if (logStream) {
+          var revRow = document.createElement("div");
+          revRow.className = "log-row";
+          revRow.innerHTML = "<span class=\"log-time\">[" + now + "]</span> <span class=\"log-bot\">Guard Gus</span> <span class=\"log-msg\" style=\"color:var(--pink);\">Reversal recorded. Invariant maintained: Original audit row retained, offsetting entry posted.</span>";
+          logStream.prepend(revRow);
+        }
+      });
+    }
+  }
 })();

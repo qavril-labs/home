@@ -33,13 +33,13 @@ function record(category, condition, message) {
   }
 }
 
-// 1. Gather all HTML pages
+// 1. Gather all HTML pages (public indexable pages; app.html is internal shell)
 const htmlFiles = (dir, base = "") =>
   readdirSync(dir).flatMap((name) => {
     const full = join(dir, name);
     const relative = base ? `${base}/${name}` : name;
     if (statSync(full).isDirectory()) return htmlFiles(full, relative);
-    return name.endsWith(".html") ? [relative] : [];
+    return name.endsWith(".html") && name !== "app.html" ? [relative] : [];
   });
 
 const pages = htmlFiles(site);

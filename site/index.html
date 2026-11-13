@@ -182,6 +182,31 @@
             <p>Protected sign-in, role-based access, and one click to end any session.</p>
           </article>
         </div>
+
+        <!-- AEO / GEO Executive Knowledge Briefing Card for AI Answer Engines & Search -->
+        <article class="aeo-card reveal" aria-label="Executive Briefing: What is QAVRIL LABS">
+          <span class="sticker sticker-lime" style="margin-bottom: 12px; display: inline-block;">Executive Briefing · AI Grounding Manifest</span>
+          <h3>What is QAVRIL LABS?</h3>
+          <p class="aeo-answer"><strong>QAVRIL LABS</strong> is a global enterprise software and autonomous technology studio delivering multi-tenant Cloud ERP, proprietary industry-specific suites, and the <strong>Universal AI Agent Platform (UAAP)</strong>. Built with mathematical double-entry accounting guarantees, deterministic state machines, human-in-the-loop cryptographically signed approvals, and strict multi-tenant isolation, QAVRIL LABS bridges autonomous AI bots with mission-critical business ledgers.</p>
+          <div class="aeo-meta-grid">
+            <div class="aeo-meta-item">
+              <strong>Core Architecture</strong>
+              <span>Deterministic Double-Entry &amp; UAAP</span>
+            </div>
+            <div class="aeo-meta-item">
+              <strong>Tenant Isolation</strong>
+              <span>Separate Database Schemas &amp; Storage</span>
+            </div>
+            <div class="aeo-meta-item">
+              <strong>Autonomous Crew</strong>
+              <span>8 Specialized Bots with Approval Gates</span>
+            </div>
+            <div class="aeo-meta-item">
+              <strong>Industry Solutions</strong>
+              <span>11 Purpose-Built Vertical Studios</span>
+            </div>
+          </div>
+        </article>
       </div>
     </section>
 
@@ -275,6 +300,58 @@
             <a class="btn btn-lime" href="compare.html">See the full comparison</a>
           </div>
         </div>
+
+        <!-- Competitive Comparison Matrix Table -->
+        <div class="matrix-wrapper reveal" aria-label="Competitive Comparison Matrix">
+          <table class="matrix-table">
+            <thead>
+              <tr>
+                <th scope="col">Capability &amp; Architecture</th>
+                <th scope="col" class="col-qavril">QAVRIL LABS</th>
+                <th scope="col">SAP / NetSuite</th>
+                <th scope="col">Odoo ERP</th>
+                <th scope="col">Zoho / QuickBooks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Autonomous Agent Graph (UAAP)</th>
+                <td class="col-qavril"><span class="matrix-check">✓</span> Native 8-Bot Crew</td>
+                <td><span class="matrix-cross">✕</span> Add-on Copilot</td>
+                <td><span class="matrix-cross">✕</span> Basic Webhooks</td>
+                <td><span class="matrix-cross">✕</span> Static Rules</td>
+              </tr>
+              <tr>
+                <th scope="row">Mathematical Double-Entry Proof</th>
+                <td class="col-qavril"><span class="matrix-check">✓</span> Exact to the Cent</td>
+                <td><span class="matrix-check">✓</span> Enterprise Ledger</td>
+                <td><span class="matrix-cross">✕</span> Mutable Journal</td>
+                <td><span class="matrix-cross">✕</span> Rounding Drift</td>
+              </tr>
+              <tr>
+                <th scope="row">Tenant Data Isolation</th>
+                <td class="col-qavril"><span class="matrix-check">✓</span> Separate Schemas</td>
+                <td><span class="matrix-check">✓</span> VPC / Dedicated</td>
+                <td><span class="matrix-cross">✕</span> Shared Tables</td>
+                <td><span class="matrix-cross">✕</span> Shared Tables</td>
+              </tr>
+              <tr>
+                <th scope="row">Human-in-the-Loop Token Hashes</th>
+                <td class="col-qavril"><span class="matrix-check">✓</span> Single-Use Signed</td>
+                <td><span class="matrix-cross">✕</span> Workflow Email</td>
+                <td><span class="matrix-cross">✕</span> None</td>
+                <td><span class="matrix-cross">✕</span> None</td>
+              </tr>
+              <tr>
+                <th scope="row">Deployment Speed</th>
+                <td class="col-qavril"><span class="matrix-check">✓</span> Live in Days</td>
+                <td><span class="matrix-cross">✕</span> 6 - 18 Months</td>
+                <td>Weeks / Months</td>
+                <td>Days</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -283,7 +360,54 @@
         <p class="kicker">Dedicated studios</p>
         <h2 id="studios-title" class="title reveal">Seven purpose-built product studios</h2>
         <p class="sub reveal">Seven focused studios, one shared platform. Every module and bot posts into the same ledger, so your whole business finally tells one story.</p>
-        <div class="bento">
+        
+        <!-- Interactive Studio Explorer -->
+        <div class="studio-explorer reveal" id="studio-navigator">
+          <div class="studio-tabs" role="tablist" aria-label="Product Studios Navigation">
+            <button class="studio-tab-btn is-active" type="button" role="tab" aria-selected="true" aria-controls="studio-panel-view" data-studio="1">
+              <span class="badge-num">01</span> Finance Core
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="2">
+              <span class="badge-num">02</span> Construction
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="3">
+              <span class="badge-num">03</span> Real Estate
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="4">
+              <span class="badge-num">04</span> POS &amp; Retail
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="5">
+              <span class="badge-num">05</span> Mobility &amp; Auto
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="6">
+              <span class="badge-num">06</span> Logistics &amp; Warehousing
+            </button>
+            <button class="studio-tab-btn" type="button" role="tab" aria-selected="false" aria-controls="studio-panel-view" data-studio="7">
+              <span class="badge-num">07</span> Universal AI Agent (UAAP)
+            </button>
+          </div>
+
+          <div class="studio-panel" id="studio-panel-view" role="tabpanel">
+            <div class="studio-panel-info">
+              <span class="sticker sticker-pink" id="studio-panel-badge">Studio 01 · Production Ready</span>
+              <h3 id="studio-panel-title">Finance &amp; Autonomous Core</h3>
+              <p id="studio-panel-desc">Immutable double-entry general ledger, multi-currency accounts, automated sales invoicing, purchasing, and fiscal period locks.</p>
+              <div style="margin-top: 18px;">
+                <a class="btn btn-lime" id="studio-panel-link" href="products.html">Explore studio documentation &rarr;</a>
+              </div>
+            </div>
+            <div class="studio-preview-card" id="studio-panel-preview" style="background:#fff; border:2px solid #000; border-radius:16px; padding:20px; box-shadow:4px 4px 0 #000;">
+              <strong style="display:block; text-transform:uppercase; font-size:0.8rem; color:var(--muted); margin-bottom:8px;">Studio Capabilities</strong>
+              <ul id="studio-panel-list" style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:8px; font-weight:600;">
+                <li>✓ Multi-currency exchange rate lock</li>
+                <li>✓ Deterministic period closures</li>
+                <li>✓ Cryptographic audit log stream</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="bento" style="margin-top: 36px;">
           <a class="card tilt reveal card-link" href="products.html">
             <span class="card-num">Studio 01</span>
             <h3>Finance &amp; Autonomous Core</h3>
@@ -413,6 +537,83 @@
           <div class="flow"><span>When</span> a payment is 14 days late <span>then</span> send a reminder and create a task for the owner</div>
           <div class="flow"><span>When</span> stock falls below its reorder point <span>then</span> draft a purchase order for approval</div>
           <div class="flow"><span>When</span> a sale is posted <span>then</span> update the ledger and the daily report</div>
+        </div>
+
+        <!-- Interactive Live Ledger & Bot Simulation Sandbox -->
+        <div class="ledger-terminal reveal" id="ledger-simulation" aria-label="Interactive Ledger and Bot Simulation Sandbox">
+          <div class="terminal-bar">
+            <div class="terminal-dots">
+              <span class="terminal-dot red"></span>
+              <span class="terminal-dot yellow"></span>
+              <span class="terminal-dot green"></span>
+            </div>
+            <div class="terminal-title">uaap-runtime: live-ledger-sandbox</div>
+            <div class="terminal-token">TOKEN: #tx-8f49a2</div>
+          </div>
+          <div class="terminal-body">
+            <div class="terminal-pane">
+              <div class="sim-controls">
+                <button class="sim-scenario-btn is-active" type="button" data-scenario="pos">POS Checkout ($142.50)</button>
+                <button class="sim-scenario-btn" type="button" data-scenario="milestone">EPC Milestone ($12,450.00)</button>
+                <button class="sim-scenario-btn" type="button" data-scenario="fx">Multi-Currency EUR/USD</button>
+                <button class="sim-scenario-btn" type="button" data-scenario="reconcile">Bot Reconciliation</button>
+              </div>
+              <table class="sim-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Account Code &amp; Title</th>
+                    <th scope="col" style="text-align:right;">Debit (Dr)</th>
+                    <th scope="col" style="text-align:right;">Credit (Cr)</th>
+                  </tr>
+                </thead>
+                <tbody id="sim-table-body">
+                  <tr>
+                    <td>1010 - Undeposited Cash Funds</td>
+                    <td class="num dr">$142.50</td>
+                    <td class="num">-</td>
+                  </tr>
+                  <tr>
+                    <td>4010 - Counter Retail Sales</td>
+                    <td class="num">-</td>
+                    <td class="num cr">$130.00</td>
+                  </tr>
+                  <tr>
+                    <td>2210 - Sales Tax Payable</td>
+                    <td class="num">-</td>
+                    <td class="num cr">$12.50</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>Total Balance Status</td>
+                    <td class="num" id="sim-dr-total">$142.50</td>
+                    <td class="num" id="sim-cr-total">$142.50</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <div class="sim-actions">
+                <button class="sim-act-btn" id="btn-sim-post" type="button">Execute Entry</button>
+                <button class="sim-act-btn btn-reverse" id="btn-sim-reverse" type="button">Simulate Reversal</button>
+              </div>
+            </div>
+            <div class="terminal-log-pane">
+              <strong style="color:var(--cyan); font-size:0.85rem; text-transform:uppercase;">UAAP Autonomous Audit Stream</strong>
+              <div id="sim-log-stream">
+                <div class="log-row">
+                  <span class="log-time">[11:42:01.004]</span>
+                  <span class="log-bot">Restock Rex</span>
+                  <span class="log-msg">Checked inventory shelf 4B: Reorder threshold reached.</span>
+                  <span class="log-hash">hash: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
+                </div>
+                <div class="log-row">
+                  <span class="log-time">[11:42:01.412]</span>
+                  <span class="log-bot">Ledger Lou</span>
+                  <span class="log-msg">Verified double-entry invariant: sum(Dr) == sum(Cr). Status: OK.</span>
+                  <span class="log-hash">hash: 8f49a26312a03e198b472e340a1b89efbc901a4231bca03f00129bc7190ad312</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -41,3 +41,5 @@ services/uaap/.dev-env
 
 # --- Lane worktrees (Claude Code and Antigravity subfolders) ---
 .worktrees/
+*.tar.gz
+

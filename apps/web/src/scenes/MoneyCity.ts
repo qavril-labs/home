@@ -421,7 +421,7 @@ export function mountMoneyCity(
       const last = coins.children[coins.children.length - 1];
       if (last) coins.remove(last);
     }
-    coins.children.forEach((coin) => {
+    coins.children.forEach((coin: any) => {
       const restY = (coin.userData as any).rest || 0;
       coin.position.y += (restY - coin.position.y) * 0.2;
     });
