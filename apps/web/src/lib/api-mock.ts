@@ -7,6 +7,8 @@ import type {
   UnpostedEntry,
   MonthEndChecklistItem,
   LedgerLouData,
+  TrialBalanceRow,
+  CurrencyBalanceRow,
 } from "../types";
 
 export const initialMockInsights: WorkspaceInsights = {
@@ -706,4 +708,27 @@ export const initialMockParties: Party[] = [
     outstandingBalance: "-890.00",
     status: "active",
   },
+];
+
+export const mockTrialBalanceData: TrialBalanceRow[] = [
+  { code: "1000", name: "Cash on hand", type: "ASSET", debit: "4200.00", credit: "0.00" },
+  { code: "1100", name: "Bank account", type: "ASSET", debit: "42150.00", credit: "0.00" },
+  { code: "1200", name: "Customers owe you", type: "ASSET", debit: "12450.00", credit: "0.00" },
+  { code: "1300", name: "Stock / Inventory", type: "ASSET", debit: "28300.00", credit: "0.00" },
+  { code: "2000", name: "You owe suppliers", type: "LIABILITY", debit: "0.00", credit: "8650.00" },
+  { code: "2100", name: "Tax payable", type: "LIABILITY", debit: "0.00", credit: "3400.00" },
+  { code: "3000", name: "Owner's equity", type: "EQUITY", debit: "0.00", credit: "32900.00" },
+  { code: "4000", name: "Sales revenue", type: "REVENUE", debit: "0.00", credit: "128420.50" },
+  { code: "5000", name: "Cost of goods sold", type: "EXPENSE", debit: "44200.00", credit: "0.00" },
+  { code: "6000", name: "Rent", type: "EXPENSE", debit: "14000.00", credit: "0.00" },
+  { code: "6100", name: "Salaries", type: "EXPENSE", debit: "18500.00", credit: "0.00" },
+  { code: "6200", name: "Utilities", type: "EXPENSE", debit: "4200.00", credit: "0.00" },
+  { code: "6900", name: "Other operating expenses", type: "EXPENSE", debit: "5370.50", credit: "0.00" },
+];
+
+export const mockCurrencyBalanceData: CurrencyBalanceRow[] = [
+  { currency: "USD", journalCount: 114, totalDebit: "142850.50", totalCredit: "142850.50", variance: "0.00", status: "balanced" },
+  { currency: "EUR", journalCount: 16, totalDebit: "18400.00", totalCredit: "18400.00", variance: "0.00", status: "balanced" },
+  { currency: "GBP", journalCount: 8, totalDebit: "8220.00", totalCredit: "8220.00", variance: "0.00", status: "balanced" },
+  { currency: "CAD", journalCount: 4, totalDebit: "3900.00", totalCredit: "3900.00", variance: "0.00", status: "balanced" },
 ];

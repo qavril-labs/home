@@ -9,8 +9,8 @@ import { ItemsPage } from "./pages/ItemsPage";
 import { ContactsPage } from "./pages/ContactsPage";
 import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
-import { initialMockItems, initialMockContacts } from "./lib/api-mock";
-import type { Contact, ProductItem } from "./types";
+import { initialMockItems, initialMockParties } from "./lib/api-mock";
+import type { Party, ProductItem } from "./types";
 
 export const App: React.FC = () => {
   const getInitialTab = () => {
@@ -29,7 +29,7 @@ export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
-  const [contacts, setContacts] = useState<Contact[]>(initialMockContacts);
+  const [parties, setParties] = useState<Party[]>(initialMockParties);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -76,16 +76,24 @@ export const App: React.FC = () => {
     setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const handleAddContact = (contact: Contact) => {
-    setContacts((prev) => [contact, ...prev]);
+  const handleAddParty = (party: Party) => {
+    setParties((prev) => [party, ...prev]);
   };
 
-  const handleUpdateContact = (updated: Contact) => {
-    setContacts((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  const handleUpdateParty = (updated: Party) => {
+    setParties((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
   };
 
-  const handleDeleteContact = (id: string) => {
-    setContacts((prev) => prev.filter((c) => c.id !== id));
+  const handleDeleteParty = (id: string) => {
+    setParties((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleToggleStatusParty = (id: string) => {
+    setParties((prev) =>
+      prev.map((p) =>
+        p.id === id ? { ...p, status: p.status === "active" ? "inactive" : "active" } : p
+      )
+    );
   };
 
   return (
@@ -133,10 +141,11 @@ export const App: React.FC = () => {
         ) : activeTab === "contacts" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <ContactsPage
-              contacts={contacts}
-              onAddContact={handleAddContact}
-              onUpdateContact={handleUpdateContact}
-              onDeleteContact={handleDeleteContact}
+              parties={parties}
+              onAddParty={handleAddParty}
+              onUpdateParty={handleUpdateParty}
+              onDeleteParty={handleDeleteParty}
+              onToggleStatusParty={handleToggleStatusParty}
             />
           </div>
         ) : activeTab === "import" ? (

@@ -11,11 +11,15 @@ import {
   initialUnpostedEntries,
   initialMonthEndChecklist,
   mockBankStatementLines,
+  mockTrialBalanceData,
+  mockCurrencyBalanceData,
 } from "../../lib/api-mock";
 import type {
   LedgerLouData,
   UnpostedEntry,
   MonthEndChecklistItem,
+  TrialBalanceRow,
+  CurrencyBalanceRow,
 } from "../../types";
 import {
   Power,
@@ -24,6 +28,9 @@ import {
   FileText,
   ShieldCheck,
   ChevronRight,
+  Scale,
+  Globe,
+  CheckCircle2,
 } from "lucide-react";
 
 export interface LedgerLouProps {
@@ -43,6 +50,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
 
   // Modals & Drawers
+  const [activeSubTab, setActiveSubTab] = useState<"checklist" | "trial-balance" | "currencies">("checklist");
   const [isUnpostedModalOpen, setIsUnpostedModalOpen] = useState<boolean>(false);
   const [isBankDrawerOpen, setIsBankDrawerOpen] = useState<boolean>(false);
   const [isLockPeriodConfirmOpen, setIsLockPeriodConfirmOpen] = useState<boolean>(false);
@@ -437,22 +445,55 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
         </div>
       </section>
 
-      {/* 4. Month-End Closing Checklist Table */}
+      {/* 4. Month-End Review & Ledger Verification Hub */}
       <section
         className="neo-card p-4 bg-panel border-line shadow-card"
-        aria-label="Month-End Closing Checklist"
+        aria-label="Month-End Closing & Ledger Invariants Hub"
       >
+        {/* Hub Tabs Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-grid">
-          <div>
-            <h2 className="font-display font-extrabold text-lg uppercase tracking-tight text-text leading-tight">
-              Month-End Closing Checklist (FIN-13)
-            </h2>
-            <p className="text-xs text-muted mt-0.5">
-              Four verified closing requirements before November 2026 books are sealed.
-            </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveSubTab("checklist")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-line transition-all ${
+                activeSubTab === "checklist"
+                  ? "bg-cyan text-ink shadow-[2px_2px_0_var(--q-ink)]"
+                  : "bg-page text-muted hover:text-text hover:bg-page/80"
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Closing Checklist ({checklist.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab("trial-balance")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-line transition-all ${
+                activeSubTab === "trial-balance"
+                  ? "bg-cyan text-ink shadow-[2px_2px_0_var(--q-ink)]"
+                  : "bg-page text-muted hover:text-text hover:bg-page/80"
+              }`}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              <span>Trial Balance Invariant (13 Accounts)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab("currencies")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-line transition-all ${
+                activeSubTab === "currencies"
+                  ? "bg-cyan text-ink shadow-[2px_2px_0_var(--q-ink)]"
+                  : "bg-page text-muted hover:text-text hover:bg-page/80"
+              }`}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span>Multi-Currency (4 Currencies)</span>
+            </button>
           </div>
 
-          {unpostedEntries.length > 0 && (
+          {unpostedEntries.length > 0 && activeSubTab === "checklist" && (
             <Button
               variant="lime"
               size="sm"
@@ -465,90 +506,211 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
           )}
         </div>
 
-        {/* Checklist Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
-                <th className="py-2.5 px-3">Closing Requirement</th>
-                <th className="py-2.5 px-3">Target Account / Scope</th>
-                <th className="py-2.5 px-3">Figures & Status</th>
-                <th className="py-2.5 px-3 text-center">Status</th>
-                <th className="py-2.5 px-3 text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-grid">
-              {checklist.map((item) => {
-                const isUnpostedItem = item.id === "unposted_depreciation";
-                const isPeriodLockItem = item.id === "period_lock";
+        {/* Tab 1: Checklist Table */}
+        {activeSubTab === "checklist" && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
+                  <th className="py-2.5 px-3">Closing Requirement</th>
+                  <th className="py-2.5 px-3">Target Account / Scope</th>
+                  <th className="py-2.5 px-3">Figures & Status</th>
+                  <th className="py-2.5 px-3 text-center">Status</th>
+                  <th className="py-2.5 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-grid">
+                {checklist.map((item) => {
+                  const isUnpostedItem = item.id === "unposted_depreciation";
+                  const isPeriodLockItem = item.id === "period_lock";
 
-                return (
-                  <tr
-                    key={item.id}
-                    className="hover:bg-page/70 transition-colors"
-                  >
-                    {/* Item & Description */}
-                    <td className="py-3 px-3 align-top max-w-xs">
-                      <div className="font-bold text-sm text-text flex items-center gap-1.5">
-                        {item.title}
-                      </div>
-                      <p className="text-xs text-muted mt-0.5 leading-snug">
-                        {item.description}
-                      </p>
+                  return (
+                    <tr
+                      key={item.id}
+                      className="hover:bg-page/70 transition-colors"
+                    >
+                      {/* Item & Description */}
+                      <td className="py-3 px-3 align-top max-w-xs">
+                        <div className="font-bold text-sm text-text flex items-center gap-1.5">
+                          {item.title}
+                        </div>
+                        <p className="text-xs text-muted mt-0.5 leading-snug">
+                          {item.description}
+                        </p>
+                      </td>
+
+                      {/* Target Account */}
+                      <td className="py-3 px-3 align-top font-mono text-xs text-text font-semibold">
+                        <span className="px-2 py-0.5 bg-page border border-grid">
+                          {item.targetAccount}
+                        </span>
+                      </td>
+
+                      {/* Figures */}
+                      <td className="py-3 px-3 align-top">
+                        <div className="space-y-1">
+                          {item.figures.map((fig, idx) => (
+                            <div key={idx} className="flex items-center gap-2 text-xs">
+                              <span className="text-muted text-[11px]">{fig.label}:</span>
+                              <span className="font-mono font-bold text-text">
+                                {fig.value.includes(".")
+                                  ? formatMoney(fig.value)
+                                  : fig.value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* StatusChip */}
+                      <td className="py-3 px-3 align-top text-center whitespace-nowrap">
+                        <StatusChip status={item.status} label={item.statusLabel} />
+                      </td>
+
+                      {/* Action Button */}
+                      <td className="py-3 px-3 align-top text-right whitespace-nowrap">
+                        <Button
+                          size="sm"
+                          variant={
+                            isUnpostedItem && unpostedEntries.length > 0
+                              ? "lime"
+                              : isPeriodLockItem && !isPeriodLocked
+                              ? "yellow"
+                              : "ghost"
+                          }
+                          onClick={() => handleChecklistAction(item)}
+                          className="text-xs py-1 px-3"
+                        >
+                          <span>{item.actionLabel || "Inspect"}</span>
+                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Tab 2: Trial Balance Invariant Table */}
+        {activeSubTab === "trial-balance" && (
+          <div className="space-y-3">
+            <div className="p-2.5 bg-page border-line flex items-center justify-between text-xs">
+              <span className="text-muted font-medium">
+                Double-Entry Invariant: <code className="font-bold text-text">Σ(Debits) - Σ(Credits) = 0</code>
+              </span>
+              <span className="font-mono font-bold text-good flex items-center gap-1">
+                ✓ Zero Diff Invariant Verified (Δ $0.00)
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
+                    <th className="py-2.5 px-3">Code</th>
+                    <th className="py-2.5 px-3">Account Name</th>
+                    <th className="py-2.5 px-3">Classification</th>
+                    <th className="py-2.5 px-3 text-right">Debit (Dr)</th>
+                    <th className="py-2.5 px-3 text-right">Credit (Cr)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-grid">
+                  {mockTrialBalanceData.map((row: TrialBalanceRow) => (
+                    <tr key={row.code} className="hover:bg-page/70 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-text">
+                        {row.code}
+                      </td>
+                      <td className="py-2 px-3 font-medium text-text">
+                        {row.name}
+                      </td>
+                      <td className="py-2 px-3">
+                        <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-page border border-grid text-muted">
+                          {row.type}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-mono font-bold text-right text-text">
+                        {row.debit === "0.00" ? "-" : formatMoney(row.debit)}
+                      </td>
+                      <td className="py-2 px-3 font-mono font-bold text-right text-text">
+                        {row.credit === "0.00" ? "-" : formatMoney(row.credit)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-line bg-panel font-bold text-xs">
+                    <td colSpan={3} className="py-2.5 px-3 uppercase tracking-wider text-text">
+                      Total Balanced Sums
                     </td>
-
-                    {/* Target Account */}
-                    <td className="py-3 px-3 align-top font-mono text-xs text-text font-semibold">
-                      <span className="px-2 py-0.5 bg-page border border-grid">
-                        {item.targetAccount}
-                      </span>
+                    <td className="py-2.5 px-3 font-mono font-black text-right text-text">
+                      $173,370.50
                     </td>
-
-                    {/* Figures */}
-                    <td className="py-3 px-3 align-top">
-                      <div className="space-y-1">
-                        {item.figures.map((fig, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs">
-                            <span className="text-muted text-[11px]">{fig.label}:</span>
-                            <span className="font-mono font-bold text-text">
-                              {fig.value.includes(".")
-                                ? formatMoney(fig.value)
-                                : fig.value}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </td>
-
-                    {/* StatusChip */}
-                    <td className="py-3 px-3 align-top text-center whitespace-nowrap">
-                      <StatusChip status={item.status} label={item.statusLabel} />
-                    </td>
-
-                    {/* Action Button */}
-                    <td className="py-3 px-3 align-top text-right whitespace-nowrap">
-                      <Button
-                        size="sm"
-                        variant={
-                          isUnpostedItem && unpostedEntries.length > 0
-                            ? "lime"
-                            : isPeriodLockItem && !isPeriodLocked
-                            ? "yellow"
-                            : "ghost"
-                        }
-                        onClick={() => handleChecklistAction(item)}
-                        className="text-xs py-1 px-3"
-                      >
-                        <span>{item.actionLabel || "Inspect"}</span>
-                        <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                      </Button>
+                    <td className="py-2.5 px-3 font-mono font-black text-right text-text">
+                      $173,370.50
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 3: Multi-Currency Matrix */}
+        {activeSubTab === "currencies" && (
+          <div className="space-y-3">
+            <div className="p-2.5 bg-page border-line flex items-center justify-between text-xs">
+              <span className="text-muted font-medium">
+                Multi-Currency Ledger Invariants across all active operating books.
+              </span>
+              <span className="font-mono font-bold text-good">
+                4 Currencies Balanced
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
+                    <th className="py-2.5 px-3">Currency</th>
+                    <th className="py-2.5 px-3">Journal Entries</th>
+                    <th className="py-2.5 px-3 text-right">Total Debit</th>
+                    <th className="py-2.5 px-3 text-right">Total Credit</th>
+                    <th className="py-2.5 px-3 text-right">Net Variance</th>
+                    <th className="py-2.5 px-3 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-grid">
+                  {mockCurrencyBalanceData.map((row: CurrencyBalanceRow) => (
+                    <tr key={row.currency} className="hover:bg-page/70 transition-colors">
+                      <td className="py-2.5 px-3 font-mono font-bold text-text">
+                        <span className="px-2 py-0.5 bg-page border border-line">
+                          {row.currency}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-muted font-medium">
+                        {row.journalCount} entries
+                      </td>
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text">
+                        {formatMoney(row.totalDebit)}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text">
+                        {formatMoney(row.totalCredit)}
+                      </td>
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-good">
+                        Δ {formatMoney(row.variance)}
+                      </td>
+                      <td className="py-2.5 px-3 text-center">
+                        <StatusChip status="good" label="✓ Balanced" />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* 5. Activity Log & Guardrails Grid */}

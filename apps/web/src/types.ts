@@ -168,3 +168,20 @@ export interface LedgerLouData {
   checklist: MonthEndChecklistItem[];
   unpostedEntries: UnpostedEntry[];
 }
+
+export interface TrialBalanceRow {
+  code: string;
+  name: string;
+  type: "ASSET" | "LIABILITY" | "EQUITY" | "REVENUE" | "EXPENSE";
+  debit: string;
+  credit: string;
+}
+
+export interface CurrencyBalanceRow {
+  currency: string;
+  journalCount: number;
+  totalDebit: string;
+  totalCredit: string;
+  variance: string;
+  status: "balanced" | "variance";
+}
