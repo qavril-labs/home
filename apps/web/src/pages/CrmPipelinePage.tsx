@@ -190,25 +190,30 @@ export const CrmPipelinePage: React.FC<CrmPipelinePageProps> = ({
     const newInvoice: Invoice = {
       id: `inv-${Date.now()}`,
       invoiceNumber: `INV-2026-${String(Math.floor(Math.random() * 900) + 100)}`,
-      customerName: quote.customerName,
-      customerEmail: "finance@" + quote.customerName.toLowerCase().replace(/\s+/g, "") + ".com",
+      partyId: "CNT-001",
+      partyName: quote.customerName,
       status: "draft",
       issueDate: new Date().toISOString().split("T")[0] || "2026-11-14",
       dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split("T")[0] || "2026-12-14",
-      lineItems: [
+      currency: "USD",
+      lines: [
         {
           id: "li-1",
+          sku: "SRV-QUOTE",
           description: `Quote Fulfillment: ${quote.quoteNumber}`,
           quantity: 1,
+          unit: "unit",
           unitPrice: quote.grandTotal,
+          taxRate: "0.00",
+          taxCode: "TAX-STD",
           lineTotal: quote.grandTotal,
         },
       ],
       subtotal: quote.subtotal,
-      taxAmount: quote.taxTotal,
-      discountAmount: "0.00",
-      totalAmount: quote.grandTotal,
-      paidAmount: "0.00",
+      taxTotal: quote.taxTotal,
+      total: quote.grandTotal,
+      amountPaid: "0.00",
+      balanceDue: quote.grandTotal,
       notes: `Converted from accepted quote ${quote.quoteNumber}.`,
     };
 
