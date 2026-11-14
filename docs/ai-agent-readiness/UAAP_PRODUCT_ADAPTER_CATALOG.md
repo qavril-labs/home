@@ -22,11 +22,11 @@ Each adapter registers: `product_id`, `tenant binding`, `auth mode`, `endpoint r
 | 11 | PRD-ERP-11 | Fleet & Transport | Garage + Quick Commerce fragments; catalogue LOG-05 | — | — | C | Partial/Planned |
 | 12 | PRD-ERP-12 | HIMS | `Health Prescription` (prescription/medicine prototype) | Supabase (known) | TBC | D (clinician-supervised only) | Prototype |
 | 13 | PRD-ERP-13 | HRMS | PMS `hrms_full_suite` migration | via PMS RPC | PMS RLS | D | Schema only |
-| 14 | PRD-ERP-14 | Finance & Accounting | `packages/ledger`, routes `/v1/ledger/*` | Bearer token; perms `fin.*`; entitlement FIN-01 (known) | RLS | **Reference (A5)** | Unit tests pass (ledger test not individually run; package suite listed) |
-| 15 | PRD-ERP-15 | Sales Management | `packages/sales` (no HTTP routes yet) | none yet | RLS (planned) | After core API | Slice only; 11 tests pass |
+| 14 | PRD-ERP-14 | Finance & Accounting | `backend/packages/ledger`, routes `/v1/ledger/*` | Bearer token; perms `fin.*`; entitlement FIN-01 (known) | RLS | **Reference (A5)** | Unit tests pass (ledger test not individually run; package suite listed) |
+| 15 | PRD-ERP-15 | Sales Management | `backend/packages/sales` (no HTTP routes yet) | none yet | RLS (planned) | After core API | Slice only; 11 tests pass |
 | 16 | PRD-ERP-16 | Purchase Management | Construction purchase module; PMS procurement | TBC | TBC | A5 | Requires Verification |
 | 17 | PRD-ERP-17 | Business & SME ERP | `E:\SaaS` core | Bearer token, `/v1/*` (known) | RLS | **Reference (A4 first adapter)** | typecheck pass; 72 unit tests pass |
-| 18 | PRD-AI-01 | UAAP | to be created (`services/uaap`) | — | — | Wave A | Planned |
+| 18 | PRD-AI-01 | UAAP | to be created (`backend/services/uaap`) | — | — | Wave A | Planned |
 | 19 | PRD-AI-02 | Enterprise AI Copilot | `Enterprise Copilot for ERPCRM` (frontend; backend README says pending) | Calls Gemini SDK from browser dependency (**secret-exposure risk**, TBC) | — | UI client of UAAP | Prototype |
 | 20 | PRD-AI-03 | Knowledge Copilot | `Scrapper RAG Chatbot` (FastAPI, Chroma, `gemma4:31b-cloud`) | No auth seen in `main.py` head | per-session collection | A5 reuse of ideas | Prototype |
 | 21 | PRD-AI-04 | Customer Support Agent | `Voice Agent` (LiveKit, GPT-4o) | Provider keys via env | — | A5 | Prototype |
@@ -36,15 +36,15 @@ Each adapter registers: `product_id`, `tenant binding`, `auth mode`, `endpoint r
 | 25 | PRD-AI-08 | Document Processing | Scrapper RAG `document_processor.py`, Construction `analyzeMedia` | — | — | **A5 first agent** | Prototype fragments |
 | 26 | PRD-AI-09 | AI Procurement Assistant | Procurement prototype | — | — | A5 | Prototype |
 | 27 | PRD-AI-10 | AI Marketing Automation | none dedicated | — | — | E | Planned |
-| 28 | PRD-TECH-01 | Business Process Automation | `packages/events` outbox | internal | RLS-less system table | A6 | Implemented, no worker |
+| 28 | PRD-TECH-01 | Business Process Automation | `backend/packages/events` outbox | internal | RLS-less system table | A6 | Implemented, no worker |
 | 29 | PRD-TECH-02 | Cloud Infra Automation | HelpDesk workflow docs only | — | — | E | Planned (docs) |
 | 30 | PRD-TECH-03 | Cloud & DevOps | Dockerfiles/compose, `.gitlab-ci.yml` in Construction | — | — | E | Config present, unverified |
 | 31 | PRD-TECH-04 | Data Eng. & BI | audit log only | — | — | E | Planned |
 | 32 | PRD-TECH-05 | Cybersecurity | RLS, target guards | — | — | cross-cutting | Partially implemented |
 | 33 | PRD-TECH-06 | IoT | none found | — | — | E | **Not Found** |
-| 34 | PRD-TECH-07 | Design System | `site/styles.css` (site only) | — | — | n/a | Site-scope only |
+| 34 | PRD-TECH-07 | Design System | `frontend/site/styles.css` (site only) | — | — | n/a | Site-scope only |
 | 35 | PRD-IMM-01 | AR/VR/MR | none | — | — | E | **Not Found** |
-| 36 | PRD-IMM-02 | WebAR | `site/scene3d.js` (3D canvas, not AR) | — | — | n/a | Prototype (3D, not AR) |
+| 36 | PRD-IMM-02 | WebAR | `frontend/site/scene3d.js` (3D canvas, not AR) | — | — | n/a | Prototype (3D, not AR) |
 | 37 | PRD-IMM-03 | Virtual Showrooms | none verified | — | — | E | **Not Found** |
 | 38 | PRD-IMM-04 | 3D Configurators | `render-product-images.py` (image renderer) | — | — | n/a | Not a configurator |
 | 39 | PRD-IMM-05 | Digital Twins | none | — | — | E | **Planned** |

@@ -39,7 +39,7 @@ This updated master technical audit establishes the definitive baseline for QAVR
 | 8 | **Quick Commerce Delivery** | ERP | `E:\Port\Quick Commerce Delivery Partner` | React, Vite, Capacitor (Android), Supabase | **Requires Verification** (App shell present; unverified runtime) |
 | 9 | **Garage Management** | ERP | `E:\Port\Garage Management` | React, Vite, Prisma ORM, Tailwind | **Requires Verification** (Job cards schema; partial) |
 | 10 | **HIMS (Healthcare)** | ERP | `E:\Port\Health Prescription` | TanStack, Vite, Supabase, 3.7MB medicine dataset | **Prototype** (E-prescriptions, medicines) |
-| 11 | **Procurement Management** | ERP | `E:\Port\Procurement` & `packages/db` | Next.js 14, Fastify, PostgreSQL, SearXNG scraper | **Prototype** (Quotation matching spike) |
+| 11 | **Procurement Management** | ERP | `E:\Port\Procurement` & `backend/packages/db` | Next.js 14, Fastify, PostgreSQL, SearXNG scraper | **Prototype** (Quotation matching spike) |
 | 12 | **Finance & Accounting** | ERP | `E:\SaaS\packages\ledger` | TypeScript, Fastify, PostgreSQL (append-only triggers) | **Verified Working** (General Ledger package) |
 | 13 | **Sales Management** | ERP | `E:\SaaS\packages\sales` | TypeScript, Fastify, PostgreSQL (gap-free counters) | **Verified Working** (11/11 tests pass) |
 | 14 | **Purchase Management** | ERP | `E:\Port\Construction\src\modules\purchase` | Angular 21, Node.js, Express, SQLite | **Requires Verification** (Submodule in Construction) |

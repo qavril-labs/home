@@ -228,10 +228,10 @@ Milestone A3 introduces the Stateful Agent Runtime and Memory Layer to the Unive
 
 ## 4. Planned File Structure for Milestone A3
 
-When authorized to code, Milestone A3 will be implemented inside `services/uaap/`:
+When authorized to code, Milestone A3 will be implemented inside `backend/services/uaap/`:
 
 ```
-services/uaap/
+backend/services/uaap/
 ├── src/uaap/
 │   └── runtime/
 │       ├── __init__.py
@@ -282,7 +282,7 @@ Milestone A3 will require **100% passing automated tests** before considering co
 ## 6. Strict Milestone Exit Criteria
 
 Milestone A3 will only be marked complete when:
-1. All in-memory runtime, checkpointing, adapter, working memory, and approval modules are implemented in `services/uaap/src/uaap/runtime/`.
+1. All in-memory runtime, checkpointing, adapter, working memory, and approval modules are implemented in `backend/services/uaap/src/uaap/runtime/`.
 2. All planned runtime unit and isolation tests pass with 100% success.
 3. No database has been provisioned; zero database migrations created.
 4. Core SaaS and Construction ERP remain completely untouched.

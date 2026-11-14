@@ -1,6 +1,6 @@
 # UAAP Agent Standard (applies to every agent and bot)
 
-**Date:** 2026-11-10 · **Code:** `services/uaap/src/uaap/agents/base.py`, `guardrails.py`, `obs/metrics.py`
+**Date:** 2026-11-10 · **Code:** `backend/services/uaap/src/uaap/agents/base.py`, `guardrails.py`, `obs/metrics.py`
 
 The standard exists so that no agent hallucinates or shows random data. It is enforced in code, so following it is not optional:
 

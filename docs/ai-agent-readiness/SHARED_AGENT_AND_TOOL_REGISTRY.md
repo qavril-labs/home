@@ -13,12 +13,12 @@ By establishing shared agents configured with product-specific parameters, QAVRI
 
 | Shared Agent Name | Universal Core Capabilities | Product Consumers | Underlying Business Modules Reused |
 |---|---|---|---|
-| **Universal Finance Agent** | Double-entry journal posting, bank reconciliation, trial balance, tax calculations, P&L reporting | Construction ERP, Property ERP, Retail POS, Restaurant POS, HIMS, Business ERP | `@erp/ledger`, `@erp/money`, `@erp/tax` (`packages/*`) |
+| **Universal Finance Agent** | Double-entry journal posting, bank reconciliation, trial balance, tax calculations, P&L reporting | Construction ERP, Property ERP, Retail POS, Restaurant POS, HIMS, Business ERP | `@erp/ledger`, `@erp/money`, `@erp/tax` (`backend/packages/*`) |
 | **Universal Inventory Agent** | Stock balance queries, replenishment recommendations, reorder quantity formulas, scrap auditing | Retail POS, Restaurant POS, Construction Store, Garage, Production ERP | `stock_ledger.service.js`, `BOQ_ITEMS`, `Store` |
 | **Universal Procurement Agent** | Vendor comparison, RFQ drafting, 3-way matching assistance (PO vs GRN vs Bill), lead time rating | Construction ERP, Property ERP, IT HelpDesk, Production ERP, Garage | `procurement.controller.js`, `trade_categories` |
 | **Universal Document Agent** | OCR text extraction, invoice line-item extraction, PDF contract clause analysis, multimodal vision | Every product in the portfolio | `document_processor.py`, `ai.service.js` vision |
 | **Universal Customer Support** | Omnichannel ticket intake, policy Q&A, sentiment tracking, human escalation routing | Property Tenant Portal, IT HelpDesk, Restaurant Reservations, POS, Delivery | `Voice Agent` (`LiveKit`), `IT Helpdesk` |
-| **Universal Reporting Agent** | Executive KPI aggregation, natural language analytics, chart/table JSON formatting | Executive Dashboards across all 39 products | `packages/audit`, `reports/`, Fastify BI endpoints |
+| **Universal Reporting Agent** | Executive KPI aggregation, natural language analytics, chart/table JSON formatting | Executive Dashboards across all 39 products | `backend/packages/audit`, `reports/`, Fastify BI endpoints |
 | **Universal Approval Agent** | Gatekeeper for high-value transactions, supervisor notification, signature validation | Purchase Orders (> $1,000), Lease terminations, Refund payouts, Deployments | Workflow Approval Center, Outbox Event Bus |
 
 ---

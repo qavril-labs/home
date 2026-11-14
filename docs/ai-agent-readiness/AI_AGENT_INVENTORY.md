@@ -24,12 +24,12 @@ QAVRIL LABS employs a **Three-Layer Universal Agent Hierarchy**:
 | # | Agent Name | Layer | Primary Capabilities | Shared Product Consumers | Verified Codebase Foundation |
 |---|---|---|---|---|---|
 | 1 | **QAVRIL Master Orchestrator** | Layer 1 | Intent routing, task decomposition, agent delegation | Every product in the portfolio | `E:\Port\Zyno Genie` (LangGraph state graph) |
-| 2 | **Universal Finance Agent** | Layer 2 | Double-entry journal checks, bank reconciliation, P&L generation | Construction, Property, Retail, Restaurant, HIMS, SME | `packages/ledger`, `Personal Finance` |
+| 2 | **Universal Finance Agent** | Layer 2 | Double-entry journal checks, bank reconciliation, P&L generation | Construction, Property, Retail, Restaurant, HIMS, SME | `backend/packages/ledger`, `Personal Finance` |
 | 3 | **Universal Inventory Agent** | Layer 2 | Stock burn rates, replenishment formulas, reorder lead times | Retail POS, Restaurant, Construction, Garage, Production | `stock_ledger.service.js` |
 | 4 | **Universal Procurement Agent**| Layer 2 | 3-way matching assistance, RFQ scoring, supplier ratings | Construction, Property, IT HelpDesk, Production | `E:\Port\Procurement`, `PMS trade_categories` |
 | 5 | **Document Intelligence Agent** | Layer 2 | Multimodal OCR, invoice extraction, contract analysis | All 39 products across the portfolio | `E:\Port\Scrapper RAG`, `ai.service.js` |
 | 6 | **Customer Support Agent** | Layer 2 | Omnichannel voice and chat resolution, FAQ deflection | Property Portal, IT HelpDesk, POS, Delivery App | `E:\Port\Voice Agent` (`LiveKit`), `IT Helpdesk` |
-| 7 | **Universal Reporting Agent** | Layer 2 | Cross-product KPI consolidation, executive summaries | All 39 products across the portfolio | `packages/audit`, `reports/` |
+| 7 | **Universal Reporting Agent** | Layer 2 | Cross-product KPI consolidation, executive summaries | All 39 products across the portfolio | `backend/packages/audit`, `reports/` |
 | 8 | **Universal Approval Agent** | Layer 2 | Human-in-the-loop gatekeeper for high-value operations | Gated writes across all enterprise modules | Workflow Engine, Outbox Pattern |
 
 ---
@@ -87,7 +87,7 @@ QAVRIL LABS employs a **Three-Layer Universal Agent Hierarchy**:
 1. **Transactional Outbox Worker Bot:** Continuously polls and dispatches `outbox_events`.
 2. **Approval Reminder & Escalation Bot:** Nudges supervisors when approval tickets sit idle.
 3. **Multi-Channel Notification Bot:** Dispatches outbound alerts via Email, SMS, and WhatsApp.
-4. **Lead Nurturing & Booking Bot:** Auto-processes incoming demo leads from the marketing site (`site/leads`).
+4. **Lead Nurturing & Booking Bot:** Auto-processes incoming demo leads from the marketing site (`frontend/site/leads`).
 5. **Data Validation & Invariant Checking Bot:** Audits ledger balance invariants and budget headroom.
 6. **Rent-Due Reminder Bot:** Automated tenant PDC maturity notifications.
 7. **Daily DPR Summary Bot:** Consolidates daily site progress reports for project directors.

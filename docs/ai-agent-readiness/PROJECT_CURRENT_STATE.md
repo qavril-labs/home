@@ -87,7 +87,7 @@ This technical audit establishes the precise operational and codebase state acro
 | **Driver Delivery & Route Mobile** | **Verified Working** | Capacitor Android build, routes | `Quick Commerce Delivery App` | Standalone app; not yet federated into Core SaaS API |
 | **Job Cards & Workshop Service** | **Verified Working** | UI routes & appointments table | `E:\Port\Garage Management` | Parts inventory deduction not linked to Core General Ledger |
 | **Dynamic Route Optimization** | **Partially Implemented** | Google Maps API integration | `Property Management` & `Quick Commerce` | Lacks genetic/TSP autonomous route dispatch solver |
-| **Fleet Fuel & Expense Ledger** | **Not Implemented** | Catalog specification `LOG-05` | None (catalog only) | Requires integration with Core Ledger (`packages/ledger`) |
+| **Fleet Fuel & Expense Ledger** | **Not Implemented** | Catalog specification `LOG-05` | None (catalog only) | Requires integration with Core Ledger (`backend/packages/ledger`) |
 
 ---
 
@@ -96,14 +96,14 @@ This technical audit establishes the precise operational and codebase state acro
 
 | Component / Package | Implementation State | Verification Evidence | Details |
 |---|---|---|---|
-| **Identity & Authentication** (`packages/identity`) | **Verified Working** | Tests pass in `identity.test.ts` | Password login via scrypt, SHA-256 hashed session tokens, tenant-scoped session tables |
-| **Multi-Tenancy Isolation** (`packages/tenancy`) | **Verified Working** | Tests pass in `tenancy.test.ts` | Row-Level Security (RLS) enforcement via PostgreSQL `current_setting('app.tenant_id')` |
-| **Financial General Ledger** (`packages/ledger`) | **Verified Working** | Tests pass in `ledger.test.ts` | Double-entry, multi-currency, immutable append-only with SQL trigger blocking update/delete |
-| **Sales & Invoicing** (`packages/sales`) | **Verified Working** | 11/11 tests pass in `invoicing.test.ts` | Gap-free document numbering, automated journal posting to receivables, revenue & tax |
-| **Tax Rules Engine** (`packages/tax`) | **Verified Working** | 13/13 tests pass in `tax.test.ts` | Reverse charge, inclusive/exclusive pricing, effective-dated tax rates |
-| **Exact Money Math** (`packages/money`) | **Verified Working** | 19/19 tests pass in `money.test.ts` | Minor integer units using `bigint`, zero-decimal and 3-decimal currency arithmetic |
-| **Public Lead Engine & Webhook** (`apps/api`) | **Verified Working** | 3,735 checks pass in `site:check`, API route | Anti-bot honeypot, IP rate limiting, operator webhook forwarding |
-| **Marketing Site Architecture** (`site/`) | **Verified Working** | Verified HTML5/CSS3 pages | Clean structural sections: Products, Projects, Case Studies, Blogs, AI Bots (`site/bots.html`) |
+| **Identity & Authentication** (`backend/packages/identity`) | **Verified Working** | Tests pass in `identity.test.ts` | Password login via scrypt, SHA-256 hashed session tokens, tenant-scoped session tables |
+| **Multi-Tenancy Isolation** (`backend/packages/tenancy`) | **Verified Working** | Tests pass in `tenancy.test.ts` | Row-Level Security (RLS) enforcement via PostgreSQL `current_setting('app.tenant_id')` |
+| **Financial General Ledger** (`backend/packages/ledger`) | **Verified Working** | Tests pass in `ledger.test.ts` | Double-entry, multi-currency, immutable append-only with SQL trigger blocking update/delete |
+| **Sales & Invoicing** (`backend/packages/sales`) | **Verified Working** | 11/11 tests pass in `invoicing.test.ts` | Gap-free document numbering, automated journal posting to receivables, revenue & tax |
+| **Tax Rules Engine** (`backend/packages/tax`) | **Verified Working** | 13/13 tests pass in `tax.test.ts` | Reverse charge, inclusive/exclusive pricing, effective-dated tax rates |
+| **Exact Money Math** (`backend/packages/money`) | **Verified Working** | 19/19 tests pass in `money.test.ts` | Minor integer units using `bigint`, zero-decimal and 3-decimal currency arithmetic |
+| **Public Lead Engine & Webhook** (`backend/apps/api`) | **Verified Working** | 3,735 checks pass in `site:check`, API route | Anti-bot honeypot, IP rate limiting, operator webhook forwarding |
+| **Marketing Site Architecture** (`frontend/site/`) | **Verified Working** | Verified HTML5/CSS3 pages | Clean structural sections: Products, Projects, Case Studies, Blogs, AI Bots (`frontend/site/bots.html`) |
 
 ---
 

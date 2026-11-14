@@ -6,7 +6,7 @@
 
 | Data store | Owner | UAAP access |
 |---|---|---|
-| Core SaaS PostgreSQL (`tenants`, `users`, `ledger_*`, `audit_log`, `outbox_events`…) | Core SaaS (`packages/db`) | **None direct.** Via Core HTTP API; outbox via signed webhook |
+| Core SaaS PostgreSQL (`tenants`, `users`, `ledger_*`, `audit_log`, `outbox_events`…) | Core SaaS (`backend/packages/db`) | **None direct.** Via Core HTTP API; outbox via signed webhook |
 | PMS Supabase PostgreSQL | PMS | **None direct.** API/RPC only |
 | Construction SQLite in `E:\Port\Construction\_sqlite_work\` | Construction ERP | **None.** Express API only. Policy untouched |
 | Other product DBs (POS, Restaurant, HelpDesk, VMS…) | Each product | None direct |
@@ -38,7 +38,7 @@
 | `audit_events` | Append-only audit (trigger-enforced) | |
 
 ## 4. Migration policy
-1. Alembic in `services/uaap/migrations`, version table `uaap.alembic_version`; never touches core `packages/db/migrations`.
+1. Alembic in `backend/services/uaap/migrations`, version table `uaap.alembic_version`; never touches core `backend/packages/db/migrations`.
 2. Forward-only in staging/production; destructive operations (DROP/TRUNCATE/column removal) require explicit approval and a verified backup.
 3. Every migration runs first against a disposable database in CI, including a fresh-install check and an RLS cross-tenant test.
 4. No application startup migration (matches Construction rule 4 and `DATABASE_MANIFEST.md` practice).

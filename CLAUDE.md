@@ -5,20 +5,23 @@ Read these before changing code:
 - `ERP-Product-Catalog.md`: product IDs, sizes, phases, and dependencies. Reference product IDs in commits, specs, and comments.
 - `docs/phase-0-status.md`: what is implemented, partial, or not started.
 - `docs/industry-portfolio.md`: which industries are covered by which catalog packs, and the level each belongs to.
-- `docs/build-plan.md` and `docs/ui-contract.md`: Claude Code is the backend lane (packages, API, contract, bot service) and Antigravity the frontend lane (`apps/web/`, site, 3D, end-to-end tests). Folder ownership, the bot parts, and the UI rules every screen follows. Tokens live in `design/`. Antigravity reads `AGENTS.md`.
+- `docs/build-plan.md` and `docs/ui-contract.md`: Claude Code is the backend lane (packages, API, contract, bot service) and Antigravity the frontend lane (`frontend/web/`, site, 3D, end-to-end tests). Folder ownership, the bot parts, and the UI rules every screen follows. Tokens live in `frontend/design/`. Antigravity reads `AGENTS.md`.
 
 ## Commands
 
-- `npm install`: install workspaces.
-- `npm test`: unit tests plus Postgres integration tests. Set `TEST_DATABASE_URL` to a server whose role can create databases and roles (for example a local superuser). Without it, tests start an embedded Postgres, which does not start on the Windows machine used so far.
-- `npm run typecheck`: TypeScript across all packages.
-- `npm run migrate`: apply SQL migrations. Needs `DATABASE_URL`.
-- `npm run dev:api`: run the HTTP API. Needs `DATABASE_URL` and `PLATFORM_ADMIN_KEY` (32+ characters).
-- `npm run dev:all`: run Redis, the API (port 3002), the worker and the site (port 8080). Creates `erp_dev` and the non-superuser role `erp_dev_app`, applies migrations, and runs the API and worker as that role so row-level security applies. Set `DATABASE_URL` and `APP_DATABASE_URL` to use Neon.
-- `docs/infrastructure.md`: backend, frontend and databases; Neon projects; Redis and BullMQ queues; deployment.
-- `npm run site:check`: check the marketing site (links, structured data, form fields, sitemap, preview image). Needs no browser or database.
-- `npm run leads:export -- [limit]`: print recent public leads as CSV. Needs `DATABASE_URL`.
-- `npm run catalog:generate`: rebuild the product registry in `packages/catalog` from `ERP-Product-Catalog.md`. Run it after editing the catalog. Never edit `products.generated.ts` by hand.
+The repository is two separate npm projects. Claude Code works only in `backend/` and `contracts/` (worktree `E:\SaaS\.worktrees\backend`, branch `lane/backend`); Antigravity works only in `frontend/`. Run backend commands with `npm --prefix backend ...` from the root, or plain `npm ...` inside `backend/`.
+
+- `npm --prefix backend install`: install the backend workspaces.
+- `npm --prefix backend test`: unit tests plus Postgres integration tests. Set `TEST_DATABASE_URL` to a server whose role can create databases and roles (for example a local superuser). Without it, tests start an embedded Postgres, which does not start on the Windows machine used so far.
+- `npm --prefix backend run typecheck`: TypeScript across all backend packages.
+- `npm --prefix backend run migrate`: apply SQL migrations. Needs `DATABASE_URL`.
+- `npm --prefix backend run dev:api`: run the HTTP API. Needs `DATABASE_URL` and `PLATFORM_ADMIN_KEY` (32+ characters).
+- `npm --prefix backend run dev:worker`: run the BullMQ worker and outbox relay. Needs `DATABASE_URL` and `REDIS_URL`.
+- `npm run dev:all` (root): run Redis, the API (port 3002), the worker and the site (port 8080). Creates `erp_dev` and the non-superuser role `erp_dev_app`, applies migrations, and runs the API and worker as that role so row-level security applies. Set `DATABASE_URL` and `APP_DATABASE_URL` to use Neon.
+- `npm --prefix backend run leads:export -- [limit]`: print recent public leads as CSV. Needs `DATABASE_URL`.
+- `npm --prefix backend run catalog:generate`: rebuild the product registry in `backend/packages/catalog` from `ERP-Product-Catalog.md`. Run it after editing the catalog. Never edit `products.generated.ts` by hand.
+- `npm --prefix frontend run site:check`: the frontend's site check. It also compares the lead form with the API schema, so run it after changing that schema.
+- `docs/infrastructure.md`: backend, frontend and databases; Neon projects; Redis and BullMQ queues; hosting on AWS behind Cloudflare.
 
 ## Architecture rules
 
@@ -42,7 +45,7 @@ Read these before changing code:
 - **Tests.** Each package has a `test/` folder. Rounding, tax, and currency changes need edge-case tests (negative amounts, half-cent rounding, zero-decimal currencies).
 - **Dependencies.** Add one only with a reason. State the reason in the commit message.
 
-## AI agents and industry packs (`services/uaap`)
+## AI agents and industry packs (`backend/services/uaap`)
 
 - Every agent follows `docs/ai-agent-readiness/UAAP_AGENT_STANDARD.md` and is specified with the prompt template in `docs/ai-agent-readiness/BOT_BUILD_SPLIT.md`, which also says which tool owns which bot and which shared files only Claude Code edits.
 - Never implement an industry agent before verifying its data sources, ERP dependencies, catalog entitlement and policy requirements. Agents never fabricate business data or regulatory rules.
@@ -52,6 +55,11 @@ Read these before changing code:
 
 ## Layout
 
-- `packages/*`: domain packages. Plain TypeScript with no HTTP framework.
-- `packages/db`: Postgres adapters, migrations, and the test database helper. Domain packages do not import `pg`.
-- `apps/api`: HTTP layer (Fastify). Thin: parse input, open a tenant transaction, call services, map errors.
+- `backend/`: everything Claude Code owns. Its own `package.json`, lockfile, `tsconfig.json` and `vitest.config.ts`.
+- `backend/packages/*`: domain packages. Plain TypeScript with no HTTP framework.
+- `backend/packages/db`: Postgres adapters, migrations, and the test database helper. Domain packages do not import `pg`.
+- `backend/apps/api`: HTTP layer (Fastify). Thin: parse input, open a tenant transaction, call services, map errors.
+- `backend/apps/worker`: BullMQ worker and outbox relay.
+- `backend/services/uaap`: the agent service (Python).
+- `contracts/`: `openapi.yaml` and `events.md`, the only files shared with the frontend. Claude Code writes them; Antigravity reviews every change.
+- `frontend/`: Antigravity's. Never edit it; open an issue instead.

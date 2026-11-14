@@ -38,7 +38,7 @@ A refused attempt (initiator, wrong hash) leaves the proposal open. A decided pr
 | Service login | `uaap_service`, member of `uaap_app`; not superuser, no `BYPASSRLS` |
 | Migrations | `python -m uaap.db.migrate` with `UAAP_DATABASE_OWNER_URL`; version and checksum in `uaap.schema_migrations` |
 
-**Decision:** ADR-013 named Alembic. Plain SQL files with a version table were used instead, matching the core `packages/db` runner and avoiding a dependency. Edited migrations are refused by checksum.
+**Decision:** ADR-013 named Alembic. Plain SQL files with a version table were used instead, matching the core `backend/packages/db` runner and avoiding a dependency. Edited migrations are refused by checksum.
 
 What `0001_uaap_core` creates:
 - **`uaap.audit_events`:** append-only. A trigger rejects UPDATE, DELETE and TRUNCATE. Prompts, arguments and tokens are stored only as hashes.
@@ -48,7 +48,7 @@ What `0001_uaap_core` creates:
 
 Writes go through a background writer, so requests never wait on Neon. Failures and drops are counted and shown in the admin console under "Durable writes".
 
-**Local secrets.** `services/uaap/.dev-env` and `.dev-admin-key` are git-ignored, and `scripts/run_dev.py` loads them. Real environment variables take precedence.
+**Local secrets.** `backend/services/uaap/.dev-env` and `.dev-admin-key` are git-ignored, and `scripts/run_dev.py` loads them. Real environment variables take precedence.
 
 ## 4. Verification (2026-11-10)
 

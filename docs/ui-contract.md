@@ -1,10 +1,10 @@
 # UI contract
 
-Every screen in QAVRIL LABS, whether Claude Code or Antigravity builds it, follows this contract. A screen that breaks it is sent back, however good it looks. The working reference is the dashboard at `site/app.html` and its styles in `site/styles.css`.
+Every screen in QAVRIL LABS, whether Claude Code or Antigravity builds it, follows this contract. A screen that breaks it is sent back, however good it looks. The working reference is the dashboard at `frontend/site/app.html` and its styles in `frontend/site/styles.css`.
 
 ## 1. Tokens only
 
-- Colours, fonts, borders, shadows and spacing come from [design/tokens.css](../design/tokens.css) (CSS) or [design/tailwind.preset.cjs](../design/tailwind.preset.cjs) (Tailwind). [design/tokens.json](../design/tokens.json) is the source.
+- Colours, fonts, borders, shadows and spacing come from [frontend/design/tokens.css](../frontend/design/tokens.css) (CSS) or [frontend/design/tailwind.preset.cjs](../frontend/design/tailwind.preset.cjs) (Tailwind). [frontend/design/tokens.json](../frontend/design/tokens.json) is the source.
 - No raw hex codes, no other fonts, no other shadows in component code. A new colour needs a token first, in the same pull request.
 - Two fonts: **Unbounded** (800, uppercase) for page titles and big numbers, **Space Grotesk** for everything else.
 

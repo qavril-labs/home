@@ -15,7 +15,7 @@
 ## Tasks
 | # | Task | Output | Tests / acceptance |
 |---|---|---|---|
-| A2-1 | Scaffold `services/uaap` (pyproject, ruff, mypy strict, pytest, import-linter rules from Service Boundaries) | Skeleton, CI script | lint/type/test green; `npm test` + `npm run typecheck` still unchanged |
+| A2-1 | Scaffold `backend/services/uaap` (pyproject, ruff, mypy strict, pytest, import-linter rules from Service Boundaries) | Skeleton, CI script | lint/type/test green; `npm test` + `npm run typecheck` still unchanged |
 | A2-2 | Settings & secret loading (pydantic-settings), env validation, redaction filter | `config.py`, `obs/redact.py` | startup fails on missing/forbidden config; secrets never in logs (test) |
 | A2-3 | Provider interface + `OllamaProvider` (chat, JSON mode, streaming optional, model listing) | `gateway/providers/` | contract tests against a fake Ollama HTTP server; no live call without D2 |
 | A2-4 | Model registry + capability routing (json, vision, long-context, cost tier) from YAML | `gateway/router.py`, `models.yaml` | routing table tests |

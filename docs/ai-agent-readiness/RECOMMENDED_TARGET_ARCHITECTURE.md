@@ -85,7 +85,7 @@ flowchart TD
 
 | Target Technology | Suitability Evaluation | Interaction with 39-Product Workspace |
 |---|---|---|
-| **Modular Monolith** | **Ideal** | Perfectly aligns with `E:\SaaS` (`packages/*`). Domain packages remain isolated while sharing kernel utilities. |
+| **Modular Monolith** | **Ideal** | Perfectly aligns with `E:\SaaS` (`backend/packages/*`). Domain packages remain isolated while sharing kernel utilities. |
 | **React, TypeScript, Vite, Tailwind** | **Ideal** | Standard frontend framework used across PMS, Retail POS, IT HelpDesk, Garage Management, and Enterprise Copilot. |
 | **FastAPI & Python for AI Services** | **Ideal** | Leverages proven LangGraph code in `E:\Port\Zyno Genie` and RAG pipelines in `E:\Port\Scrapper RAG`. |
 | **PostgreSQL & pgvector** | **Ideal** | PostgreSQL with Row-Level Security is already the core database of `E:\SaaS`, `PMS`, `IT Helpdesk`, and `Restaurant POS`. Adding the `pgvector` extension natively provides tenant-isolated semantic search. |

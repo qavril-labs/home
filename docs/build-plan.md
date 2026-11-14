@@ -2,57 +2,77 @@
 
 **Status: draft for agreement.** Claude Code and Antigravity each review this plan and record their answers in [plan-review.md](plan-review.md). Work starts once both agree and the owner signs off.
 
-How QAVRIL LABS is built by two tools in one workspace, with one look and one architecture. Product IDs refer to [ERP-Product-Catalog.md](../ERP-Product-Catalog.md). Every screen follows [ui-contract.md](ui-contract.md). Colours, type and spacing come from [design/](../design).
+How QAVRIL LABS is built by two tools in one workspace, with one look and one architecture. Product IDs refer to [ERP-Product-Catalog.md](../ERP-Product-Catalog.md). Every screen follows [ui-contract.md](ui-contract.md). Colours, type and spacing come from [frontend/design/](../frontend/design).
 
 ## 1. The split: backend and frontend
 
 | | **Claude Code** | **Antigravity** |
 |---|---|---|
 | **Lane** | Backend, data and bots' logic | Frontend, visuals and quality |
-| **Builds** | Domain packages, database migrations (core and each product database on Neon), the HTTP API, the background worker with BullMQ and Redis, the API contract and generated client, ledger posting, permissions and approvals, the bot service (`services/uaap/`), CSV import and export logic, document templates (PDF), notification sending | The web app (`apps/web/`): every screen, modal, drawer and toast; 3D scenes; charts; the marketing site; translations; end-to-end browser tests; visual checks at every width and theme |
+| **Builds** | Domain packages, database migrations (core and each product database on Neon), the HTTP API, the background worker with BullMQ and Redis, the API contract and generated client, ledger posting, permissions and approvals, the bot service (`backend/services/uaap/`), CSV import and export logic, document templates (PDF), notification sending | The web app (`frontend/web/`): every screen, modal, drawer and toast; 3D scenes; charts; the marketing site; translations; end-to-end browser tests; visual checks at every width and theme |
 | **Why** | Careful, rule-heavy work where a mistake costs money or leaks data | Fast UI building with its own browser to see, click and test what it builds |
 | **Reviews** | Every change that touches the API contract, money, permissions or data | Every screen and visual change, against the UI contract |
 | **Never does** | Visual design outside the contract | Business logic, money arithmetic, migrations, authentication, direct database access |
 
-The **contract** between the two lanes is the API: `apps/api/openapi.yaml` plus the generated client in `packages/api-client/`. The frontend calls nothing else, and the backend changes the contract only through a pull request the frontend sees.
+The **contract** between the two lanes is the API, described in `contracts/openapi.yaml`. The frontend generates its own client from it and calls nothing else; the backend changes the contract only through a pull request the frontend reviews.
 
-## 2. Folder ownership
+## 2. Two separate halves
+
+The repository has two separate npm projects with nothing in common but the contract:
+
+```
+E:\SaaS                    main branch; the owner merges and runs everything here
+├─ backend/                Claude Code. Own package.json, lockfile, tsconfig, tests
+│  ├─ apps/api/            HTTP API (Fastify)
+│  ├─ apps/worker/         BullMQ worker and outbox relay
+│  ├─ packages/            domain packages, db and migrations, queue, catalog
+│  ├─ services/uaap/       agent service (Python)
+│  └─ scripts/             catalog generator
+├─ frontend/               Antigravity. Own package.json, lockfile
+│  ├─ web/                 the web app (React, Vite, Tailwind, three.js)
+│  ├─ site/                the marketing site (static HTML)
+│  ├─ design/              design tokens and the Tailwind preset
+│  ├─ locales/             translations
+│  ├─ e2e/                 Playwright end-to-end tests
+│  └─ scripts/             site build, check and local server
+├─ contracts/              the only shared files: openapi.yaml, events.md (backend owns, frontend reviews)
+├─ docs/                   plans and specs
+├─ scripts/dev-all.mjs     runs both halves together on this machine
+└─ CLAUDE.md, AGENTS.md, ERP-Product-Catalog.md
+```
 
 | Folder | Owner | The other tool may |
 |---|---|---|
-| `packages/*` (domain), `packages/db/` | Claude Code | Read |
-| `apps/api/`, `apps/api/openapi.yaml` | Claude Code | Request changes by issue |
-| `packages/api-client/` (generated) | Claude Code | Read and import |
-| `services/uaap/` (bot service) | Claude Code | Read |
-| `packages/importers/`, `packages/templates/` | Claude Code | Read |
-| `design/` (tokens) | Antigravity | Request a token by issue; Claude Code reviews contrast |
-| `apps/web/` (web app) | Antigravity | Claude Code reviews API calls |
-| `apps/web/src/scenes/` (3D) | Antigravity | — |
-| `site/`, `scripts/site-*.mjs` (marketing site) | Antigravity | — |
-| `locales/` (translations) | Antigravity | Claude Code adds server-side message keys |
-| `tests/e2e/` | Antigravity | — |
+| `backend/` (everything inside) | Claude Code | Read only |
+| `frontend/` (everything inside) | Antigravity | Read only |
+| `contracts/` | Claude Code writes | Antigravity reviews every change |
 | `docs/` | Both, each in its own lane's docs | — |
+| Root files: `package.json`, `scripts/dev-all.mjs`, `.gitignore`, `.claude/`, CI workflows | Owner | Change only in a small pull request of its own, with a reason |
 
-Files neither tool edits alone: `package.json`, `package-lock.json`, `tsconfig.json`, `vitest.config.ts`, CI workflows. Change them in a small pull request of their own, with a reason.
+The frontend never imports backend code. It reads `contracts/openapi.yaml`, generates its own typed client and mocks inside `frontend/`, and calls the API over HTTP. The backend never imports frontend code. Each half installs, builds, tests and deploys on its own:
+
+| | Backend | Frontend |
+|---|---|---|
+| Install | `npm --prefix backend install` | `npm --prefix frontend install` |
+| Check | `npm --prefix backend run typecheck` and `npm --prefix backend test` | `npm --prefix frontend run site:check` and `npm --prefix frontend run build:web` |
+| Run alone | `npm --prefix backend run dev:api` | `npm --prefix frontend run dev:web` |
+| Deploy | API and worker to AWS | Web app and site to AWS (S3 and CloudFront), behind Cloudflare |
 
 ## 3. Working in the same workspace
 
-The main folder stays `E:\SaaS`, connected to GitHub at `https://github.com/msaxena1212/qavril_labs`. Each tool works in its own subfolder, a **git worktree**: the same repository, its own folder and branch, so the two never overwrite each other.
+The main folder stays `E:\SaaS`, connected to GitHub at `https://github.com/qavril-labs/home` (branch `main`). The repository's `backend` and `frontend` branches belong to a separate, existing construction app; this platform does not use or change them.
 
-| Folder | Who | Branch |
-|---|---|---|
-| `E:\SaaS` | The owner: merges, reviews, runs the whole platform | `main` |
-| `E:\SaaS\.worktrees\backend` | Claude Code | `lane/backend` |
-| `E:\SaaS\.worktrees\frontend` | Antigravity | `lane/frontend` |
+Each tool works in its own subfolder, a **git worktree**: the same repository, its own folder and branch, so the two never overwrite each other.
 
-The `.worktrees/` folder is ignored by git, so the subfolders never get committed inside each other. Each lane pulls `main` before every task and merges back through pull requests at least once a day. Set up once:
+| Folder | Who | Branch | Edits only |
+|---|---|---|---|
+| `E:\SaaS` | The owner: merges, reviews, runs the whole platform | `main` | Root files |
+| `E:\SaaS\.worktrees\backend` | Claude Code | `lane/backend` | `backend/`, `contracts/` |
+| `E:\SaaS\.worktrees\frontend` | Antigravity | `lane/frontend` | `frontend/` |
 
-```bash
-git worktree add .worktrees/backend -b lane/backend
-git worktree add .worktrees/frontend -b lane/frontend
-```
+Because each lane edits only its own top-level folder, the two branches never change the same file, so merges into `main` do not conflict. The `.worktrees/` folder is ignored by git. Each lane pulls `main` before every task and merges back through pull requests at least once a day.
 
-The backend, frontend and databases are separate parts; [infrastructure.md](infrastructure.md) describes them, the Neon projects, Redis and BullMQ. Run everything locally with `npm run dev:all` (site on 8080, API on 3002, Redis on 6379, plus the worker). While an endpoint is still being built, the frontend uses mock responses generated from `openapi.yaml`.
+[infrastructure.md](infrastructure.md) covers the databases, Redis and BullMQ, and hosting. Run everything locally with `npm run dev:all` (site on 8080, API on 3002, Redis on 6379, plus the worker).
 
 ## 4. The bots, split into parts
 
@@ -61,7 +81,7 @@ Every bot is built from the same six parts. A bot is done when all six exist.
 | Part | What it is | Owner |
 |---|---|---|
 | **1. Signals** | An API endpoint returning exactly the figures the bot reads | Claude Code |
-| **2. Brain** | Rules, and model prompts where useful, turning signals into findings and a proposed action (`services/uaap/`) | Claude Code |
+| **2. Brain** | Rules, and model prompts where useful, turning signals into findings and a proposed action (`backend/services/uaap/`) | Claude Code |
 | **3. Action and approval** | The API command the bot may call, its limit, the draft it creates, the approval step, the audit entry and the kill switch (AGT-01, AGT-06) | Claude Code |
 | **4. Delivery** | Email, WhatsApp and in-app messages from approved templates (PLT-10) | Claude Code |
 | **5. Screens** | `BotCard`, the bot's page with its 3D or chart view, the approvals inbox with review modals | Antigravity |
@@ -94,10 +114,10 @@ Today the dashboard's bot cards are worked out in the browser from the overview.
 
 | Claude Code (backend) | Antigravity (frontend) |
 |---|---|
-| Write `apps/api/openapi.yaml` for every existing route and generate `packages/api-client/` | Create `apps/web/` (React, Vite, TypeScript, Tailwind) using `design/tailwind.preset.cjs` and `design/tokens.css` |
+| Write `contracts/openapi.yaml` for every existing route, and `contracts/events.md` | Create `frontend/web/` (React, Vite, TypeScript, Tailwind) using `frontend/design/tailwind.preset.cjs` and `frontend/design/tokens.css` |
 | Move the bot findings into `GET /v1/workspace/insights`, with tests | Build the shared components: `AppHeader`, `Card`, `KpiTile`, `DataTable`, `StatusChip`, `BotCard`, `TrendChart`, `EmptyState`, `Gate`, `Modal`, `Drawer`, `Toast`, `ConfirmDialog`, `CommandBar` |
 | Add the error-code list to the contract so screens can show the right message | A component gallery page showing every component in light and dark at 375, 768 and 1280px |
-| — | Set up Playwright in `tests/e2e/`: sign-up, sign-in, quick entry, sign-out against `npm run dev:all` |
+| — | Set up Playwright in `frontend/e2e/`: sign-up, sign-in, quick entry, sign-out against `npm run dev:all` |
 
 ## 7. Sprints 1 to 6 (two weeks each)
 
@@ -105,7 +125,7 @@ The order follows the catalog's critical path: master data and the ledger, then 
 
 | Sprint | Claude Code (backend) | Antigravity (frontend) |
 |---|---|---|
-| **1** | MDM-01 customers and suppliers, MDM-02 items, MDM-03 chart of accounts API; Ledger Lou brain | Rebuild the dashboard in `apps/web/` with the money city; customers and items screens with create and edit drawers; CSV import screen |
+| **1** | MDM-01 customers and suppliers, MDM-02 items, MDM-03 chart of accounts API; Ledger Lou brain | Rebuild the dashboard in `frontend/web/` with the money city; customers and items screens with create and edit drawers; CSV import screen |
 | **2** | SAL-04 invoicing, FIN-02 receivables, PLT-08 number patterns, invoice PDF (PLT-12); Chase Chloe brain | Invoice list and editor, customer statement, send-reminder modal; E2E invoice to payment |
 | **3** | PLT-07 approvals, AGT-01 agent permissions, AGT-06 agent audit; email and WhatsApp delivery (PLT-10 slice) | Approvals inbox with review modals; bot pages with on and off switch; E2E approve and reject |
 | **4** | PRC-01 to PRC-04 purchasing, INV-01, INV-02, INV-06 stock; Restock Rex and Guard Gus brains | Purchase orders, goods receipt, stock screens; stock warehouse 3D scene |

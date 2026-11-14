@@ -23,7 +23,7 @@ A cornerstone architectural requirement of QAVRIL LABS is the clear distinction 
 +----------------------------------------------------------------------------------------------------+
 |                                   SHARED REUSABLE ERP MODULES                                      |
 |  Finance & Ledger · Sales & Invoicing · Purchase & Procurement · Inventory & Store · HRMS · Tax   |
-|            (Shared Kernel in packages/* and Authorized Reusable Database Schemas)                  |
+|            (Shared Kernel in backend/packages/* and Authorized Reusable Database Schemas)                  |
 +----------------------------------------------------------------------------------------------------+
                                                   │
                                                   ▼
@@ -68,8 +68,8 @@ A cornerstone architectural requirement of QAVRIL LABS is the clear distinction 
 | **PRD-AI-01** | **Universal AI Agent Platform (UAAP)** | Central Intelligence Layer (FastAPI, LangGraph, Model Gateway) | **FLAGSHIP PRODUCT** | `E:\Port\Zyno Genie` & `Scrapper RAG` |
 | **PRD-AI-02** | **Enterprise AI Copilot** | Contextual Workspace Assistant (Sidebar UI + LLM API) | Specialized Intelligence | `E:\Port\Enterprise Copilot for ERPCRM` |
 | **PRD-AI-03** | **Enterprise Knowledge Copilot** | Multi-Tenant RAG & Enterprise Search | Specialized Intelligence | `E:\Port\Voice Agent` & `Scrapper RAG` |
-| **PRD-AI-04** | **AI Customer Support Agent** | Omnichannel Voice & Chat Support Engine | Specialized Autonomous Agent | `E:\Port\Voice Agent` & `site/bots/` |
-| **PRD-AI-05** | **AI Sales Assistant** | Lead Qualification & Automated Outreach Engine | Specialized Autonomous Agent | `E:\Port\SalesRobot+Hi-Reply` & `site/leads` |
+| **PRD-AI-04** | **AI Customer Support Agent** | Omnichannel Voice & Chat Support Engine | Specialized Autonomous Agent | `E:\Port\Voice Agent` & `frontend/site/bots/` |
+| **PRD-AI-05** | **AI Sales Assistant** | Lead Qualification & Automated Outreach Engine | Specialized Autonomous Agent | `E:\Port\SalesRobot+Hi-Reply` & `frontend/site/leads` |
 | **PRD-AI-06** | **AI Customer Feedback Intelligence**| Multichannel Sentiment & Anomaly Detection | Specialized Intelligence | `E:\Port\News chatbot` & App Store Datasets |
 | **PRD-AI-07** | **Smart Inventory Forecasting** | Demand Curve & Stock Depletion ML/LLM Predictor | Specialized Subagent | `E:\SaaS\ERP-Product-Catalog.md` (AI-06) |
 | **PRD-AI-08** | **Intelligent Document Processing** | OCR, Vision Defect & Contract Extraction Engine | Specialized Subagent | `E:\Port\Scrapper RAG` & `Construction AI` |
@@ -85,10 +85,10 @@ A cornerstone architectural requirement of QAVRIL LABS is the clear distinction 
 | **PRD-TECH-01** | **Business Process Automation Platform** | Automation | Outbox event bus, asynchronous workflow routing | `E:\SaaS\packages\events`, `E:\Port\Syncora` |
 | **PRD-TECH-02** | **Cloud Infrastructure Automation** | Technology | Automated deployment gates, staging/prod pipelines | `E:\Port\IT Helpdesk\comprehensive_integration` |
 | **PRD-TECH-03** | **Cloud & DevOps Solutions** | Technology | Containerization, reverse proxies, CI/CD templates | `docker-compose.yml`, Dockerfiles across repos |
-| **PRD-TECH-04** | **Data Engineering & BI** | Technology | Immutable audit logs, change data capture, reports | `packages/audit`, `Personal Finance Analyzer` |
-| **PRD-TECH-05** | **Cybersecurity & Resilience** | Technology | Zero-Trust RLS, scrypt auth, SQL target guards | `packages/db`, `database_target_guard.js` |
+| **PRD-TECH-04** | **Data Engineering & BI** | Technology | Immutable audit logs, change data capture, reports | `backend/packages/audit`, `Personal Finance Analyzer` |
+| **PRD-TECH-05** | **Cybersecurity & Resilience** | Technology | Zero-Trust RLS, scrypt auth, SQL target guards | `backend/packages/db`, `database_target_guard.js` |
 | **PRD-TECH-06** | **IoT & Connected Systems** | Technology | Barrier gates, RFID kiosks, driver GPS telematics | `E:\Port\VMS`, `Quick Commerce Delivery App` |
-| **PRD-TECH-07** | **Digital Product Design System** | Technology | Unified UI tokens, accessible component library | `site/styles.css`, Radix UI & Tailwind configs |
+| **PRD-TECH-07** | **Digital Product Design System** | Technology | Unified UI tokens, accessible component library | `frontend/site/styles.css`, Radix UI & Tailwind configs |
 
 ---
 
@@ -99,6 +99,6 @@ A cornerstone architectural requirement of QAVRIL LABS is the clear distinction 
 | **PRD-IMM-01** | **AR/VR/MR Applications** | WebXR / Native Spatial | Architecture walk-throughs, safety training | `ERP-Product-Catalog.md` (P4 Immersive) |
 | **PRD-IMM-02** | **WebAR Experiences** | Browser-based WebGL/WebXR | Zero-install product placement in browser | `E:\SaaS\site\scene3d.js` |
 | **PRD-IMM-03** | **Virtual Showrooms** | Interactive 3D Canvas | Real estate unit tour, automobile inspection | `E:\Port\Build Flow\BuildFlow-ERP` (3D POC) |
-| **PRD-IMM-04** | **3D Product Configurators** | Three.js / WebGL shaders | Custom vehicle/furniture interactive pricing | `scripts/render-product-images.py`, `site` |
+| **PRD-IMM-04** | **3D Product Configurators** | Three.js / WebGL shaders | Custom vehicle/furniture interactive pricing | `frontend/scripts/render-product-images.py`, `site` |
 | **PRD-IMM-05** | **Digital Twins & Simulations**| Discrete Event & BIM Twins | Construction site progress, building energy | `ERP-Product-Catalog.md` (PLN-05, CON-12) |
 

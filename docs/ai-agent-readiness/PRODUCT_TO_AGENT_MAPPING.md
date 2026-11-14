@@ -265,7 +265,7 @@ Below is the complete mapping across all 39 products.
 - Spatial asset viewer, BIM 3D model inspector for construction engineers on site.
 
 ### 36. WebAR Experiences (`PRD-IMM-02`)
-- Zero-download product placement in browser canvas via Three.js (`site/scene3d.js`).
+- Zero-download product placement in browser canvas via Three.js (`frontend/site/scene3d.js`).
 
 ### 37. Virtual Showrooms (`PRD-IMM-03`)
 - Interactive 3D walk-through for real estate off-plan developments and automobile showrooms.

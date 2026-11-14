@@ -10,27 +10,27 @@
 
 Antigravity and Claude Code agree: **split every bot by part, not the list of bots by half.**
 
-This aligns 100% with `docs/build-plan.md` and the hard rules in `AGENTS.md` ("*Never touch packages/, apps/api/, services/uaap/, migrations or authentication. You are the frontend lane*").
+This aligns 100% with `docs/build-plan.md` and the hard rules in `AGENTS.md` ("*Never touch backend/packages/, backend/apps/api/, backend/services/uaap/, migrations or authentication. You are the frontend lane*").
 
 ### The 6-Part Division of Responsibility
 
 | Part | Description | Owner | Primary Paths |
 |---|---|---|---|
-| **1. Signals** | Read API endpoints in Core SaaS delivering exact figures | **Claude Code** | `apps/api/`, `packages/*` |
-| **2. Brain** | Agent/bot logic, guardrails, model prompts, and tool calls | **Claude Code** | `services/uaap/` |
-| **3. Action & Approval** | Tool commands, limits, proposal drafts, inbox records, audit log, kill switch | **Claude Code** | `apps/api/`, `services/uaap/` |
-| **4. Delivery** | Message templates (email, WhatsApp, in-app alerts) | **Claude Code** | `services/uaap/`, `packages/*` |
-| **5. Screens** | `BotCard`, Bot Configuration/Detail Page, Approvals Inbox with review modals, enable/disable toggle, charts/3D visualization | **Antigravity** | `apps/web/` |
-| **6. Tests** | Backend unit evaluations with known data (Claude Code); Playwright E2E browser tests of signal, draft, review modal, and outcome (Antigravity) | **Both** | `services/uaap/tests/` (Claude Code)<br>`tests/e2e/` (Antigravity) |
+| **1. Signals** | Read API endpoints in Core SaaS delivering exact figures | **Claude Code** | `backend/apps/api/`, `backend/packages/*` |
+| **2. Brain** | Agent/bot logic, guardrails, model prompts, and tool calls | **Claude Code** | `backend/services/uaap/` |
+| **3. Action & Approval** | Tool commands, limits, proposal drafts, inbox records, audit log, kill switch | **Claude Code** | `backend/apps/api/`, `backend/services/uaap/` |
+| **4. Delivery** | Message templates (email, WhatsApp, in-app alerts) | **Claude Code** | `backend/services/uaap/`, `backend/packages/*` |
+| **5. Screens** | `BotCard`, Bot Configuration/Detail Page, Approvals Inbox with review modals, enable/disable toggle, charts/3D visualization | **Antigravity** | `frontend/web/` |
+| **6. Tests** | Backend unit evaluations with known data (Claude Code); Playwright E2E browser tests of signal, draft, review modal, and outcome (Antigravity) | **Both** | `backend/services/uaap/tests/` (Claude Code)<br>`frontend/e2e/` (Antigravity) |
 
 ---
 
 ## 2. Why This Split Eliminates All Blockers
 
 1. **Zero Folder Overlap:**  
-   - Claude Code writes exclusively in `services/uaap/`, `packages/*`, and `apps/api/`.  
-   - Antigravity writes exclusively in `apps/web/`, `site/`, `design/`, `locales/`, and `tests/e2e/`.  
-   - Antigravity never touches `services/uaap/`.
+   - Claude Code writes exclusively in `backend/services/uaap/`, `backend/packages/*`, and `backend/apps/api/`.  
+   - Antigravity writes exclusively in `frontend/web/`, `frontend/site/`, `frontend/design/`, `frontend/locales/`, and `frontend/e2e/`.  
+   - Antigravity never touches `backend/services/uaap/`.
 2. **Solves Wave 1 Data & Platform Dependencies:**  
    - Claude Code builds the necessary Core SaaS APIs and adapters (e.g. leads HTTP API, document parser integration, inbox notifications) in proper dependency order without violating ADR-004.
 3. **Complete Vertical Slices:**  
@@ -49,14 +49,14 @@ flowchart TD
     end
 
     subgraph W1["Week 1: Contracts & Shared Foundations"]
-        API["Claude Code: apps/api/openapi.yaml & packages/api-client/"]
-        WEB["Antigravity: apps/web/ setup (Tailwind tokens, design system)"]
+        API["Claude Code: contracts/openapi.yaml & backend/packages/api-client/"]
+        WEB["Antigravity: frontend/web/ setup (Tailwind tokens, design system)"]
         COMP["Antigravity: Shared components (BotCard, Modal, Drawer, Inbox)"]
-        E2E["Antigravity: Playwright harness in tests/e2e/"]
+        E2E["Antigravity: Playwright harness in frontend/e2e/"]
     end
 
     subgraph S1["Sprint 1: Ledger Lou (AGT-03) & Dashboard Rebuild"]
-        LL_BE["Claude Code: Ledger Lou signals, brain, approvals (services/uaap/)"]
+        LL_BE["Claude Code: Ledger Lou signals, brain, approvals (backend/services/uaap/)"]
         LL_FE["Antigravity: Dashboard money city, BotCard, Ledger Lou review UI, E2E test"]
     end
 
@@ -109,4 +109,4 @@ Following the critical path in `docs/build-plan.md`:
   5. Rewrite `docs/ai-agent-readiness/BOT_BUILD_SPLIT.md` to reflect the by-part agreement.
 - [ ] **Antigravity Action:**
   1. Switch workspace context to `E:\SaaS-web` on branch `lane/frontend`.
-  2. Initialize `apps/web/` foundations using `design/` tokens and preset.
+  2. Initialize `frontend/web/` foundations using `frontend/design/` tokens and preset.

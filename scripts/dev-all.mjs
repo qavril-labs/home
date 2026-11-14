@@ -48,7 +48,7 @@ function run(label, command, args, env) {
 if (!usingNeon) await ensureDatabase();
 console.log("[DB] Applying migrations ...");
 await new Promise((resolve, reject) => {
-  run("DB", "npm", ["run", "migrate"], { DATABASE_URL: databaseUrl }).on("close", (code) =>
+  run("DB", "npm", ["--prefix", "backend", "run", "migrate"], { DATABASE_URL: databaseUrl }).on("close", (code) =>
     code === 0 ? resolve() : reject(new Error("Migrations failed")),
   );
 });
@@ -92,10 +92,10 @@ if (!(await redisListening())) {
 }
 
 console.log("[SITE] http://localhost:8080/");
-const site = run("SITE", "node", ["scripts/serve-site.mjs"], { PORT: "8080", HOST: "127.0.0.1" });
+const site = run("SITE", "node", ["frontend/scripts/serve-site.mjs"], { PORT: "8080", HOST: "127.0.0.1" });
 
 console.log("[API] http://localhost:3002/");
-const api = run("API", "npm", ["run", "start", "-w", "@erp/api"], {
+const api = run("API", "npm", ["--prefix", "backend", "run", "start", "-w", "@erp/api"], {
   PORT: "3002",
   HOST: "127.0.0.1",
   DATABASE_URL: apiDatabaseUrl,
@@ -105,7 +105,7 @@ const api = run("API", "npm", ["run", "start", "-w", "@erp/api"], {
 });
 
 console.log("[WORKER] outbox relay and queues");
-const worker = run("WORKER", "npm", ["run", "start", "-w", "@erp/worker"], {
+const worker = run("WORKER", "npm", ["--prefix", "backend", "run", "start", "-w", "@erp/worker"], {
   DATABASE_URL: apiDatabaseUrl,
   REDIS_URL: redisUrl,
 });

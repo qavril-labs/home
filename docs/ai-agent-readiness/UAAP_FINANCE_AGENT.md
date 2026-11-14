@@ -1,6 +1,6 @@
 # Universal Finance Agent
 
-**Date:** 2026-11-09 · **Code:** `services/uaap/src/uaap/agents/finance.py` · **Agent id:** `universal-finance-agent` · **Builds on:** [UAAP_A4_COMPLETION_REPORT.md](UAAP_A4_COMPLETION_REPORT.md)
+**Date:** 2026-11-09 · **Code:** `backend/services/uaap/src/uaap/agents/finance.py` · **Agent id:** `universal-finance-agent` · **Builds on:** [UAAP_A4_COMPLETION_REPORT.md](UAAP_A4_COMPLETION_REPORT.md)
 
 The first named agent on UAAP. It is a Layer 2 shared agent (inventory item 2) and groundwork for catalog product AGT-03 (Finance close assistant).
 

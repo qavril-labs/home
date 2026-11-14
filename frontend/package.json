@@ -1,0 +1,22 @@
+{
+  "name": "qavril-frontend",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "QAVRIL LABS frontend: the web app, marketing site, design tokens, translations and end-to-end tests. Owned by Antigravity.",
+  "workspaces": [
+    "web",
+    "e2e"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:web": "npm run dev -w @erp/web",
+    "build:web": "npm run build -w @erp/web",
+    "site:build": "node scripts/build-site-pages.mjs",
+    "site:check": "node scripts/check-site.mjs",
+    "site:serve": "node scripts/serve-site.mjs",
+    "test:e2e": "npm run test -w @erp/e2e-tests"
+  }
+}

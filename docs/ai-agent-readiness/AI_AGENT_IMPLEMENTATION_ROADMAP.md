@@ -35,8 +35,8 @@ To avoid agent proliferation and guarantee operational stability across the expa
 - **Focus:** Building the core intelligence tier that all 39 products connect to.
 - **Key Deliverables:**
   1. Audit and cleanse repository `.env` files (specifically in `E:\Port\Construction`) to permanently neutralize dormant production database host strings.
-  2. Implement an Outbox Polling Worker daemon in `packages/db` that runs continuously and dispatches queued domain events.
-  3. Formalize the 5-Tier Agent Permission Schema in Core SaaS (`packages/identity`).
+  2. Implement an Outbox Polling Worker daemon in `backend/packages/db` that runs continuously and dispatches queued domain events.
+  3. Formalize the 5-Tier Agent Permission Schema in Core SaaS (`backend/packages/identity`).
   4. Deploy the centralized FastAPI AI Model Gateway supporting Ollama Cloud (`deepseek-v4.1-flash:cloud`, `gemma4:31b-cloud`, `glm-5.3-flash:cloud`, `minimax-m2.7:cloud`) with automatic provider failover and token metering.
   5. Deploy the Master AI Orchestrator with LangGraph state graph and Redis working memory.
   6. Implement the Typed Tool Registry with JSON-Schema contracts.
@@ -83,7 +83,7 @@ To avoid agent proliferation and guarantee operational stability across the expa
   2. **Visitor Management:** Pre-registration QR guide, instant host WhatsApp alerter, DPDP/GDPR data masking auditor.
   3. **HIMS:** Clinician-supervised patient intake scheduler, medical records transcriptionist, pharmacy inventory depletion forecaster.
   4. **HRMS:** Resume parser, employee handbook policy Q&A bot, payroll deduction validator.
-  5. **Sales & Marketing:** Automated lead nurturing bot (`site/leads`), app store review sentiment analyzer.
+  5. **Sales & Marketing:** Automated lead nurturing bot (`frontend/site/leads`), app store review sentiment analyzer.
 - **Estimated Complexity:** High (6 weeks).
 - **Business Value:** End-to-end automation of enterprise administrative overhead and clinical intake operations.
 
@@ -94,6 +94,6 @@ To avoid agent proliferation and guarantee operational stability across the expa
 - **Key Deliverables:**
   1. Cross-enterprise transactional outbox event automation.
   2. Multi-agent collaborative supply chain negotiation.
-  3. WebAR interactive product placement on web canvases (`site/scene3d.js`).
+  3. WebAR interactive product placement on web canvases (`frontend/site/scene3d.js`).
   4. Construction 4D BIM digital twin simulating site progress against Gantt schedules.
 - **Estimated Complexity:** Very High (Ongoing / Advanced R&D).

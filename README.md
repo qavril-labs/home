@@ -36,4 +36,4 @@ curl -X POST http://127.0.0.1:3000/v1/platform/tenants \
 
 ## Database roles
 
-Run migrations as the table owner. Run the application as a separate role that is not a superuser and does not bypass row-level security. The test helper in `packages/db/src/testing/embedded.ts` shows the required grants.
+Run migrations as the table owner. Run the application as a separate role that is not a superuser and does not bypass row-level security. The test helper in `backend/packages/db/src/testing/embedded.ts` shows the required grants.

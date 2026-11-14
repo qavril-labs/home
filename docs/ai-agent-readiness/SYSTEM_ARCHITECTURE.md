@@ -25,10 +25,10 @@ The QAVRIL LABS technology landscape currently consists of three enterprise pill
 |           PILLAR 1: CORE SAAS PLATFORM           |          |         PILLAR 2: ENTERPRISE PMS PLATFORM        |
 |                  (`E:\SaaS`)                     |          |        (`E:\Port\Property Management System`)    |
 +--------------------------------------------------+          +--------------------------------------------------+
-| - Fastify HTTP API (`apps/api`)                  |          | - TanStack Start / React 19 Frontend Shell       |
-| - Shared Kernel (`packages/kernel`, `money`)     |          | - Supabase PostgreSQL Database (80+ migrations)  |
-| - General Ledger (`packages/ledger`)             |          | - Role-Based Routing (Admin, Cashier, Prop-Mgr)  |
-| - Tenancy & Identity (`packages/tenancy`)        |          | - Atomic Accounting & PDC Postings               |
+| - Fastify HTTP API (`backend/apps/api`)                  |          | - TanStack Start / React 19 Frontend Shell       |
+| - Shared Kernel (`backend/packages/kernel`, `money`)     |          | - Supabase PostgreSQL Database (80+ migrations)  |
+| - General Ledger (`backend/packages/ledger`)             |          | - Role-Based Routing (Admin, Cashier, Prop-Mgr)  |
+| - Tenancy & Identity (`backend/packages/tenancy`)        |          | - Atomic Accounting & PDC Postings               |
 | - PostgreSQL with Row-Level Security (RLS)       |          | - Tenant Self-Service Portal                     |
 | - Transactional Outbox & Audit Trigger           |          | - Procurement & Maintenance Automation           |
 +--------------------------------------------------+          +--------------------------------------------------+

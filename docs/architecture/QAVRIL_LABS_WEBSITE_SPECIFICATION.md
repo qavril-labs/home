@@ -165,6 +165,6 @@ Explicit crawler access for all major AI answer engines:
 
 All website updates must continue to satisfy:
 1. `npm run site:check` — 0 broken links, 100% FAQ schema synchronization, valid form contracts, real sitemap entries.
-2. `node scripts/audit-site-l1.mjs` — 0 failures across semantic structure, accessibility (alt text, ARIA attributes), SEO metadata, security headers, and draft legal notices.
-3. Real-browser headless test suite (`scripts/run-l2-browser-suite.mjs`) across 6 viewports (`360px` to `1920px`) with 0 console errors and 0 CSP violations.
+2. `node frontend/scripts/audit-site-l1.mjs` — 0 failures across semantic structure, accessibility (alt text, ARIA attributes), SEO metadata, security headers, and draft legal notices.
+3. Real-browser headless test suite (`frontend/scripts/run-l2-browser-suite.mjs`) across 6 viewports (`360px` to `1920px`) with 0 console errors and 0 CSP violations.
 4. Zero unapproved commits or git resets on `master`.

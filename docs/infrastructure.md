@@ -6,18 +6,18 @@ How QAVRIL LABS is laid out as a backend, a frontend and databases, run locally 
 
 | Part | Folder | Runs as | Owner |
 |---|---|---|---|
-| **Backend (BE)** | `apps/api/` (HTTP API), `apps/worker/` (queues and outbox relay), `packages/*` (domain), `services/uaap/` (agent service) | Node.js 22 processes; the agent service in Python | Claude Code |
-| **Frontend (FE)** | `apps/web/` (web app), `site/` (marketing site) | Static files built by Vite, served from a CDN | Antigravity |
-| **Databases (DB)** | `packages/db/migrations/` (core), `packages/<product>/migrations/` (each product) | Neon Postgres | Claude Code |
+| **Backend (BE)** | `backend/`: `apps/api/` (HTTP API), `apps/worker/` (queues and outbox relay), `packages/` (domain), `services/uaap/` (agent service) | Node.js 22 processes; the agent service in Python | Claude Code |
+| **Frontend (FE)** | `frontend/web/` (web app), `frontend/site/` (marketing site) | Static files built by Vite, served from a CDN | Antigravity |
+| **Databases (DB)** | `backend/packages/db/migrations/` (core), `backend/packages/<product>/migrations/` (each product) | Neon Postgres | Claude Code |
 
-The frontend talks to the backend only over the API contract (`apps/api/openapi.yaml`). The backend talks to databases and Redis. Nothing in the frontend connects to a database.
+The frontend talks to the backend only over the API contract (`contracts/openapi.yaml`). The backend talks to databases and Redis. Nothing in the frontend connects to a database.
 
 ## 2. Neon: one core project, one project per product family
 
 | Neon project | Databases | Holds |
 |---|---|---|
 | **qavril-saas** (main) | `core` | Tenants, users and sessions, master data, the general ledger, numbering, audit log, the outbox, entitlements, leads |
-| **qavril-agents** | `agents` | `services/uaap`: agent runs, checkpoints, approvals inbox, memory |
+| **qavril-agents** | `agents` | `backend/services/uaap`: agent runs, checkpoints, approvals inbox, memory |
 | **qavril-pack-<name>** | `pack` | One industry product family, created when that pack starts (for example `qavril-pack-ds` for distribution and FMCG) |
 
 Each Neon project has branches: `main` (production), `dev` (shared development), and one short-lived branch per pull request for previews and migration tests.
@@ -35,7 +35,7 @@ Create a product database only when its pack starts. Until then, its tables do n
 
 ## 3. Redis and BullMQ
 
-Redis 6.2 or newer (8.2 is installed locally) backs BullMQ queues. The queue names live in `packages/queue/src/index.ts`:
+Redis 6.2 or newer (8.2 is installed locally) backs BullMQ queues. The queue names live in `backend/packages/queue/src/index.ts`:
 
 | Queue | Work | Catalog |
 |---|---|---|
@@ -56,21 +56,37 @@ Production Redis: a managed Redis such as Upstash or Redis Cloud, with TLS (`red
 npm run dev:all
 ```
 
-This starts Redis (if not running), applies migrations, creates the non-superuser `erp_dev_app` role, then runs the API (port 3002), the worker and the site (port 8080). Settings come from the environment; [.env.example](../.env.example) lists them.
+This starts Redis (if not running), applies migrations, creates the non-superuser `erp_dev_app` role, then runs the API (port 3002), the worker and the site (port 8080). Settings come from the environment; [.env.example](../backend/.env.example) lists them.
 
 To run against Neon instead of local Postgres, set `DATABASE_URL` to the Neon owner connection string (migrations) and `APP_DATABASE_URL` to the Neon app role's connection string. Use the `dev` branch, never `main`.
 
-## 5. Deploying
+## 5. Hosting: AWS behind Cloudflare
 
-| Part | Where | Notes |
+Keep AWS for hosting and Cloudflare for DNS, the proxy and the CDN in front of it. There is no need to move. The two halves deploy separately:
+
+| Part | AWS | Notes |
 |---|---|---|
-| API and worker | A Node host that runs long-lived processes (for example Render, Railway or Fly.io) | Separate services from one image; the worker scales by queue |
-| Agent service | Same host, Python service | Its own Neon project |
-| Web app and marketing site | Static hosting with a CDN (for example Cloudflare Pages or Vercel) | `apiBase` points at the API's public address |
+| API (`backend/apps/api`) | ECS on Fargate, or an EC2 instance, behind an Application Load Balancer | `api.qavrillabs.com` and `api-staging.qavrillabs.com` |
+| Worker (`backend/apps/worker`) | Same image as the API, a second service with no load balancer | Scales by queue length |
+| Agent service (`backend/services/uaap`) | Its own ECS service | Its own Neon project |
+| Web app (`frontend/web`) and marketing site (`frontend/site`) | S3 bucket served through CloudFront | `apiBase` points at the API's public address per environment |
 | Databases | Neon | Migrations run in CI against a branch first, then on `main` |
-| Redis | Managed Redis | TLS, `noeviction` |
+| Redis | Amazon ElastiCache for Redis (Valkey), or a managed Redis | TLS (`rediss://`), `noeviction` |
 
-Hosting choices other than Neon are proposals; confirm them before the first deploy.
+Cloudflare sits in front of both: DNS records for `qavrillabs.com`, `staging`, `api` and `api-staging` are proxied (orange cloud), with SSL mode **Full (strict)**.
+
+### Security headers
+
+`frontend/site/_headers` only works on Netlify and Cloudflare Pages. On AWS it is ignored, which is why staging sends only two of the seven headers. Set them in **one** place, at the edge:
+
+- **Recommended: a Cloudflare Response Header Transform Rule** for `qavrillabs.com` and `staging.qavrillabs.com`, setting `Content-Security-Policy`, `Strict-Transport-Security`, `Permissions-Policy`, `Referrer-Policy`, `X-Content-Type-Options` and `X-Frame-Options` with the values in `_headers`. It covers every origin behind Cloudflare and needs no AWS change.
+- **Or a CloudFront response headers policy** attached to the site's distribution, with the same values.
+
+Keep `_headers` as the single written source of those values, and copy any change into the rule. Staging also needs its CSP `connect-src` to allow `https://api-staging.qavrillabs.com` once that API exists.
+
+### Caching
+
+The site's CSS and JavaScript are cached for 30 days at Cloudflare. Every page loads them with a version (`styles.css?v=11`); bump the version in `frontend/scripts/build-site-pages.mjs` and the hand-written pages whenever the file changes, or visitors keep the old copy.
 
 ## 6. Other tools in use
 

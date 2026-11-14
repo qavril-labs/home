@@ -11,7 +11,7 @@ Give agents a single, code-enforced path to product data. After A4 an agent can 
 In scope:
 
 1. `uaap.tools.types`: tool definitions, calls, results, caller context.
-2. `uaap.tools.permissions`: the core wildcard rule (`*`, `fin.*`, exact), ported from `packages/identity/src/permissions.ts`, and the effective-permission rule (agent grants ∩ user permissions, ADR-006).
+2. `uaap.tools.permissions`: the core wildcard rule (`*`, `fin.*`, exact), ported from `backend/packages/identity/src/permissions.ts`, and the effective-permission rule (agent grants ∩ user permissions, ADR-006).
 3. `uaap.tools.registry`: typed registry with JSON-Schema (Draft 2020-12) contracts checked at registration, Tier 5 definitions that cannot have an executor, unknown tools treated as Tier 5, and per-tenant tier overrides that can only raise a tier.
 4. `uaap.tools.agents`: agent principals (`agent:<id>`) with explicit grants and an allow-list of tools.
 5. `uaap.tools.idempotency`: per-tenant idempotency keys bound to a hash of the arguments.

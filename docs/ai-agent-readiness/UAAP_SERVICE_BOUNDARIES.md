@@ -14,7 +14,7 @@
 Internal Python packages (all in one service for Wave A):
 
 ```
-services/uaap/src/uaap/
+backend/services/uaap/src/uaap/
   api/        routes, schemas, auth dependency
   gateway/    providers/ (ollama, …), router, metering, quotas
   runtime/    graph builder, checkpointer, orchestrator, lifecycle
@@ -45,7 +45,7 @@ services/uaap/src/uaap/
 `POST /v1/runs` · `GET /v1/runs/{id}` · `POST /v1/runs/{id}/cancel|resume` · `GET /v1/agents` · `POST /v1/model/chat` (gateway, internal-scoped) · `GET /v1/approvals` · `POST /v1/approvals/{id}/decision` · `POST /v1/events` (HMAC-signed) · `GET /v1/usage` · `GET /healthz`, `/readyz`.
 
 ## 5. Environments
-`local` (dev DB, in-memory working memory, mocked provider) · `test` (disposable DB per run, as in `packages/db/testing`) · `staging` · `production`. Config via environment variables validated at startup (pydantic-settings); a startup check refuses to run if `ENV=production` and any non-production DB/provider is configured, mirroring Construction's target guard.
+`local` (dev DB, in-memory working memory, mocked provider) · `test` (disposable DB per run, as in `backend/packages/db/testing`) · `staging` · `production`. Config via environment variables validated at startup (pydantic-settings); a startup check refuses to run if `ENV=production` and any non-production DB/provider is configured, mirroring Construction's target guard.
 
 ## 6. Construction ERP isolation
 UAAP reaches Construction only via its Express API (`/api/v1/*`) through an adapter. UAAP never receives `DB_STORAGE`, never touches `E:\Port\Construction\_sqlite_work`, and writes nothing there. SQLite write contention (`SQLITE_BUSY`) is handled by adapter backoff and a per-product concurrency limit of 1 writer.

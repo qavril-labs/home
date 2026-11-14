@@ -93,7 +93,7 @@ export interface DomainEvent<T = unknown> {
 ```
 
 ### High-Frequency Cross-Product Events:
-1. `sales.invoice.posted`: Emitted by Retail POS, Restaurant POS, Sales Management, or Property Leasing. Trigger: Automatically generates balanced journal entry in `packages/ledger`.
+1. `sales.invoice.posted`: Emitted by Retail POS, Restaurant POS, Sales Management, or Property Leasing. Trigger: Automatically generates balanced journal entry in `backend/packages/ledger`.
 2. `inventory.item.depleted`: Emitted when ingredients are deducted for a restaurant order or cement is issued on a construction site. Trigger: Evaluates reorder threshold; drafts Purchase Order if below minimum.
 3. `procurement.grn.received`: Emitted when goods arrive at a warehouse. Trigger: Initiates 3-way matching check against the original PO and vendor invoice.
 4. `compliance.pdc.matured`: Emitted when a post-dated cheque reaches its due date. Trigger: Alerts cashier and queues deposit voucher.

@@ -3,7 +3,7 @@
 **Milestone:** A1 · **Status:** Proposed · Spec only.
 
 ## 1. Tenant identity propagation
-1. Client presents the product session token (`<tenantId>.<random>`; only SHA-256 stored server-side, per `packages/identity`).
+1. Client presents the product session token (`<tenantId>.<random>`; only SHA-256 stored server-side, per `backend/packages/identity`).
 2. UAAP extracts `tenantId` from the prefix **only to route validation**; it then calls the issuing product's `/v1/me` (core: `GET /v1/me`) and trusts the returned principal, not the prefix.
 3. UAAP opens each DB transaction with `SET LOCAL app.tenant_id = <uuid>`; every UAAP table has `tenant_id` + `FORCE ROW LEVEL SECURITY` using the same policy text as `0001_foundation.sql`.
 4. Background runs store `tenant_id` and `initiated_by` on the run; workers re-set tenant context before every step. A run without tenant context cannot start.

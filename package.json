@@ -1,33 +1,24 @@
 {
-  "name": "erp-platform",
+  "name": "qavril-labs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
+  "description": "QAVRIL LABS. backend/ (Claude Code) and frontend/ (Antigravity) are separate npm projects; these scripts only run them.",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "migrate": "npm run migrate -w @erp/db",
-    "leads:export": "npm run leads:export -w @erp/db",
-    "site:check": "node scripts/check-site.mjs",
-    "site:build": "node scripts/build-site-pages.mjs",
-    "catalog:generate": "node scripts/generate-product-registry.mjs",
-    "dev:api": "npm run dev -w @erp/api",
-    "dev:all": "node scripts/dev-all.mjs"
+    "install:all": "npm --prefix backend install && npm --prefix frontend install",
+    "dev:all": "node scripts/dev-all.mjs",
+    "typecheck": "npm --prefix backend run typecheck",
+    "test": "npm --prefix backend test",
+    "migrate": "npm --prefix backend run migrate",
+    "catalog:generate": "npm --prefix backend run catalog:generate",
+    "site:build": "npm --prefix frontend run site:build",
+    "site:check": "npm --prefix frontend run site:check",
+    "dev:web": "npm --prefix frontend run dev:web"
   },
-  "devDependencies": {
-    "@types/node": "^26.6.6",
-    "@types/pg": "^8.23.1",
-    "embedded-postgres": "^18.6.0-beta.19",
-    "tsx": "^4.23.15",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.12"
+  "dependencies": {
+    "pg": "^8.23.1"
   }
 }

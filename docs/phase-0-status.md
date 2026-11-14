@@ -28,7 +28,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-20 | SaaS Billing (for you) | Not started | | Plans, invoices, dunning |
 | PLT-21 | Security & Data Residency | Partial | Tenant isolation through row-level security, scrypt hashing, hashed session tokens, suspended-tenant checks | Encryption configuration, region-pinned deployments, backups and disaster recovery, rate limiting |
 | PLT-22 | Observability & Support | Partial | Structured request logging through Fastify | Metrics, error tracking, support console with consent |
-| PLT-23 | Onboarding & Help | Partial | Tenant bootstrap endpoint; self-service sign-up (`POST /v1/public/signup`) that creates the workspace in USD with the ledger on, 15 starter accounts and this fiscal year, and signs the owner in; sign-up and sign-in pages; the signed-in dashboard (`site/app.html`) with totals, a six-month chart, quick entries, recent entries, balances, and a bot crew panel computed in the browser from the overview | Email verification, password reset, sample data, help, bots that act (today they only report and draft) |
+| PLT-23 | Onboarding & Help | Partial | Tenant bootstrap endpoint; self-service sign-up (`POST /v1/public/signup`) that creates the workspace in USD with the ledger on, 15 starter accounts and this fiscal year, and signs the owner in; sign-up and sign-in pages; the signed-in dashboard (`frontend/site/app.html`) with totals, a six-month chart, quick entries, recent entries, balances, and a bot crew panel computed in the browser from the overview | Email verification, password reset, sample data, help, bots that act (today they only report and draft) |
 
 ## Verification
 
@@ -60,7 +60,7 @@ Local dev must connect as a role without superuser rights: superusers bypass row
 
 ## Public lead intake
 
-The marketing site posts early-access requests to `POST /v1/public/leads`. Leads are stored in the `leads` table, which is intentionally not tenant data: it has no `tenant_id` and no row-level security. Requests are rate-limited per IP (5 per 10 minutes by default), and a hidden honeypot field silently drops bot submissions. Operators export leads with `npm run leads:export`. The site itself is documented in [site/README.md](../site/README.md).
+The marketing site posts early-access requests to `POST /v1/public/leads`. Leads are stored in the `leads` table, which is intentionally not tenant data: it has no `tenant_id` and no row-level security. Requests are rate-limited per IP (5 per 10 minutes by default), and a hidden honeypot field silently drops bot submissions. Operators export leads with `npm run leads:export`. The site itself is documented in [frontend/site/README.md](../frontend/site/README.md).
 
 ## Counts
 

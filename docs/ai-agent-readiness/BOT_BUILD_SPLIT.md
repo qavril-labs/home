@@ -8,14 +8,14 @@ Every bot is split **by part**, not the bot list by half. This follows [../build
 
 | Part | What it is | Owner | Where |
 |---|---|---|---|
-| 1. Signals | Core SaaS read API returning exactly the figures the bot reads | Claude Code | `apps/api/`, `packages/*` |
-| 2. Brain | Agent or deterministic bot logic, guardrails, prompts, tool calls, agent card | Claude Code | `services/uaap/` |
-| 3. Action and approval | Tools with tiers and limits, drafts, approvals inbox, audit, kill switch | Claude Code | `services/uaap/`, `apps/api/` |
-| 4. Delivery | In-app alerts, and email and WhatsApp once PLT-10 exists | Claude Code | `services/uaap/`, `packages/*` |
-| 5. Screens | `BotCard`, bot page, approvals inbox and review modals, on/off switch, charts and 3D | Antigravity | `apps/web/` |
-| 6. Tests | 6a unit evaluations and conformance (Claude Code); 6b Playwright end-to-end tests (Antigravity) | Both | `services/uaap/tests/`, `tests/e2e/` |
+| 1. Signals | Core SaaS read API returning exactly the figures the bot reads | Claude Code | `backend/apps/api/`, `backend/packages/*` |
+| 2. Brain | Agent or deterministic bot logic, guardrails, prompts, tool calls, agent card | Claude Code | `backend/services/uaap/` |
+| 3. Action and approval | Tools with tiers and limits, drafts, approvals inbox, audit, kill switch | Claude Code | `backend/services/uaap/`, `backend/apps/api/` |
+| 4. Delivery | In-app alerts, and email and WhatsApp once PLT-10 exists | Claude Code | `backend/services/uaap/`, `backend/packages/*` |
+| 5. Screens | `BotCard`, bot page, approvals inbox and review modals, on/off switch, charts and 3D | Antigravity | `frontend/web/` |
+| 6. Tests | 6a unit evaluations and conformance (Claude Code); 6b Playwright end-to-end tests (Antigravity) | Both | `backend/services/uaap/tests/`, `frontend/e2e/` |
 
-**The contract between the lanes** is the API: `apps/api/openapi.yaml` and the generated `packages/api-client/`, which will cover UAAP's `/v1/agents` and `/v1/approvals` too. Antigravity calls nothing else. A bot is done when all six parts exist.
+**The contract between the lanes** is the API: `contracts/openapi.yaml` and the generated `backend/packages/api-client/`, which will cover UAAP's `/v1/agents` and `/v1/approvals` too. Antigravity calls nothing else. A bot is done when all six parts exist.
 
 ## 2. Ground rules
 
@@ -30,7 +30,7 @@ Every bot is split **by part**, not the bot list by half. This follows [../build
 |---|---|---|
 | F1 | A5 durability sign-off (restart-survival test) | Everything |
 | F0 | First commit, `lane/backend` and `lane/frontend`, worktree `E:\SaaS-web` (needs owner go-ahead) | Parallel work |
-| C0 | `openapi.yaml` and `packages/api-client/`, including the bot and approvals endpoints | All screens |
+| C0 | `openapi.yaml` and `backend/packages/api-client/`, including the bot and approvals endpoints | All screens |
 | F2 | Industry Pack SDK: manifest, registries, policy, `READY` / `PARTIAL` / `BLOCKED`, provenance, release gates | Pack bots |
 | F3 | Catalog rows for the 32 suites and the GAR and FMCG agents | Licensing |
 | F4 | Outbox worker (A6) | Event-driven bots |
@@ -85,7 +85,7 @@ Copy this block, fill in every field, and give it to whichever tool owns the bot
 ## 0. Read first
 - CLAUDE.md, ERP-Product-Catalog.md, docs/ai-agent-readiness/UAAP_AGENT_STANDARD.md,
   docs/ai-agent-readiness/BOT_BUILD_SPLIT.md
-- Existing reference: services/uaap/src/uaap/agents/finance.py and its tests
+- Existing reference: backend/services/uaap/src/uaap/agents/finance.py and its tests
 
 ## 1. Identity
 - Bot id / catalog product id: <e.g. GAR08 / GAR-08>
@@ -145,8 +145,8 @@ UPSTREAM_INVALID_RESPONSE, UNGROUNDED_REPLY, AGENT_DISABLED, plus bot-specific c
 - Catalog dependencies and entitlement product id: <...>
 
 ## 14. Files you may create or edit
-- Backend: apps/api/ (signals), services/uaap/src/uaap/packs/<pack>/, services/uaap/tests/
-- Frontend (separate prompt, Antigravity): apps/web/, tests/e2e/ only, from the handoff note
+- Backend: backend/apps/api/ (signals), backend/services/uaap/src/uaap/packs/<pack>/, backend/services/uaap/tests/
+- Frontend (separate prompt, Antigravity): frontend/web/, frontend/e2e/ only, from the handoff note
 
 ## 15. Definition of done
 - AgentCard complete; conformance test passes; every edge case has a passing test

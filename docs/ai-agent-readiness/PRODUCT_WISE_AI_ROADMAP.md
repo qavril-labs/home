@@ -83,7 +83,7 @@ Rather than attempting to build agents for all 39 products simultaneously, the r
   2. **Visitor Management:** Pre-registration QR guide, instant host WhatsApp alerter, DPDP/GDPR data masking auditor.
   3. **HIMS:** Clinician-supervised patient intake scheduler, medical records transcriptionist, pharmacy inventory depletion forecaster.
   4. **HRMS:** Resume parser, employee handbook policy Q&A bot, payroll deduction validator.
-  5. **Sales & Marketing:** Automated lead nurturing bot (`site/leads`), app store review sentiment analyzer.
+  5. **Sales & Marketing:** Automated lead nurturing bot (`frontend/site/leads`), app store review sentiment analyzer.
 - **Estimated Duration:** 6 weeks.
 - **Milestone Exit Criteria:** IT tickets and visitor arrivals handled with automated workflows; patient data strictly clinician-supervised.
 
@@ -94,7 +94,7 @@ Rather than attempting to build agents for all 39 products simultaneously, the r
 - **Core Deliverables:**
   1. Cross-enterprise transactional outbox event automation.
   2. Multi-agent collaborative supply chain negotiation.
-  3. WebAR interactive product placement on web canvases (`site/scene3d.js`).
+  3. WebAR interactive product placement on web canvases (`frontend/site/scene3d.js`).
   4. Construction 4D BIM digital twin simulating site progress against Gantt schedules.
 - **Estimated Duration:** Ongoing / Advanced R&D.
 
