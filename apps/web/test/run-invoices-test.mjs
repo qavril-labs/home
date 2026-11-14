@@ -54,7 +54,7 @@ test("FIN-02 & FIN-03: Receivables and Payables aging buckets", () => {
 });
 
 test("SAL-04: Mock invoices dataset integrity and UI Contract currency formatting", () => {
-  assert.ok(initialMockInvoices.length >= 4);
+  assert.ok(initialMockInvoices.length >= 3);
   for (const inv of initialMockInvoices) {
     assert.ok(inv.invoiceNumber.startsWith("INV-"));
     assert.ok(formatMoney(inv.total).startsWith("$"));

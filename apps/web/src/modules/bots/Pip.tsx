@@ -356,7 +356,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
         </div>
 
         {/* 3D Pipeline Funnel Visualization (Desktop with fine pointer & motion) */}
-        <PipelineFunnel3D />
+        <PipelineFunnel3D deals={deals} />
 
         {/* 2D Funnel Stage Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pb-2">

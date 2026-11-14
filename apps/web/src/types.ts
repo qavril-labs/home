@@ -575,6 +575,87 @@ export interface PipData {
 }
 
 // ==========================================
+// Inventory & Warehouses (INV-01 to INV-05)
+// ==========================================
+
+export interface WarehouseLocation {
+  id: string;
+  code: string; // e.g. "WH-MAIN", "WH-EAST", "WH-SHOP"
+  name: string;
+  city: string;
+  capacityUnits: number;
+  utilizedUnits: number;
+  manager: string;
+}
+
+export interface WarehouseStockSlot {
+  id: string;
+  warehouseCode: string; // e.g. "WH-MAIN"
+  warehouseName: string;
+  aisle: string; // e.g. "A1", "B2"
+  shelf: number;
+  sku: string;
+  itemName: string;
+  uom: string; // "pcs" | "kg" | "m" | "hrs"
+  quantity: number;
+  reorderPoint: number;
+  unitValue: string; // decimal string
+  totalValue: string; // decimal string
+}
+
+export interface StockTransfer {
+  id: string;
+  transferNumber: string; // e.g. "TRF-2026-081"
+  sku: string;
+  itemName: string;
+  fromWarehouse: string; // code e.g. "WH-MAIN"
+  toWarehouse: string;   // code e.g. "WH-EAST"
+  quantity: number;
+  uom: string;
+  status: "Draft" | "In Transit" | "Completed";
+  requestedAt: string;
+  notes?: string;
+}
+
+// ==========================================
+// Quotes & CPQ (SAL-02)
+// ==========================================
+
+export interface SalesQuote {
+  id: string;
+  quoteNumber: string; // e.g. "QUO-2026-301"
+  dealId?: string;
+  customerName: string;
+  contactPerson: string;
+  issuedAt: string;
+  validUntil: string;
+  status: "Draft" | "Sent" | "Accepted" | "Expired";
+  subtotal: string; // decimal string
+  discountPercent: number;
+  taxTotal: string; // decimal string
+  grandTotal: string; // decimal string
+  itemsCount: number;
+  notes?: string;
+}
+
+// ==========================================
+// Bank & Cash Reconciliation (FIN-04)
+// ==========================================
+
+export interface BankFeedLine {
+  id: string;
+  postedDate: string;
+  reference: string;
+  description: string;
+  amount: string; // decimal string
+  direction: "IN" | "OUT";
+  status: "Unmatched" | "Suggested" | "Reconciled";
+  matchedRef?: string;
+  matchedLabel?: string;
+  confidence?: number;
+}
+
+// ==========================================
 // Sprint 6+: Industry Pack Bots (GAR / FMCG) & AI-09
 // ==========================================
 
@@ -709,4 +790,5 @@ export interface ConversationalTurn {
     targetTab: string;
   };
 }
+
 

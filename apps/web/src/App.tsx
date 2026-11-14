@@ -10,8 +10,12 @@ import { AccountsPage } from "./pages/AccountsPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { PayablesManager } from "./modules/invoicing/PayablesManager";
 import { LedgerPage } from "./pages/LedgerPage";
+import { InventoryPage } from "./pages/InventoryPage";
+import { CrmPipelinePage } from "./pages/CrmPipelinePage";
+import { BankReconciliationPage } from "./pages/BankReconciliationPage";
 import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
+import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
@@ -28,6 +32,12 @@ import {
   initialMockItems,
   initialMockJournals,
   initialMockParties,
+  initialWarehouses,
+  initialWarehouseStock,
+  initialStockTransfers,
+  initialPipelineDeals,
+  initialSalesQuotes,
+  initialBankFeedLines,
 } from "./lib/api-mock";
 import type {
   Account,
@@ -37,6 +47,12 @@ import type {
   JournalEntry,
   Party,
   ProductItem,
+  WarehouseLocation,
+  WarehouseStockSlot,
+  StockTransfer,
+  PipelineDeal,
+  SalesQuote,
+  BankFeedLine,
 } from "./types";
 
 function getTabFromLocation(): string {
@@ -71,6 +87,12 @@ export const App: React.FC = () => {
   );
   const [bills, setBills] = useState<Bill[]>(initialMockBills);
   const [journals, setJournals] = useState<JournalEntry[]>(initialMockJournals);
+  const [warehouses] = useState<WarehouseLocation[]>(initialWarehouses);
+  const [stockSlots] = useState<WarehouseStockSlot[]>(initialWarehouseStock);
+  const [transfers, setTransfers] = useState<StockTransfer[]>(initialStockTransfers);
+  const [pipelineDeals, setPipelineDeals] = useState<PipelineDeal[]>(initialPipelineDeals);
+  const [salesQuotes, setSalesQuotes] = useState<SalesQuote[]>(initialSalesQuotes);
+  const [bankFeedLines, setBankFeedLines] = useState<BankFeedLine[]>(initialBankFeedLines);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
 
   // Sync URL hash and activeTab
@@ -447,6 +469,60 @@ export const App: React.FC = () => {
               onNavigateToChaseChloe={() => navigateToTab("chase-chloe")}
             />
           </div>
+        ) : activeTab === "inventory" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <InventoryPage
+              warehouses={warehouses}
+              stockSlots={stockSlots}
+              transfers={transfers}
+              onAddTransfer={(t) => setTransfers((prev) => [t, ...prev])}
+              onUpdateTransferStatus={(id, status) =>
+                setTransfers((prev) =>
+                  prev.map((t) => (t.id === id ? { ...t, status } : t))
+                )
+              }
+            />
+          </div>
+        ) : activeTab === "crm" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <CrmPipelinePage
+              deals={pipelineDeals}
+              quotes={salesQuotes}
+              onAddDeal={(deal) => setPipelineDeals((prev) => [deal, ...prev])}
+              onUpdateDealStage={(id, stage) =>
+                setPipelineDeals((prev) =>
+                  prev.map((d) => (d.id === id ? { ...d, stage } : d))
+                )
+              }
+              onAddQuote={(quote) => setSalesQuotes((prev) => [quote, ...prev])}
+              onUpdateQuoteStatus={(id, status) =>
+                setSalesQuotes((prev) =>
+                  prev.map((q) => (q.id === id ? { ...q, status } : q))
+                )
+              }
+              onConvertToInvoice={(inv) => setInvoices((prev) => [inv, ...prev])}
+            />
+          </div>
+        ) : activeTab === "bank" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <BankReconciliationPage
+              bankLines={bankFeedLines}
+              invoices={invoices}
+              bills={bills}
+              onReconcileLine={(lineId, matchedRef) =>
+                setBankFeedLines((prev) =>
+                  prev.map((l) =>
+                    l.id === lineId
+                      ? { ...l, status: "Reconciled", matchedRef, confidence: 100 }
+                      : l
+                  )
+                )
+              }
+              onImportStatement={(lines) =>
+                setBankFeedLines((prev) => [...lines, ...prev])
+              }
+            />
+          </div>
         ) : activeTab === "payables" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <PayablesManager
@@ -494,6 +570,10 @@ export const App: React.FC = () => {
               onDeleteAccount={handleDeleteAccount}
               onToggleStatusAccount={handleToggleStatusAccount}
             />
+          </div>
+        ) : activeTab === "packs" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <IndustryPacksHub />
           </div>
         ) : activeTab === "import" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
