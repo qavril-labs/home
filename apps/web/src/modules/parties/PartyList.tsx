@@ -9,6 +9,7 @@ import type { Party, PartyStatus, PartyType } from "../../types";
 import {
   Building2,
   Edit3,
+  FileSpreadsheet,
   Power,
   Search,
   Trash2,
@@ -26,6 +27,7 @@ export interface PartyListProps {
   onOpenEdit: (party: Party) => void;
   onToggleStatus?: (id: string) => void;
   onDeleteParty?: (id: string) => void;
+  onOpenStatement?: (partyId: string) => void;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -72,6 +74,7 @@ export const PartyList: React.FC<PartyListProps> = ({
   onOpenEdit,
   onToggleStatus,
   onDeleteParty,
+  onOpenStatement,
 }) => {
   const [activeTab, setActiveTab] = useState<PartyTypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<PartyStatusFilter>("all");
@@ -231,6 +234,17 @@ export const PartyList: React.FC<PartyListProps> = ({
         const partyLabel = r.tradeName || r.legalName;
         return (
           <div className="flex items-center justify-end gap-1.5">
+            {onOpenStatement && (r.type === "customer" || r.type === "both") && (
+              <button
+                type="button"
+                onClick={() => onOpenStatement(r.id)}
+                className="p-1.5 bg-page border border-ink shadow-[1px_1px_0_var(--q-ink)] hover:bg-cyan hover:text-ink text-text cursor-pointer active:translate-y-0.5 transition-colors"
+                title={`View Statement for ${partyLabel}`}
+                aria-label={`View Statement for ${partyLabel}`}
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onOpenEdit(r)}

@@ -277,7 +277,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               </p>
             </div>
 
-            <div className="bg-page p-3 border-line">
+            <div className="bg-cream p-3 border-line">
               <span className="text-[11px] font-bold uppercase tracking-wider text-pink block mb-1">
                 Draft Content Prepared
               </span>

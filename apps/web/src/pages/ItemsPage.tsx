@@ -4,10 +4,11 @@ import { ItemDrawer } from "../modules/items/ItemDrawer";
 import { Button } from "../components/ui/Button";
 import { useToast } from "../context/ToastContext";
 import type { ItemType, ProductItem } from "../types";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Radio } from "lucide-react";
 
 export interface ItemsPageProps {
   items: ProductItem[];
+  isLiveApi?: boolean;
   onAddItem: (item: ProductItem) => void;
   onUpdateItem: (item: ProductItem) => void;
   onDeleteItem: (id: string) => void;
@@ -15,6 +16,7 @@ export interface ItemsPageProps {
 
 export const ItemsPage: React.FC<ItemsPageProps> = ({
   items,
+  isLiveApi = false,
   onAddItem,
   onUpdateItem,
   onDeleteItem,
@@ -72,9 +74,19 @@ export const ItemsPage: React.FC<ItemsPageProps> = ({
       {/* Title Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-pink block">
-            Master Data · MDM-02
-          </span>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-pink">
+              Master Data · MDM-02
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold border border-ink ${
+                isLiveApi ? "bg-lime text-ink" : "bg-cream text-ink"
+              }`}
+            >
+              <Radio className="w-3 h-3" />
+              {isLiveApi ? "LIVE HTTP · /v1/master-data/items" : "CONTRACT CLIENT · /v1/master-data/items"}
+            </span>
+          </div>
           <h1 className="font-display font-extrabold text-3xl uppercase tracking-tight text-text leading-tight">
             Item Master & Products
           </h1>

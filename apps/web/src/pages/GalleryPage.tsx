@@ -68,16 +68,16 @@ export const GalleryPage: React.FC = () => {
   ];
 
   const colorTokens = [
-    { name: "lime", css: "var(--q-lime)", hex: "#c6ff3d", usage: "Primary CTA, cash" },
-    { name: "pink", css: "var(--q-pink)", hex: "#ff4fa3", usage: "Accents, warnings" },
-    { name: "violet", css: "var(--q-violet)", hex: "#8b6bff", usage: "Series in, sales" },
-    { name: "cyan", css: "var(--q-cyan)", hex: "#3de8ff", usage: "Information, tools" },
-    { name: "yellow", css: "var(--q-yellow)", hex: "#ffe14d", usage: "Profit, highlights" },
-    { name: "orange", css: "var(--q-orange)", hex: "#ff8a3d", usage: "Series out, expenses" },
-    { name: "good", css: "var(--q-good)", hex: "#1a7f37", usage: "✓ All good status" },
-    { name: "watch", css: "var(--q-watch)", hex: "#9a6700", usage: "! Worth a look" },
-    { name: "act", css: "var(--q-act)", hex: "#b42318", usage: "● Needs you" },
-    { name: "idle", css: "var(--q-idle)", hex: "#4a4568", usage: "… Waiting for data" },
+    { name: "lime", css: "var(--q-lime)", usage: "Primary CTA, cash" },
+    { name: "pink", css: "var(--q-pink)", usage: "Accents, warnings" },
+    { name: "violet", css: "var(--q-violet)", usage: "Series in, sales" },
+    { name: "cyan", css: "var(--q-cyan)", usage: "Information, tools" },
+    { name: "yellow", css: "var(--q-yellow)", usage: "Profit, highlights" },
+    { name: "orange", css: "var(--q-orange)", usage: "Series out, expenses" },
+    { name: "good", css: "var(--q-good)", usage: "✓ All good status" },
+    { name: "watch", css: "var(--q-watch)", usage: "! Worth a look" },
+    { name: "act", css: "var(--q-act)", usage: "● Needs you" },
+    { name: "idle", css: "var(--q-idle)", usage: "… Waiting for data" },
   ];
 
   const getContainerClass = () => {
@@ -183,7 +183,7 @@ export const GalleryPage: React.FC = () => {
                   style={{ backgroundColor: token.css }}
                 />
                 <div className="font-bold text-xs text-text capitalize">{token.name}</div>
-                <div className="font-mono text-[10px] text-muted">{token.hex}</div>
+                <div className="font-mono text-[10px] text-muted">{token.css}</div>
                 <div className="text-[10px] text-muted mt-1 leading-tight">{token.usage}</div>
               </div>
             ))}

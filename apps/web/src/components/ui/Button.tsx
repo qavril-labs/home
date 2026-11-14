@@ -9,12 +9,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "lime", size = "md", children, ...props }, ref) => {
     const variantStyles = {
-      lime: "bg-lime text-ink",
-      yellow: "bg-yellow text-ink",
-      pink: "bg-pink text-white",
-      violet: "bg-violet text-white",
-      cyan: "bg-cyan text-ink",
-      dark: "bg-ink text-white",
+      lime: "bg-lime text-ink hover:opacity-90",
+      yellow: "bg-yellow text-ink hover:opacity-90",
+      pink: "bg-pink text-white hover:opacity-90",
+      violet: "bg-violet text-white hover:opacity-90",
+      cyan: "bg-cyan text-ink hover:opacity-90",
+      dark: "bg-ink text-white hover:opacity-90",
       ghost: "bg-transparent text-text border-line hover:bg-grid",
     }[variant];
 

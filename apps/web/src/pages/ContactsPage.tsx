@@ -1,13 +1,16 @@
 import React, { useState, useMemo } from "react";
 import { PartyList } from "../modules/parties/PartyList";
 import { PartyDrawer } from "../modules/parties/PartyDrawer";
+import { CustomerStatementDrawer } from "../modules/bots/CustomerStatementDrawer";
 import { Button } from "../components/ui/Button";
 import { useToast } from "../context/ToastContext";
-import type { Party, PartyType } from "../types";
-import { Plus } from "lucide-react";
+import { apiClient } from "../lib/api-client";
+import type { CustomerStatement, Party, PartyType } from "../types";
+import { Plus, Radio } from "lucide-react";
 
 export interface ContactsPageProps {
   parties: Party[];
+  isLiveApi?: boolean;
   onAddParty: (party: Party) => void;
   onUpdateParty: (party: Party) => void;
   onDeleteParty: (id: string) => void;
@@ -16,6 +19,7 @@ export interface ContactsPageProps {
 
 export const ContactsPage: React.FC<ContactsPageProps> = ({
   parties,
+  isLiveApi = false,
   onAddParty,
   onUpdateParty,
   onDeleteParty,
@@ -25,6 +29,13 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingParty, setEditingParty] = useState<Party | null>(null);
   const [drawerDefaultType, setDrawerDefaultType] = useState<PartyType>("customer");
+  const [activeStatement, setActiveStatement] = useState<CustomerStatement | null>(null);
+
+  const handleOpenStatement = async (partyId: string) => {
+    const party = parties.find((p) => p.id === partyId);
+    const res = await apiClient.getCustomerStatement(partyId, party);
+    setActiveStatement(res.data);
+  };
 
   // KPI summaries
   const kpis = useMemo(() => {
@@ -83,9 +94,19 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
       {/* Title Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs font-bold uppercase tracking-wider text-pink block">
-            Master Data · MDM-01
-          </span>
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-pink">
+              Master Data · MDM-01
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold border border-ink ${
+                isLiveApi ? "bg-lime text-ink" : "bg-cream text-ink"
+              }`}
+            >
+              <Radio className="w-3 h-3" />
+              {isLiveApi ? "LIVE HTTP · /v1/master-data/parties" : "CONTRACT CLIENT · /v1/master-data/parties"}
+            </span>
+          </div>
           <h1 className="font-display font-extrabold text-3xl uppercase tracking-tight text-text leading-tight">
             Customers & Suppliers
           </h1>
@@ -159,6 +180,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
         onOpenEdit={handleOpenEdit}
         onToggleStatus={handleToggleStatus}
         onDeleteParty={handleDelete}
+        onOpenStatement={(partyId) => void handleOpenStatement(partyId)}
       />
 
       {/* Slide-out Drawer */}
@@ -168,6 +190,13 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
         editingParty={editingParty}
         defaultType={drawerDefaultType}
         onSave={handleSave}
+      />
+
+      {/* Customer Statement Viewer Drawer (FIN-02) */}
+      <CustomerStatementDrawer
+        isOpen={Boolean(activeStatement)}
+        onClose={() => setActiveStatement(null)}
+        statement={activeStatement}
       />
     </div>
   );

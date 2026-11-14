@@ -18,7 +18,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, label, className
     watch: {
       defaultLabel: "Worth a look",
       icon: "!",
-      styles: "bg-panel text-watch border-watch",
+      styles: "bg-cream text-watch border-watch",
     },
     act: {
       defaultLabel: "Needs you",
@@ -28,7 +28,7 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, label, className
     idle: {
       defaultLabel: "Waiting for data",
       icon: "…",
-      styles: "bg-panel text-idle border-idle",
+      styles: "bg-page text-idle border-idle",
     },
   }[status];
 

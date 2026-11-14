@@ -26,8 +26,7 @@ export interface MoneyCityInstance {
   destroy: () => void;
 }
 
-// Token colours from design/tokens.css:
-// series-in: #6250d6, series-out: #eb6834, cash: #c6ff3d
+// Token colours from design/tokens.css (--q-series-in, --q-series-out, --q-lime)
 const SALES_COLOR = 0x6250d6;
 const EXPENSES_COLOR = 0xeb6834;
 const CASH_COLOR = 0xc6ff3d;
@@ -219,14 +218,21 @@ export function mountMoneyCity(
     labelSprites.forEach((s) => city.remove(s));
     labelSprites.length = 0;
 
+    const rootStyles =
+      typeof window !== "undefined"
+        ? window.getComputedStyle(document.documentElement)
+        : null;
+    const mutedToken = rootStyles?.getPropertyValue("--q-muted").trim() || "rgb(201, 195, 234)";
+    const limeToken = rootStyles?.getPropertyValue("--q-lime").trim() || "rgb(198, 255, 61)";
+
     names.slice(0, 6).forEach((name, i) => {
-      const s = createTextSprite(name, "#c9c3ea");
+      const s = createTextSprite(name, mutedToken);
       s.position.set(-3.6 + i * 1.25, 0.05, 1.55);
       city.add(s);
       labelSprites.push(s);
     });
 
-    const cashLabel = createTextSprite("Cash", "#c6ff3d");
+    const cashLabel = createTextSprite("Cash", limeToken);
     cashLabel.position.set(4.15, 0.05, 1.55);
     city.add(cashLabel);
     labelSprites.push(cashLabel);
@@ -323,9 +329,8 @@ export function mountMoneyCity(
     const columnMeshes = columns.map((c) => c.mesh);
     const colIntersects = raycaster.intersectObjects(columnMeshes);
 
-    if (colIntersects.length > 0) {
+    if (colIntersects.length > 0 && colIntersects[0]) {
       const hit = colIntersects[0];
-      if (!hit) return;
       const match = columns.find((c) => c.mesh === hit.object);
       if (match && match.monthName) {
         const typeStr = match.series === 0 ? "Sales" : "Expenses";
@@ -422,7 +427,7 @@ export function mountMoneyCity(
       const last = coins.children[coins.children.length - 1];
       if (last) coins.remove(last);
     }
-    coins.children.forEach((coin) => {
+    coins.children.forEach((coin: any) => {
       const restY = (coin.userData as any).rest || 0;
       coin.position.y += (restY - coin.position.y) * 0.2;
     });

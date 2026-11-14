@@ -22,9 +22,15 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   const navItems = [
     { id: "dashboard", label: "Dashboard" },
-    { id: "ledger-lou", label: "Ledger Lou (AGT-03)" },
-    { id: "contacts", label: "Contacts (MDM-01)" },
+    { id: "ledger", label: "Ledger (FIN-01)" },
+    { id: "invoices", label: "Invoices (SAL-04)" },
+    { id: "chase-chloe", label: "Chase Chloe (FIN-14)" },
+    { id: "payables", label: "Bills (FIN-03)" },
+    { id: "contacts", label: "Parties (MDM-01)" },
     { id: "items", label: "Items (MDM-02)" },
+    { id: "accounts", label: "Accounts (MDM-03)" },
+    { id: "approvals", label: "Approvals (PLT-21)" },
+    { id: "ledger-lou", label: "Ledger Lou (AGT-03)" },
     { id: "import", label: "CSV Import (PLT-14)" },
     { id: "gallery", label: "Component Gallery" },
   ];
