@@ -183,7 +183,7 @@ function head(prefix, title, description, canonicalPath) {
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@800&display=swap" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@800&display=swap"></noscript>
   <script>try{var t=localStorage.getItem("qavril-theme");if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
-  <link rel="stylesheet" href="${prefix}styles.css?v=7">
+  <link rel="stylesheet" href="${prefix}styles.css?v=11">
   <link rel="stylesheet" href="${prefix}subpage.css">
 ${crumbs(canonicalPath, title)}</head>
 <body>`;
