@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
+import { Sidebar } from "./components/ui/Sidebar";
 import { CommandBar } from "./components/ui/CommandBar";
 import { ToastContainer } from "./components/ui/Toast";
 import { Gate } from "./components/ui/Gate";
@@ -77,6 +78,7 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<string>(() => getTabFromLocation());
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
+  const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
   const [parties, setParties] = useState<Party[]>(initialMockParties);
@@ -380,25 +382,38 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-page text-text flex flex-col font-body">
-      {/* App Header per UI Contract */}
-      <AppHeader
-        workspaceName="Apex Production"
-        activeTab={activeTab}
-        onNavigate={navigateToTab}
-        onOpenCommandBar={() => setIsCommandBarOpen(true)}
-        onSignOut={() => {
-          try {
-            sessionStorage.setItem("qavril-session", "signed-out");
-          } catch {
-            // ignore
-          }
-          setIsAuthenticated(false);
-        }}
-      />
+    <div className="min-h-screen bg-page text-text flex font-body">
+      {/* Persistent Desktop Sidebar and Mobile Drawer */}
+      {isAuthenticated && (
+        <Sidebar
+          activeTab={activeTab}
+          onNavigate={navigateToTab}
+          isOpenMobile={isSidebarOpenMobile}
+          onCloseMobile={() => setIsSidebarOpenMobile(false)}
+          workspaceName="Apex Production"
+        />
+      )}
 
-      {/* Main Content Area */}
-      <main className="flex-1 pb-16" id="main">
+      {/* Main Content Column */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* App Header per UI Contract */}
+        <AppHeader
+          workspaceName="Apex Production"
+          activeTab={activeTab}
+          onOpenCommandBar={() => setIsCommandBarOpen(true)}
+          onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
+          onSignOut={() => {
+            try {
+              sessionStorage.setItem("qavril-session", "signed-out");
+            } catch {
+              // ignore
+            }
+            setIsAuthenticated(false);
+          }}
+        />
+
+        {/* Main Content Area */}
+        <main className="flex-1 pb-16 px-3 sm:px-6 md:px-8 max-w-[1400px] w-full mx-auto" id="main">
         {!isAuthenticated ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-12">
             <Gate
@@ -616,6 +631,7 @@ export const App: React.FC = () => {
 
       {/* Global Toast Container */}
       <ToastContainer />
+      </div>
     </div>
   );
 };
