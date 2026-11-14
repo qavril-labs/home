@@ -37,7 +37,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       maxWidth="max-w-[480px]"
     >
       <div className="flex items-start gap-4 py-2">
-        <div className="w-12 h-12 bg-[#fff4dc] border-line shadow-sm flex items-center justify-center flex-shrink-0 text-watch">
+        <div className="w-12 h-12 bg-cream border-line shadow-sm flex items-center justify-center flex-shrink-0 text-watch">
           <AlertTriangle className="w-6 h-6 text-act" />
         </div>
         <div className="text-sm text-text leading-relaxed font-medium">

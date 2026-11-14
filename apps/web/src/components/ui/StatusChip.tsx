@@ -13,22 +13,22 @@ export const StatusChip: React.FC<StatusChipProps> = ({ status, label, className
     good: {
       defaultLabel: "All good",
       icon: "✓",
-      styles: "bg-[#e6f9ed] text-good border-good dark:bg-[#112a1a] dark:text-good",
+      styles: "bg-panel text-good border-good",
     },
     watch: {
       defaultLabel: "Worth a look",
       icon: "!",
-      styles: "bg-[#fff8e6] text-watch border-watch dark:bg-[#2b220e] dark:text-watch",
+      styles: "bg-panel text-watch border-watch",
     },
     act: {
       defaultLabel: "Needs you",
       icon: "●",
-      styles: "bg-[#fdeded] text-act border-act dark:bg-[#331414] dark:text-act",
+      styles: "bg-panel text-act border-act",
     },
     idle: {
       defaultLabel: "Waiting for data",
       icon: "…",
-      styles: "bg-[#f0edf7] text-idle border-idle dark:bg-[#1a172c] dark:text-idle",
+      styles: "bg-panel text-idle border-idle",
     },
   }[status];
 

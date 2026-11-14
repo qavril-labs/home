@@ -10,6 +10,9 @@ import { Gate } from "../components/ui/Gate";
 import { Modal } from "../components/ui/Modal";
 import { Drawer } from "../components/ui/Drawer";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { DataTable } from "../components/ui/DataTable";
+import { QuickEntryForm } from "../components/ui/QuickEntryForm";
+import { CommandBar } from "../components/ui/CommandBar";
 import { useToast } from "../context/ToastContext";
 import { useTheme } from "../context/ThemeContext";
 import { initialMockInsights } from "../lib/api-mock";
@@ -23,6 +26,9 @@ import {
   Palette,
   Type,
   Maximize2,
+  Table as TableIcon,
+  Search,
+  PenTool,
 } from "lucide-react";
 
 export const GalleryPage: React.FC = () => {
@@ -35,7 +41,31 @@ export const GalleryPage: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [isCommandBarOpen, setIsCommandBarOpen] = useState(false);
   const [activeGate, setActiveGate] = useState<"none" | "signed-out" | "setup">("none");
+
+  const sampleTableColumns = [
+    { header: "Account / Contact", accessorKey: "name" as const },
+    { header: "Document Ref", accessorKey: "doc" as const },
+    { header: "Date", accessorKey: "date" as const },
+    {
+      header: "Amount",
+      accessorKey: "amount" as const,
+      align: "right" as const,
+      cell: (row: any) => <span className="font-mono font-bold text-text">{row.amount}</span>,
+    },
+    {
+      header: "Status",
+      cell: (row: any) => <StatusChip status={row.status} label={row.statusText} />,
+    },
+  ];
+
+  const sampleTableData = [
+    { name: "Delta Dynamics Ltd", doc: "INV-2026-0042", date: "2026-11-10", amount: "$1,250.00", status: "good" as const, statusText: "All good" },
+    { name: "Acme Industrial Co", doc: "INV-2026-0043", date: "2026-11-11", amount: "$3,420.00", status: "watch" as const, statusText: "Worth a look" },
+    { name: "Helios Energy", doc: "INV-2026-0044", date: "2026-11-12", amount: "$890.00", status: "act" as const, statusText: "Needs you" },
+    { name: "Nova Systems", doc: "INV-2026-0045", date: "2026-11-13", amount: "$2,100.00", status: "idle" as const, statusText: "Waiting for data" },
+  ];
 
   const colorTokens = [
     { name: "lime", css: "var(--q-lime)", hex: "#c6ff3d", usage: "Primary CTA, cash" },
@@ -381,6 +411,71 @@ export const GalleryPage: React.FC = () => {
             </Card>
           </div>
         </div>
+
+        {/* Section 9: DataTable */}
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center gap-2 border-b-line pb-2">
+            <TableIcon className="w-5 h-5 text-cyan" />
+            <h2 className="font-display font-bold text-lg uppercase text-text">
+              9. DataTable (Sticky Header & Right-Aligned Amounts)
+            </h2>
+          </div>
+
+          <Card title="Recent Transactions & Invoices" featured>
+            <DataTable
+              columns={sampleTableColumns}
+              data={sampleTableData}
+              emptyTitle="No transactions found"
+              emptyDescription="No invoices or expenses have been posted yet."
+            />
+          </Card>
+        </div>
+
+        {/* Section 10: QuickEntryForm */}
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center gap-2 border-b-line pb-2">
+            <PenTool className="w-5 h-5 text-lime" />
+            <h2 className="font-display font-bold text-lg uppercase text-text">
+              10. QuickEntryForm (Tabs, 2-Column Fields, Primary Verb)
+            </h2>
+          </div>
+
+          <Card title="Quick Transaction Entry" subtitle="Post sales, expenses, and payments with one click.">
+            <QuickEntryForm
+              onSubmit={async (entry) => {
+                showToast(`Recorded ${entry.kind}: $${entry.amount} (${entry.description || "Direct"})`, {
+                  type: "success",
+                  undoAction: () => showToast("Reversed transaction", { type: "info" }),
+                });
+              }}
+            />
+          </Card>
+        </div>
+
+        {/* Section 11: Command Palette */}
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center gap-2 border-b-line pb-2">
+            <Search className="w-5 h-5 text-yellow" />
+            <h2 className="font-display font-bold text-lg uppercase text-text">
+              11. CommandBar (Ctrl+K Quick Actions & AI Entry)
+            </h2>
+          </div>
+
+          <div className="bg-panel border-line p-6 flex items-center justify-between gap-4">
+            <div>
+              <h3 className="font-display font-bold text-base text-text uppercase">
+                Global Palette & Search
+              </h3>
+              <p className="text-xs text-muted mt-0.5">
+                Press Ctrl+K anywhere in the application or trigger directly below.
+              </p>
+            </div>
+            <Button variant="lime" onClick={() => setIsCommandBarOpen(true)}>
+              <Search className="w-4 h-4 mr-1.5" />
+              Open CommandBar (Ctrl+K)
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Test Modal */}
@@ -459,6 +554,24 @@ export const GalleryPage: React.FC = () => {
             type: "success",
             undoAction: () => showToast("Reversal journal posted.", { type: "info" }),
           });
+        }}
+      />
+
+      {/* Test CommandBar */}
+      <CommandBar
+        isOpen={isCommandBarOpen}
+        onClose={() => setIsCommandBarOpen(false)}
+        onNavigate={(tab) => {
+          showToast(`Navigated to ${tab}`, { type: "info" });
+        }}
+        onOpenQuickEntry={(kind) => {
+          showToast(`Opened quick entry for ${kind}`, { type: "info" });
+        }}
+        onOpenContactDrawer={() => {
+          showToast("Opened contact creation drawer", { type: "info" });
+        }}
+        onOpenItemDrawer={() => {
+          showToast("Opened item creation drawer", { type: "info" });
         }}
       />
     </div>
