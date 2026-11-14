@@ -1,84 +1,56 @@
 import React from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "./Button";
-import { Moon, Sun, Search } from "lucide-react";
+import { Moon, Sun, Search, Menu } from "lucide-react";
 
 export interface AppHeaderProps {
   workspaceName?: string;
   activeTab?: string;
-  onNavigate?: (tab: string) => void;
   onOpenCommandBar?: () => void;
   onSignOut?: () => void;
+  onToggleSidebar?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   workspaceName = "Apex Production",
   activeTab = "dashboard",
-  onNavigate,
   onOpenCommandBar,
   onSignOut,
+  onToggleSidebar,
 }) => {
   const { theme, toggleTheme } = useTheme();
 
-  const navItems = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "ledger", label: "Ledger (FIN-01)" },
-    { id: "invoices", label: "Invoices (SAL-04)" },
-    { id: "inventory", label: "Inventory (INV-01)" },
-    { id: "crm", label: "CRM Pipeline (SAL-01)" },
-    { id: "bank", label: "Bank Rec (FIN-04)" },
-    { id: "approvals", label: "Approvals (PLT-07)" },
-    { id: "packs", label: "Industry Packs (GAR/FMCG)" },
-    { id: "chase-chloe", label: "Chase Chloe (FIN-14)" },
-    { id: "ledger-lou", label: "Ledger Lou (AGT-03)" },
-    { id: "payables", label: "Bills (FIN-03)" },
-    { id: "contacts", label: "Parties (MDM-01)" },
-    { id: "items", label: "Items (MDM-02)" },
-    { id: "accounts", label: "Accounts (MDM-03)" },
-    { id: "import", label: "CSV Import (PLT-14)" },
-    { id: "gallery", label: "Component Gallery" },
-  ];
-
   return (
-    <header className="sticky top-0 z-40 w-full bg-panel border-b-line shadow-sm">
-      <div className="max-w-[1240px] mx-auto px-4 h-16 flex items-center justify-between">
-        {/* Left: Brand Logo & Navigation */}
-        <div className="flex items-center gap-6">
-          <a
-            href="#dashboard"
-            onClick={(e) => {
-              e.preventDefault();
-              onNavigate?.("dashboard");
-            }}
-            className="flex items-center gap-2 group text-text no-underline select-none"
+    <header className="sticky top-0 z-20 w-full bg-panel border-b-line shadow-sm">
+      <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between">
+        {/* Left: Mobile Sidebar Toggle + Brand indicator for small viewports */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={onToggleSidebar}
+            className="md:hidden p-2 bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-text focus:outline-none"
+            aria-label="Open navigation sidebar"
           >
-            <span className="w-8 h-8 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-lg shadow-[2px_2px_0_var(--q-ink)] group-hover:scale-105 transition-transform">
+            <Menu className="w-5 h-5" />
+          </button>
+
+          <div className="flex md:hidden items-center gap-2">
+            <span className="w-7 h-7 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-sm shadow-[1.5px_1.5px_0_var(--q-ink)]">
               Q
             </span>
-            <span className="font-display font-extrabold text-lg tracking-tight uppercase">
+            <span className="font-display font-black text-sm tracking-tight uppercase">
               QAVRIL<span className="text-pink">/</span>LABS
             </span>
-          </a>
+          </div>
 
-          {/* Nav links */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate?.(item.id)}
-                  className={`px-3 py-1.5 text-xs font-bold transition-colors ${
-                    isActive
-                      ? "bg-lime text-ink border-2 border-ink shadow-[2px_2px_0_var(--q-ink)] -translate-y-0.5"
-                      : "text-text hover:bg-grid border-2 border-transparent"
-                  }`}
-                >
-                  {item.label}
-                </button>
-              );
-            })}
-          </nav>
+          {/* Breadcrumb indicator on desktop */}
+          <div className="hidden md:flex items-center gap-2 text-xs font-mono">
+            <span className="text-muted uppercase">Workspace</span>
+            <span className="text-muted">/</span>
+            <span className="font-bold text-text uppercase tracking-wide">
+              {activeTab.replace(/-/g, " ")}
+            </span>
+          </div>
         </div>
 
         {/* Right: Search, Workspace Selector, Theme Toggle, Sign Out */}
@@ -86,18 +58,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Quick search shortcut trigger */}
           <button
             onClick={onOpenCommandBar}
-            className="hidden sm:flex items-center gap-2 px-2.5 py-1 text-xs font-semibold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-muted"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-muted"
             title="Open quick command palette (Ctrl+K)"
           >
             <Search className="w-3.5 h-3.5 text-text" />
-            <span className="hidden lg:inline text-text">Search actions</span>
+            <span className="hidden sm:inline text-text">Search actions</span>
             <kbd className="px-1.5 py-0.5 text-[10px] bg-panel border border-ink text-text font-mono">
               Ctrl+K
             </kbd>
           </button>
 
           {/* Workspace badge */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-page border-line shadow-[2px_2px_0_var(--q-ink)]">
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-page border-line shadow-[2px_2px_0_var(--q-ink)]">
             <span className="w-2 h-2 rounded-full bg-good animate-pulse"></span>
             <span className="text-xs font-bold text-text truncate max-w-[130px]">
               {workspaceName}
@@ -129,23 +101,6 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             Sign out
           </Button>
         </div>
-      </div>
-
-      {/* Mobile nav bar */}
-      <div className="md:hidden flex items-center gap-1 overflow-x-auto px-4 py-2 border-t border-grid bg-page">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate?.(item.id)}
-            className={`px-2.5 py-1 text-xs font-bold whitespace-nowrap ${
-              activeTab === item.id
-                ? "bg-lime text-ink border border-ink shadow-[1px_1px_0_var(--q-ink)]"
-                : "text-muted hover:text-text"
-            }`}
-          >
-            {item.label}
-          </button>
-        ))}
       </div>
     </header>
   );
