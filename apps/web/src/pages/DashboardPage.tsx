@@ -18,7 +18,7 @@ import type {
   BotInsight,
   QuickEntryPayload,
 } from "../types";
-import { Plus, Sparkles, RefreshCw, Send, CheckCircle2 } from "lucide-react";
+import { Plus } from "lucide-react";
 
 export interface DashboardPageProps {
   insights: WorkspaceInsights;
@@ -237,7 +237,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             title="Record something"
             subtitle="Post directly to your general ledger without complex forms"
           >
-            <QuickEntryForm onEntryPosted={onAddEntry} />
+            <QuickEntryForm onSubmit={onAddEntry} />
           </Card>
         </div>
       </div>

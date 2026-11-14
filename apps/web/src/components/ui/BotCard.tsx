@@ -3,7 +3,7 @@ import { cn } from "../../lib/utils";
 import { StatusChip } from "./StatusChip";
 import { Button } from "./Button";
 import type { BotInsight } from "../../types";
-import { Bot, ArrowRight, FileText, CheckCircle2 } from "lucide-react";
+import { ArrowRight, FileText } from "lucide-react";
 
 export interface BotCardProps {
   bot: BotInsight;

@@ -1,7 +1,7 @@
 import React from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "./Button";
-import { Moon, Sun, Search, Sparkles } from "lucide-react";
+import { Moon, Sun, Search } from "lucide-react";
 
 export interface AppHeaderProps {
   workspaceName?: string;

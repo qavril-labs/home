@@ -4,7 +4,6 @@ import type {
   Party,
   ProductItem,
   RecentEntry,
-  QuickEntryPayload,
   UnpostedEntry,
   MonthEndChecklistItem,
   LedgerLouData,

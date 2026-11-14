@@ -16,13 +16,6 @@ export const MoneyCity3D: React.FC<MoneyCity3DProps> = ({
 }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const [isSupported, setIsSupported] = useState(true);
-  const [tooltip, setTooltip] = useState<{
-    text: string;
-    subtext: string;
-    x: number;
-    y: number;
-    visible: boolean;
-  }>({ text: "", subtext: "", x: 0, y: 0, visible: false });
 
   useEffect(() => {
     // Check hardware / environment suitability per UI contract:

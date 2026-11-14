@@ -8,7 +8,7 @@ import { ConfirmDialog } from "../components/ui/ConfirmDialog";
 import { useToast } from "../context/ToastContext";
 import { formatMoney } from "../lib/currency";
 import type { Contact } from "../types";
-import { Users, Plus, Search, Mail, Phone, MapPin, Edit3, Trash2 } from "lucide-react";
+import { Plus, Search, Mail, Phone, MapPin, Edit3, Trash2 } from "lucide-react";
 
 export interface ContactsPageProps {
   contacts: Contact[];

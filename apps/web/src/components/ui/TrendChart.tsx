@@ -34,6 +34,7 @@ export const TrendChart: React.FC<TrendChartProps> = ({
       {/* Header with Title, Legend & Table Toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-4">
+          {title && <span className="sr-only">{title}</span>}
           <ul className="flex items-center gap-4 text-xs font-bold" aria-hidden="true">
             <li className="flex items-center gap-1.5">
               <span className="w-3.5 h-3.5 bg-series-in border border-ink shadow-[1px_1px_0_var(--q-ink)]"></span>

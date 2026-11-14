@@ -325,6 +325,7 @@ export function mountMoneyCity(
 
     if (colIntersects.length > 0) {
       const hit = colIntersects[0];
+      if (!hit) return;
       const match = columns.find((c) => c.mesh === hit.object);
       if (match && match.monthName) {
         const typeStr = match.series === 0 ? "Sales" : "Expenses";

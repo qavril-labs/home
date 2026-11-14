@@ -5,13 +5,9 @@ import { StatusChip } from "../components/ui/StatusChip";
 import { DataTable, type Column } from "../components/ui/DataTable";
 import { useToast } from "../context/ToastContext";
 import {
-  FileSpreadsheet,
   UploadCloud,
   CheckCircle2,
-  AlertCircle,
   ArrowRight,
-  FileText,
-  Download,
 } from "lucide-react";
 
 interface ParsedRow {

@@ -25,41 +25,41 @@ QAVRIL LABS is a multi-tenant cloud Enterprise Resource Planning (ERP) platform 
 - [Studio 07: Universal AI Agent Platform (UAAP)](${BASE}/products/ai-agents.html): Stateful agent graph runtime, Human-in-the-Loop approvals with single-use token hashes, 5-tier permission sandboxes, and autonomous bot crew coordination.
 
 ## Products & Core Modules
-- [General ledger](https://qavrillabs.com/products/general-ledger.html): The book every other module posts into: accounts, periods, multi-currency entries, reversals and a trial balance.
-- [Sales and invoicing](https://qavrillabs.com/products/sales-invoicing.html): From quote to invoice to credit note, with receivables that update as money comes in.
-- [Purchasing and suppliers](https://qavrillabs.com/products/purchasing.html): Requisitions, purchase orders, goods receipts and supplier bills matched to what actually arrived.
-- [Inventory](https://qavrillabs.com/products/inventory.html): Stock across warehouses and branches, with lots, expiry dates and barcode scanning.
-- [Payroll and HR](https://qavrillabs.com/products/payroll-hr.html): Attendance, leave and payslips. Payroll rules are added country by country, because each country's rules differ.
-- [Retail and restaurant POS](https://qavrillabs.com/products/pos.html): Checkout that keeps working when the internet drops, plus tables, kitchen screens and QR ordering for restaurants.
-- [Projects and field service](https://qavrillabs.com/products/projects-field-service.html): Project time, billing by hours or milestone, and technician work orders with parts used.
-- [Document capture](https://qavrillabs.com/products/document-capture.html): Read invoices and receipts from photos or PDFs, and propose entries that a person checks before anything is posted.
-- [Security and tenant isolation](https://qavrillabs.com/products/security.html): The protections every product is built on. Each one's status is listed on the availability page.
-- [AI agents](https://qavrillabs.com/products/ai-agents.html): Agents that do routine work inside the limits you set, and hand anything unusual to a person.
-- [Automation](https://qavrillabs.com/products/automation.html): Rules that run when something happens: notify, post, create a task, or send a report on a schedule.
-- [AI suite](https://qavrillabs.com/products/ai-suite.html): Ask questions of your books, forecast cash and demand, and spot unusual payments, with the reasons shown.
+- [General ledger](https://staging.qavrillabs.com/products/general-ledger.html): The book every other module posts into: accounts, periods, multi-currency entries, reversals and a trial balance.
+- [Sales and invoicing](https://staging.qavrillabs.com/products/sales-invoicing.html): From quote to invoice to credit note, with receivables that update as money comes in.
+- [Purchasing and suppliers](https://staging.qavrillabs.com/products/purchasing.html): Requisitions, purchase orders, goods receipts and supplier bills matched to what actually arrived.
+- [Inventory](https://staging.qavrillabs.com/products/inventory.html): Stock across warehouses and branches, with lots, expiry dates and barcode scanning.
+- [Payroll and HR](https://staging.qavrillabs.com/products/payroll-hr.html): Attendance, leave and payslips. Payroll rules are added country by country, because each country's rules differ.
+- [Retail and restaurant POS](https://staging.qavrillabs.com/products/pos.html): Checkout that keeps working when the internet drops, plus tables, kitchen screens and QR ordering for restaurants.
+- [Projects and field service](https://staging.qavrillabs.com/products/projects-field-service.html): Project time, billing by hours or milestone, and technician work orders with parts used.
+- [Document capture](https://staging.qavrillabs.com/products/document-capture.html): Read invoices and receipts from photos or PDFs, and propose entries that a person checks before anything is posted.
+- [Security and tenant isolation](https://staging.qavrillabs.com/products/security.html): The protections every product is built on. Each one's status is listed on the availability page.
+- [AI agents](https://staging.qavrillabs.com/products/ai-agents.html): Agents that do routine work inside the limits you set, and hand anything unusual to a person.
+- [Automation](https://staging.qavrillabs.com/products/automation.html): Rules that run when something happens: notify, post, create a task, or send a report on a schedule.
+- [AI suite](https://staging.qavrillabs.com/products/ai-suite.html): Ask questions of your books, forecast cash and demand, and spot unusual payments, with the reasons shown.
 
 ## Autonomous AI Bot Crew
-- [Pip](https://qavrillabs.com/bots/pip.html): Sales follow-up bot. Handles routine workflows inside strict limits with audit logs.
-- [Ledger Lou](https://qavrillabs.com/bots/ledger-lou.html): Month-end checker. Handles routine workflows inside strict limits with audit logs.
-- [Restock Rex](https://qavrillabs.com/bots/restock-rex.html): Restocking bot. Handles routine workflows inside strict limits with audit logs.
-- [Chase Chloe](https://qavrillabs.com/bots/chase-chloe.html): Payment reminder bot. Handles routine workflows inside strict limits with audit logs.
-- [Forecast Finn](https://qavrillabs.com/bots/forecast-finn.html): Cash forecast bot. Handles routine workflows inside strict limits with audit logs.
-- [Guard Gus](https://qavrillabs.com/bots/guard-gus.html): Duplicate and anomaly bot. Handles routine workflows inside strict limits with audit logs.
-- [Ticket Tess](https://qavrillabs.com/bots/ticket-tess.html): Customer support bot. Handles routine workflows inside strict limits with audit logs.
-- [Onboard Ola](https://qavrillabs.com/bots/onboard-ola.html): New staff setup bot. Handles routine workflows inside strict limits with audit logs.
+- [Pip](https://staging.qavrillabs.com/bots/pip.html): Sales follow-up bot. Handles routine workflows inside strict limits with audit logs.
+- [Ledger Lou](https://staging.qavrillabs.com/bots/ledger-lou.html): Month-end checker. Handles routine workflows inside strict limits with audit logs.
+- [Restock Rex](https://staging.qavrillabs.com/bots/restock-rex.html): Restocking bot. Handles routine workflows inside strict limits with audit logs.
+- [Chase Chloe](https://staging.qavrillabs.com/bots/chase-chloe.html): Payment reminder bot. Handles routine workflows inside strict limits with audit logs.
+- [Forecast Finn](https://staging.qavrillabs.com/bots/forecast-finn.html): Cash forecast bot. Handles routine workflows inside strict limits with audit logs.
+- [Guard Gus](https://staging.qavrillabs.com/bots/guard-gus.html): Duplicate and anomaly bot. Handles routine workflows inside strict limits with audit logs.
+- [Ticket Tess](https://staging.qavrillabs.com/bots/ticket-tess.html): Customer support bot. Handles routine workflows inside strict limits with audit logs.
+- [Onboard Ola](https://staging.qavrillabs.com/bots/onboard-ola.html): New staff setup bot. Handles routine workflows inside strict limits with audit logs.
 
 ## Supported Industries
-- [Restaurants and cafés](https://qavrillabs.com/industries/restaurants.html): Stock that expires, tills that stop when the internet drops, and tickets that get lost between the counter and the kitchen.
-- [Clinics and dental](https://qavrillabs.com/industries/clinics.html): Appointments on paper, billing that lags behind treatment, and records that are hard to find.
-- [Construction and trades](https://qavrillabs.com/industries/construction.html): Estimates that miss costs, progress payments that are late, and subcontractors paid without a clear record.
-- [Logistics and transport](https://qavrillabs.com/industries/logistics.html): Deliveries recorded on paper, fuel and driver costs spread across spreadsheets, and proof of delivery that is hard to find.
-- [Retail and pharmacy](https://qavrillabs.com/industries/retail-pharmacy.html): Expiry dates tracked by hand, till and stock that disagree, and prescriptions handled outside the system.
-- [Schools and training](https://qavrillabs.com/industries/schools.html): Fees collected by hand, installment plans tracked in spreadsheets, and parents chasing receipts.
-- [Property management](https://qavrillabs.com/industries/property.html): Rent collected late, owner statements done by hand, and maintenance requests lost in messages.
-- [Professional services](https://qavrillabs.com/industries/professional-services.html): Time logged in one place, invoices made in another, and profit per client unknown.
-- [Agriculture and cooperatives](https://qavrillabs.com/industries/agriculture.html): Farm records on paper, input costs spread across receipts, and cooperative payouts worked out by hand.
-- [Hotels and guesthouses](https://qavrillabs.com/industries/hospitality.html): Bookings taken in several places, rooms cleaned late, and bills settled by hand at checkout.
-- [Small manufacturers](https://qavrillabs.com/industries/manufacturing.html): Materials bought without a clear need, production runs estimated on paper, and costs found out only after the order ships.
+- [Restaurants and cafés](https://staging.qavrillabs.com/industries/restaurants.html): Stock that expires, tills that stop when the internet drops, and tickets that get lost between the counter and the kitchen.
+- [Clinics and dental](https://staging.qavrillabs.com/industries/clinics.html): Appointments on paper, billing that lags behind treatment, and records that are hard to find.
+- [Construction and trades](https://staging.qavrillabs.com/industries/construction.html): Estimates that miss costs, progress payments that are late, and subcontractors paid without a clear record.
+- [Logistics and transport](https://staging.qavrillabs.com/industries/logistics.html): Deliveries recorded on paper, fuel and driver costs spread across spreadsheets, and proof of delivery that is hard to find.
+- [Retail and pharmacy](https://staging.qavrillabs.com/industries/retail-pharmacy.html): Expiry dates tracked by hand, till and stock that disagree, and prescriptions handled outside the system.
+- [Schools and training](https://staging.qavrillabs.com/industries/schools.html): Fees collected by hand, installment plans tracked in spreadsheets, and parents chasing receipts.
+- [Property management](https://staging.qavrillabs.com/industries/property.html): Rent collected late, owner statements done by hand, and maintenance requests lost in messages.
+- [Professional services](https://staging.qavrillabs.com/industries/professional-services.html): Time logged in one place, invoices made in another, and profit per client unknown.
+- [Agriculture and cooperatives](https://staging.qavrillabs.com/industries/agriculture.html): Farm records on paper, input costs spread across receipts, and cooperative payouts worked out by hand.
+- [Hotels and guesthouses](https://staging.qavrillabs.com/industries/hospitality.html): Bookings taken in several places, rooms cleaned late, and bills settled by hand at checkout.
+- [Small manufacturers](https://staging.qavrillabs.com/industries/manufacturing.html): Materials bought without a clear need, production runs estimated on paper, and costs found out only after the order ships.
 
 ## Comparative Analysis vs Other Systems
 - Compared to SAP / NetSuite: QAVRIL LABS offers onboarding in days rather than 6-12 months, transparent low monthly subscriptions ($19-$39/mo vs $1,000+/user/mo), and native built-in autonomous bot workflows.
@@ -91,71 +91,71 @@ Fiscal calendars, e-invoicing formats, and payroll rules are configured as per-c
 ## Case Studies & Practical Scenarios
 ### A three-outlet café
 Stock is counted on paper, orders arrive on WhatsApp, and month-end takes a weekend.
-Full details: https://qavrillabs.com/case-studies/cafe-three-outlets.html
+Full details: https://staging.qavrillabs.com/case-studies/cafe-three-outlets.html
 
 ### A two-person consultancy
 Invoices go out from one tool and payments are chased from another. Time is tracked in a spreadsheet.
-Full details: https://qavrillabs.com/case-studies/consultancy-two-people.html
+Full details: https://staging.qavrillabs.com/case-studies/consultancy-two-people.html
 
 ### A builders' merchant buying from abroad
 Supplier bills arrive in dollars while the books are kept in the local currency.
-Full details: https://qavrillabs.com/case-studies/builders-merchant.html
+Full details: https://staging.qavrillabs.com/case-studies/builders-merchant.html
 
 ### A dental clinic with two chairs
 Appointments are kept in a paper diary, and invoices are sent days after treatment.
-Full details: https://qavrillabs.com/case-studies/dental-clinic-two-chairs.html
+Full details: https://staging.qavrillabs.com/case-studies/dental-clinic-two-chairs.html
 
 ### A private school with fee plans
 Families pay in three installments, and the office chases each payment by phone.
-Full details: https://qavrillabs.com/case-studies/school-fee-plans.html
+Full details: https://staging.qavrillabs.com/case-studies/school-fee-plans.html
 
 ### A pharmacy with two branches
 Medicines expire on different dates in each branch, and the owner learns about losses only when the shelves are checked.
-Full details: https://qavrillabs.com/case-studies/pharmacy-two-branches.html
+Full details: https://staging.qavrillabs.com/case-studies/pharmacy-two-branches.html
 
 ### A delivery company with a small fleet
 Drivers record deliveries on paper, fuel is paid in cash, and nobody knows which route makes money.
-Full details: https://qavrillabs.com/case-studies/logistics-delivery-fleet.html
+Full details: https://staging.qavrillabs.com/case-studies/logistics-delivery-fleet.html
 
 ### A guesthouse with twelve rooms
 Bookings come from phone calls, messages and a notebook, and extras are added to the bill by hand at checkout.
-Full details: https://qavrillabs.com/case-studies/hotel-guesthouse.html
+Full details: https://staging.qavrillabs.com/case-studies/hotel-guesthouse.html
 
 ### A school office with 400 families
 Fee balances are kept in a spreadsheet, payments arrive by mobile money, and receipts are written by hand.
-Full details: https://qavrillabs.com/case-studies/school-bursary-office.html
+Full details: https://staging.qavrillabs.com/case-studies/school-bursary-office.html
 
 
 ## Engineering Deep Dives
 ### Product plan
 Every module, the order it is set up in, and what each one depends on.
-Blueprint: https://qavrillabs.com/projects/product-catalog.html
+Blueprint: https://staging.qavrillabs.com/projects/product-catalog.html
 
 ### General ledger
 Accounts, periods, balanced entries, closing, reversals and the trial balance.
-Blueprint: https://qavrillabs.com/projects/general-ledger-build.html
+Blueprint: https://staging.qavrillabs.com/projects/general-ledger-build.html
 
 ### Multi-currency ledger
 Foreign-currency entries booked in the base currency at the rate on the entry date.
-Blueprint: https://qavrillabs.com/projects/multi-currency.html
+Blueprint: https://staging.qavrillabs.com/projects/multi-currency.html
 
 ### Data separation
 Your business data is kept separate from every other customer's, so only your own team can see your records.
-Blueprint: https://qavrillabs.com/projects/tenant-isolation.html
+Blueprint: https://staging.qavrillabs.com/projects/tenant-isolation.html
 
 ### Demos and trials
 The public site, product and industry pages, case studies, and the demo and trial request form.
-Blueprint: https://qavrillabs.com/projects/marketing-site.html
+Blueprint: https://staging.qavrillabs.com/projects/marketing-site.html
 
 ### The AI bot crew
 Eight bots that handle routine work, each with one job, a short list of automations and clear limits.
-Blueprint: https://qavrillabs.com/projects/bot-crew.html
+Blueprint: https://staging.qavrillabs.com/projects/bot-crew.html
 
 ### Mobile money and card payments
 Payments from mobile money, cards and bank transfer are matched to invoices automatically.
-Blueprint: https://qavrillabs.com/projects/payments-and-receipts.html
+Blueprint: https://staging.qavrillabs.com/projects/payments-and-receipts.html
 
 ### Industry packs
 Extra screens and rules for a trade, added for the customers who need them first.
-Blueprint: https://qavrillabs.com/projects/industry-packs.html
+Blueprint: https://staging.qavrillabs.com/projects/industry-packs.html
 
