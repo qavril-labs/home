@@ -6,7 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const catalogPath = join(root, "ERP-Product-Catalog.md");
+const catalogPath = join(root, "..", "ERP-Product-Catalog.md");
 const outputPath = join(root, "packages", "catalog", "src", "products.generated.ts");
 
 const ID = /^[A-Z]{2,3}-\d{2}$/;

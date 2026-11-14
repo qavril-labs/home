@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
 import { Button } from "../../components/ui/Button";
 import { CreatePODrawer } from "./CreatePODrawer";
+import { Warehouse3D } from "../../scenes/Warehouse3D";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
 import {
@@ -515,6 +516,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
         {/* Tab Content: 2D Warehouse Bin Map */}
         {activeTab === "warehouse" && (
           <div className="space-y-4">
+            <Warehouse3D items={items} />
             <div className="p-3 bg-page border-line flex items-center justify-between text-xs">
               <span className="text-muted font-medium">
                 Warehouse 2D Location Map: Zone A (Metals), Zone B (Consumables), Zone C (Fasteners).

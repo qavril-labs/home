@@ -8,9 +8,30 @@ export interface ToastItem {
   undoLabel?: string;
 }
 
+export interface ToastOptions {
+  type?: "success" | "info" | "warning";
+  variant?: string;
+  title?: string;
+  description?: string;
+  undoAction?: () => void;
+  undoLabel?: string;
+}
+
+export type ToastInput = string | {
+  title?: string;
+  description?: string;
+  message?: string;
+  variant?: string;
+  type?: "success" | "info" | "warning";
+};
+
 interface ToastContextType {
   toasts: ToastItem[];
-  showToast: (message: string, options?: { type?: "success" | "info" | "warning"; undoAction?: () => void; undoLabel?: string }) => void;
+  showToast: (
+    input: ToastInput,
+    options?: ToastOptions | any,
+    maybeVariant?: string
+  ) => void;
   dismissToast: (id: string) => void;
 }
 
@@ -24,14 +45,35 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const showToast = useCallback(
-    (message: string, options?: { type?: "success" | "info" | "warning"; undoAction?: () => void; undoLabel?: string }) => {
+    (input: ToastInput, options?: ToastOptions | any, maybeVariant?: string) => {
       const id = "toast_" + Math.random().toString(36).substring(2, 9);
+      let msg = "";
+      let toastType: "success" | "info" | "warning" = "success";
+      let undoAction: (() => void) | undefined;
+      let undoLabel = "Undo";
+
+      if (typeof input === "string") {
+        msg = input;
+        if (options && typeof options === "object") {
+          toastType = options.type || (options.variant === "warn" || options.variant === "warning" ? "warning" : "success");
+          undoAction = options.undoAction;
+          undoLabel = options.undoLabel || "Undo";
+        }
+        if (typeof maybeVariant === "string") {
+          toastType = maybeVariant === "warn" || maybeVariant === "warning" ? "warning" : "success";
+        }
+      } else if (input && typeof input === "object") {
+        msg = input.title ? (input.description ? `${input.title}: ${input.description}` : input.title) : input.message || "";
+        const v = input.variant || input.type;
+        toastType = v === "warn" || v === "warning" ? "warning" : "success";
+      }
+
       const newToast: ToastItem = {
         id,
-        message,
-        type: options?.type || "success",
-        undoAction: options?.undoAction,
-        undoLabel: options?.undoLabel || "Undo",
+        message: msg,
+        type: toastType,
+        undoAction,
+        undoLabel,
       };
 
       setToasts((prev) => [...prev, newToast]);

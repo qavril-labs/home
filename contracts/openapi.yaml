@@ -212,6 +212,296 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthenticatedError"
 
+  /v1/master-data/parties:
+    get:
+      summary: List customers and suppliers (MDM-01)
+      operationId: listParties
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: partyType
+          in: query
+          schema:
+            type: string
+            enum: ["customer", "supplier", "both"]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ["active", "hold", "archived", "inactive"]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Party listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Party"
+    post:
+      summary: Create a new customer or supplier
+      operationId: createParty
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartyRequest"
+      responses:
+        "201":
+          description: Party created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/master-data/parties/{id}:
+    get:
+      summary: Get party details
+      operationId: getParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Party details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "404":
+          description: Party not found
+    put:
+      summary: Update party details
+      operationId: updateParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePartyRequest"
+      responses:
+        "200":
+          description: Party updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+    delete:
+      summary: Delete or archive party
+      operationId: deleteParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Party deleted
+
+  /v1/master-data/items:
+    get:
+      summary: List inventory items and goods/services catalog (MDM-02)
+      operationId: listItems
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemType
+          in: query
+          schema:
+            type: string
+            enum: ["goods", "service", "bundle"]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductItem"
+    post:
+      summary: Create a catalog or inventory item
+      operationId: createItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemRequest"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/master-data/items/{id}:
+    get:
+      summary: Get item details
+      operationId: getItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+    put:
+      summary: Update item details
+      operationId: updateItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+    delete:
+      summary: Delete item
+      operationId: deleteItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Item deleted
+
+  /v1/master-data/accounts:
+    get:
+      summary: List chart of accounts (MDM-03)
+      operationId: listMasterDataAccounts
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Account listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+    post:
+      summary: Create an account in the chart of accounts
+      operationId: createMasterDataAccount
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
+  /v1/master-data/accounts/{code}:
+    put:
+      summary: Update account name or status (MDM-03)
+      operationId: updateMasterDataAccount
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                active:
+                  type: boolean
+              required:
+                - name
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
   /v1/ledger/accounts:
     get:
       summary: List chart of accounts for company
@@ -890,3 +1180,193 @@ components:
         - description
         - amount
         - status
+
+    Party:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "01932940-1284-7a32-9842-192847583920"
+        name:
+          type: string
+          example: "Delta Dynamics LLC"
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+          example: "billing@deltadynamics.com"
+        phone:
+          type: string
+          example: "+1 555-019-2831"
+        taxId:
+          type: string
+          example: "US-8492019"
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+          example: "active"
+        balance:
+          type: string
+          example: "3450.00"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - partyType
+        - status
+        - balance
+
+    CreatePartyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Delta Dynamics LLC"
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+        phone:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+        balance:
+          type: string
+      required:
+        - name
+        - partyType
+
+    UpdatePartyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+        phone:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+
+    ProductItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "01932940-9912-7a11-8842-102938475619"
+        sku:
+          type: string
+          example: "TOOL-CNC-01"
+        name:
+          type: string
+          example: "Carbide End Mill 1/2 in 4-Flute"
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+          example: "goods"
+        category:
+          type: string
+          example: "Tooling"
+        unit:
+          type: string
+          example: "pcs"
+        unitPrice:
+          type: string
+          example: "48.50"
+        stockQuantity:
+          type: integer
+          example: 42
+        reorderPoint:
+          type: integer
+          example: 20
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+          example: "in_stock"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sku
+        - name
+        - itemType
+        - unit
+        - unitPrice
+        - stockQuantity
+        - reorderPoint
+        - status
+
+    CreateItemRequest:
+      type: object
+      properties:
+        sku:
+          type: string
+          example: "TOOL-CNC-01"
+        name:
+          type: string
+          example: "Carbide End Mill 1/2 in 4-Flute"
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+        category:
+          type: string
+        unit:
+          type: string
+          default: "pcs"
+        unitPrice:
+          type: string
+          example: "48.50"
+        stockQuantity:
+          type: integer
+          default: 0
+        reorderPoint:
+          type: integer
+          default: 0
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+      required:
+        - sku
+        - name
+
+    UpdateItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+        category:
+          type: string
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        stockQuantity:
+          type: integer
+        reorderPoint:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]

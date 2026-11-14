@@ -573,3 +573,222 @@ export interface PipData {
   quietDealsCount: number;
   deals: PipelineDeal[];
 }
+
+// ==========================================
+// Inventory & Warehouses (INV-01 to INV-05)
+// ==========================================
+
+export interface WarehouseLocation {
+  id: string;
+  code: string; // e.g. "WH-MAIN", "WH-EAST", "WH-SHOP"
+  name: string;
+  city: string;
+  capacityUnits: number;
+  utilizedUnits: number;
+  manager: string;
+}
+
+export interface WarehouseStockSlot {
+  id: string;
+  warehouseCode: string; // e.g. "WH-MAIN"
+  warehouseName: string;
+  aisle: string; // e.g. "A1", "B2"
+  shelf: number;
+  sku: string;
+  itemName: string;
+  uom: string; // "pcs" | "kg" | "m" | "hrs"
+  quantity: number;
+  reorderPoint: number;
+  unitValue: string; // decimal string
+  totalValue: string; // decimal string
+}
+
+export interface StockTransfer {
+  id: string;
+  transferNumber: string; // e.g. "TRF-2026-081"
+  sku: string;
+  itemName: string;
+  fromWarehouse: string; // code e.g. "WH-MAIN"
+  toWarehouse: string;   // code e.g. "WH-EAST"
+  quantity: number;
+  uom: string;
+  status: "Draft" | "In Transit" | "Completed";
+  requestedAt: string;
+  notes?: string;
+}
+
+// ==========================================
+// Quotes & CPQ (SAL-02)
+// ==========================================
+
+export interface SalesQuote {
+  id: string;
+  quoteNumber: string; // e.g. "QUO-2026-301"
+  dealId?: string;
+  customerName: string;
+  contactPerson: string;
+  issuedAt: string;
+  validUntil: string;
+  status: "Draft" | "Sent" | "Accepted" | "Expired";
+  subtotal: string; // decimal string
+  discountPercent: number;
+  taxTotal: string; // decimal string
+  grandTotal: string; // decimal string
+  itemsCount: number;
+  notes?: string;
+}
+
+// ==========================================
+// Bank & Cash Reconciliation (FIN-04)
+// ==========================================
+
+export interface BankFeedLine {
+  id: string;
+  postedDate: string;
+  reference: string;
+  description: string;
+  amount: string; // decimal string
+  direction: "IN" | "OUT";
+  status: "Unmatched" | "Suggested" | "Reconciled";
+  matchedRef?: string;
+  matchedLabel?: string;
+  confidence?: number;
+}
+
+// ==========================================
+// Sprint 6+: Industry Pack Bots (GAR / FMCG) & AI-09
+// ==========================================
+
+export type PackReadinessStatus = "READY" | "PARTIAL" | "BLOCKED";
+
+export interface GarmentCostLine {
+  id: string;
+  category: "Fabric" | "Trim" | "Labour (SAM)" | "Overhead";
+  componentName: string;
+  consumptionOrSam: string;
+  unit: string;
+  approvedRate: string; // decimal string
+  lineCost: string; // decimal string
+  configId: string;
+  configVersion: string;
+}
+
+export interface GarmentCostSheet {
+  id: string;
+  styleCode: string;
+  styleName: string;
+  season: string;
+  techPackId: string;
+  techPackVersion: string;
+  readiness: PackReadinessStatus;
+  missingInputs: string[];
+  totalManufacturingCost: string; // decimal string
+  suggestedWholesalePrice: string; // decimal string (target 38% margin)
+  suggestedFobPrice: string; // decimal string (target 24% margin)
+  targetMarginPct: string;
+  calcId: string;
+  lines: GarmentCostLine[];
+  status: "draft" | "approved";
+}
+
+export interface TechPackBomRow {
+  id: string;
+  itemCode: string;
+  description: string;
+  placement: string;
+  supplier: string;
+  sizeCurveConsumption: {
+    XS: string;
+    S: string;
+    M: string;
+    L: string;
+    XL: string;
+  };
+  unit: string;
+}
+
+export interface GarmentTechPack {
+  id: string;
+  styleCode: string;
+  styleName: string;
+  version: string;
+  buyerName: string;
+  readiness: PackReadinessStatus;
+  missingInputs: string[];
+  fabricWeightGsm: number;
+  samMinutes: string;
+  sampleStatus: "Proto" | "Fit Sample" | "PP Sample" | "Gold Seal Approved";
+  bom: TechPackBomRow[];
+  lastUpdated: string;
+}
+
+export interface FmcgExpiryBatch {
+  id: string;
+  batchNumber: string;
+  sku: string;
+  productName: string;
+  warehouseBin: string;
+  mfgDate: string;
+  expiryDate: string;
+  daysRemaining: number;
+  totalUnits: number;
+  unitValue: string; // decimal string
+  totalBatchValue: string; // decimal string
+  ruleId: string;
+  ruleVersion: string;
+  fefoPriority: "Dispatch First (FEFO)" | "Markdown 25% Draft" | "Quarantine / Near Expiry";
+  status: "active" | "markdown_drafted" | "quarantined";
+}
+
+export interface FmcgLabelCheckRule {
+  id: string;
+  ruleCode: string;
+  jurisdiction: string;
+  ruleSetVersion: string;
+  approvedBy: string;
+  checkName: string;
+  extractedText: string;
+  expectedRequirement: string;
+  result: "PASS" | "WARN" | "BLOCK";
+  remediationNote?: string;
+}
+
+export interface FmcgLabelReport {
+  id: string;
+  sku: string;
+  productName: string;
+  artworkVersion: string;
+  readiness: PackReadinessStatus;
+  overallVerdict: "COMPLIANT" | "NON_COMPLIANT";
+  ruleSetId: string;
+  ruleSetVersion: string;
+  checks: FmcgLabelCheckRule[];
+}
+
+export interface IndustryPacksData {
+  lastUpdated: string;
+  garmentCostSheets: GarmentCostSheet[];
+  techPacks: GarmentTechPack[];
+  fmcgBatches: FmcgExpiryBatch[];
+  fmcgLabelReports: FmcgLabelReport[];
+}
+
+export interface ConversationalTurn {
+  id: string;
+  role: "user" | "assistant";
+  text: string;
+  timestamp: string;
+  agentBadge?: {
+    name: string;
+    catalogId: string;
+    color: string;
+    tier: CanonicalTier;
+  };
+  provenanceRef?: string;
+  actionLink?: {
+    label: string;
+    targetTab: string;
+  };
+}
+
+

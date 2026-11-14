@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
 import { Button } from "../../components/ui/Button";
 import { DealFollowUpModal } from "./DealFollowUpModal";
+import { PipelineFunnel3D } from "../../scenes/PipelineFunnel3D";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
 import {
@@ -353,6 +354,9 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
             </p>
           </div>
         </div>
+
+        {/* 3D Pipeline Funnel Visualization (Desktop with fine pointer & motion) */}
+        <PipelineFunnel3D deals={deals} />
 
         {/* 2D Funnel Stage Summary */}
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pb-2">

@@ -38,6 +38,16 @@ venv/
 # UAAP local dev admin key
 services/uaap/.dev-admin-key
 services/uaap/.dev-env
+backend/services/uaap/.dev-admin-key
+backend/services/uaap/.dev-env
+**/.dev-admin-key
+**/.dev-env
+
+# Playwright artifacts
+frontend/e2e/playwright-report/
+frontend/e2e/test-results/
+**/playwright-report/
+**/test-results/
 
 # --- Lane worktrees (Claude Code and Antigravity subfolders) ---
 .worktrees/

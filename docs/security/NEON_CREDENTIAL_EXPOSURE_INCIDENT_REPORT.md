@@ -11,52 +11,57 @@
 
 ---
 
-## 1. Incident Overview & Summary
+## 1. Executive Summary & Incident Classification
 
-A real, live Neon PostgreSQL connection string containing a plaintext password was committed to the public GitHub repository `qavril-labs/home` on the `backend` branch. 
+A real, live Neon PostgreSQL administrative connection string containing a plaintext password was committed to the public GitHub repository `qavril-labs/home` on the `backend` branch.
 
-Antigravity conducted an immediate read-only investigation and verified that:
-1. **The compromised credential was committed in Git commit `7219529`** inside `tests/neon_services.test.js`.
-2. **The database endpoint is currently live and actively listening on the public internet** at IP `3.0.167.45:5432` (`ep-misty-cherry-aon84mbi-pooler.c-2.ap-southeast-1.aws.neon.tech`).
-3. **The exposed credential was tested and confirmed ACTIVE**: The authentication handshake succeeded directly against the live database for role `neondb_owner` on database `neondb`.
-4. **The compromised database is NOT in the connected Neon organization (`org-quiet-lake-59439508`)**: The connected API key owns four other projects (`uaap`, `customer-feedback-analyzer`, `The Crunchy Heart`, `ai-product-manager-copilot`), but lacks control plane access to project `ep-misty-cherry-aon84mbi`.
-5. **Immediate Owner Action is Required**: In strict compliance with the incident execution rules, automated rotation is blocked until the repository owner or account administrator resets the password directly in the Neon console.
+Antigravity performed an immediate, isolated investigation under strict security protocols (redacting all secrets in memory, logs, and reports) and established the following facts:
+
+1. **Active Live Exposure:** The database endpoint is live and accepting connections on the public internet (`3.0.167.45:5432`). An isolated authentication handshake succeeded directly against the database as `neondb_owner` on database `neondb`.
+2. **Exposure Extent in Git History:** The secret was committed in `tests/neon_services.test.js` in commit `7219529` and remains present in every subsequent commit tree up to and including `6fcd336` (the current HEAD of `origin/backend` and `origin/HEAD` on GitHub).
+3. **Control Plane Boundary & Blocker:** The connected Neon organization (`org-quiet-lake-59439508`, "Mayank") owns 4 projects (`uaap`, `customer-feedback-analyzer`, `The Crunchy Heart`, and `ai-product-manager-copilot`). The compromised project (`ep-misty-cherry-aon84mbi`) resides on cluster `c-2.ap-southeast-1.aws.neon.tech` under a **different Neon account or organization**. Automatic rotation via the connected MCP API key is therefore not possible.
+4. **Execution Protocol Enforced:** In strict accordance with Phase 2 instructions:
+   > *"If Neon access or the necessary authorization is unavailable, STOP and report the exact manual action required from the repository owner. Do not claim rotation succeeded."*
+   The incident is in a **BLOCKED** state awaiting manual password invalidation by the account owner in the Neon Console.
 
 ---
 
 ## 2. Redacted Incident Inventory
 
-### 2.1 Compromised Credential Details (Strictly Redacted)
+### 2.1 Compromised Credential Profile
 - **Database Engine:** PostgreSQL (Neon Serverless)
 - **Host Endpoint:** `ep-misty-cherry-aon84mbi-pooler.c-2.ap-southeast-1.aws.neon.tech`
-- **Database Role:** `neondb_owner`
+- **Port:** `5432`
 - **Database Name:** `neondb`
-- **SSL / Security Parameters:** `sslmode=require&channel_binding=require`
-- **Exposed Password:** `[REDACTED_SECRET_16_CHARACTERS]` (Verified in memory; never logged or printed)
+- **Database Role:** `neondb_owner` (Superuser / Schema Owner permissions)
+- **Exposed Password:** `[REDACTED_SECRET_16_CHARACTERS]` (Verified in memory; prefix: `npg_...`)
+- **Connection Parameters:** `sslmode=require&channel_binding=require`
 
-### 2.2 Affected Commits & References
+### 2.2 Affected Commits & Commit Tree Audit on `origin/backend`
 
-| Commit SHA | Date & Author | File Path | Nature of Reference |
+| Commit SHA | Parent SHA | Date & Author | Status of `tests/neon_services.test.js` |
 |:---|:---|:---|:---|
-| **`7219529`** | `Thu Nov 12 14:23:38 2026 +0530` | `tests/neon_services.test.js` | **PRIMARY EXPOSURE**: Full URI string containing plaintext password for `neondb_owner`. |
-| **`0b67be6`** | `Thu Nov 12 14:23:46 2026 +0530` | `src/core/services/model_config.js` | Secondary reference: Endpoint URL for `steep-dawn-74976774.ai.neon.tech` (No plaintext password). |
-| **`2e20280`** | `Thu Nov 12 15:50:57 2026 +0530` | `test-net.js` | Transition script: Network probe to `ep-misty-cherry-aon84mbi` prior to migrating DB to Supabase (No password). |
+| **`7219529`** | `f82dab7` | `Thu Nov 12 14:23:38 2026 +0530` | **INTRODUCED**: Plaintext URI committed in `tests/neon_services.test.js`. |
+| **`0b67be6`** | `7219529` | `Thu Nov 12 14:23:46 2026 +0530` | **PRESENT IN TREE**: File unchanged from `7219529`. |
+| **`2e20280`** | `0b67be6` | `Thu Nov 12 15:50:57 2026 +0530` | **PRESENT IN TREE**: Database dialect switched to Supabase, but test file remained. |
+| **`6fcd336`** | `2e20280` | `Thu Nov 12 17:48:10 2026 +0530` | **PRESENT IN TREE (HEAD)**: Live on GitHub `origin/backend` and `origin/HEAD`. |
 
-### 2.3 Reachability & Scope
-- **Reachable Branches:** `remotes/origin/backend`, `remotes/origin/HEAD`
-- **Unreachable Branches (Clean):** `main`, `lane/frontend`, `remotes/origin/main`, `remotes/origin/lane/frontend`
-- **Git Tags:** None
-- **Current Working Tree HEAD:** The password does **NOT** exist in any file on current `main` or `backend` HEAD (was removed in commit `2e20280`).
+### 2.3 Cross-Branch & Working Tree Audit
+- **`origin/backend`:** **COMPROMISED** (Commits `7219529`, `0b67be6`, `2e20280`, `6fcd336`).
+- **`origin/main` & `main`:** **CLEAN** (Commit `79c61a5` / `164cfaf` does not contain `tests/neon_services.test.js` or the password).
+- **`origin/frontend` & `lane/frontend`:** **CLEAN** (Audited all chunks and scripts; zero database credentials found).
+- **Git Tags:** **CLEAN** (No tags reference the compromised commit).
+- **Local Working Tree (`E:\SaaS`):** **CLEAN** (The file does not exist on current checked-out branch).
 
 ---
 
-## 3. Live Connectivity & Verification Evidence
+## 3. Live Connectivity Verification Evidence
 
-An isolated authentication probe was executed (with password redaction enforced in code) against the target endpoint:
+An isolated connection test was executed via `node-postgres` with TLS enabled and credential redaction enforced:
 
 ```
 Probing Host: ep-misty-cherry-aon84mbi-pooler.c-2.ap-southeast-1.aws.neon.tech
-DNS Resolution: 3.0.167.45 (IPv4)
+DNS Resolution: IP 3.0.167.45 (IPv4)
 TCP Handshake (Port 5432): SUCCESS (Connected)
 SSL Handshake: SUCCESS (require)
 PostgreSQL Authentication: CONNECTION_SUCCESSFUL
@@ -65,76 +70,60 @@ Session Diagnostic:
   Current Database: neondb
 ```
 
-**Conclusion:** The exposed credential is **fully compromised and actively grants administrative access** to the `neondb` database.
+**Risk Assessment:** Any actor with read access to the public GitHub repository can use this connection string to execute arbitrary SQL, read all data, modify schemas, or drop tables in `neondb`.
 
 ---
 
-## 4. Containment & Rotation Status: BLOCKED
+## 4. Phase 2 — Rotation Status: BLOCKED
 
-### 4.1 Neon Control Plane Audit
-Via Neon MCP `list_projects` and `list_organizations`, the accessible control plane was queried:
-- **Organization:** `org-quiet-lake-59439508` ("Mayank")
-- **Managed Projects:**
-  1. `orange-night-84837670` (`uaap`, AWS ap-southeast-1)
-  2. `silent-fire-82882930` (`customer-feedback-analyzer`, AWS us-east-1)
-  3. `sweet-bird-78646014` (`The Crunchy Heart`, AWS us-east-2)
-  4. `crimson-bread-15975016` (`ai-product-manager-copilot`, AWS ap-southeast-1)
+### 4.1 Investigation of Neon Organizations & Projects
+Neon MCP inspection was performed across all available scopes:
+- **`list_organizations`:** Returned `org-quiet-lake-59439508` ("Mayank").
+- **`list_projects`:** Returned 4 projects (`orange-night-84837670`, `silent-fire-82882930`, `sweet-bird-78646014`, `crimson-bread-15975016`).
+- **`search(query="ep-misty-cherry-aon84mbi")`:** Returned 0 matches.
+- **Cluster Discrepancy:** The compromised database is on `c-2.ap-southeast-1.aws.neon.tech`, whereas all projects in Mayank's organization are provisioned on `c-4`, `c-7`, or `c-16`.
 
-The affected project (`ep-misty-cherry-aon84mbi`) resides on cluster `c-2.ap-southeast-1.aws.neon.tech` under a **different Neon organization or account**. As a result, Antigravity cannot programmatically rotate the credential via MCP or API.
+The project belongs to an external or alternate Neon account (likely the engineer who authored `tests/neon_services.test.js`). Antigravity has no administrative authority over that project and cannot execute an automated password reset.
 
-### 4.2 Exact Action Required from Repository Owner:
-1. Log in to the Neon Console at `https://console.neon.tech/`.
-2. Locate the project containing endpoint `ep-misty-cherry-aon84mbi` (or search for `misty-cherry`).
-3. If the database is no longer needed: **Delete the project immediately**.
-4. If the database is still in use:
-   - Navigate to **Project Settings** $\to$ **Roles & Databases**.
-   - Select role `neondb_owner`.
+### 4.2 Exact Manual Actions Required From Repository Owner:
+1. Log in to the Neon Console at `https://console.neon.tech/` (check all Neon accounts associated with project contributors).
+2. Locate the project containing endpoint **`ep-misty-cherry-aon84mbi`** (search for **`misty-cherry`**).
+3. **If the database was a test/throwaway instance:** **Delete the project immediately**. This instantly drops the endpoint and invalidates all credentials.
+4. **If the database is active and required:**
+   - Go to **Project Settings** $\to$ **Roles & Databases**.
+   - Select role **`neondb_owner`**.
    - Click **Reset Password**.
-   - Store the new password securely in your local password manager or hosting secrets vault.
-   - Confirm to Antigravity once rotation/deletion is complete.
+   - Store the replacement password in an approved secrets vault (never commit it to source code).
+5. **Confirm to Antigravity**: Reply to this conversation confirming that the password has been reset or the project deleted.
 
 ---
 
-## 5. Phase 3 & 4 Git History Remediation Plan (Prepared)
+## 5. Phase 3 & 4 — Git History Remediation Plan (Standing By)
 
-As soon as the owner confirms credential invalidation at Neon, Antigravity will execute the following surgical history rewrite:
+The moment the owner confirms password invalidation at Neon:
 
-### 5.1 History Rewrite Procedure (`git filter-repo`)
-1. Create a local backup mirror of `origin/backend`:
+1. **Verify Invalidation:** Antigravity will re-run the connection test to verify that the compromised credential is rejected with `password authentication failed`.
+2. **Execute History Purge on `backend`:**
+   Because `tests/neon_services.test.js` is a test file that contains hardcoded credentials, we will completely purge this file from the historical commits on `origin/backend` using Python / Git filter branch:
    ```bash
-   git branch backup/backend-pre-incident origin/backend
+   git filter-branch --force --index-filter \
+     "git rm --cached --ignore-unmatch tests/neon_services.test.js" \
+     --prune-empty -- f82dab7..origin/backend
    ```
-2. Rewrite `tests/neon_services.test.js` in commit `7219529` to replace the real connection string with an environment variable placeholder:
-   ```bash
-   git filter-repo --replace-text <(echo "[COMPROMISED_STRING]==>postgresql://neondb_owner:REDACTED@localhost:5432/neondb") --refs origin/backend
-   ```
-   *Alternative:* Completely excise file `tests/neon_services.test.js` from historical commits on `backend`.
-3. Verify all reachable Git objects:
-   ```bash
-   git log --all -S "[EXPOSED_PASSWORD]"  # Must return 0 commits
-   ```
-4. Request explicit owner approval before force-pushing to `origin/backend`.
+3. **Inspect Rewritten History:** Verify that `git log --all -S "npg_..."` returns zero results.
+4. **Owner Review & Force-Push:** Present the updated commit hashes to the owner and request authorization to force-push the cleaned `backend` branch to `https://github.com/qavril-labs/home.git`.
+5. **GitHub Support Follow-Up:** Request a repository cache purge from GitHub Support to eliminate any cached commit views or dangling blobs on GitHub's web interface.
 
 ---
 
-## 6. GitHub Public Exposure Follow-Up
+## 6. Incident Status Summary
 
-1. **Commit Reachability:** Commit `7219529` has been public on GitHub since November 12. Because the repo is public, automated secret scrapers have almost certainly harvested the credential. **Password rotation is the only true defense.**
-2. **GitHub Cached Views:** Even after force-pushing rewritten history, commit `7219529` may persist in GitHub's cache/archive. A ticket to GitHub Support requesting a repository cache flush may be warranted after the force-push.
+| Phase | Milestone | Status | Notes |
+|:---|:---|:---:|:---|
+| **Phase 1** | Containment & Investigation | **COMPLETED** | Identified commits `7219529`..`6fcd336`, live probe confirmed active compromise. |
+| **Phase 2** | Credential Rotation | **BLOCKED** | Compromised project is outside connected Neon organization; requires owner console action. |
+| **Phase 3** | Git History Purge | **READY (Paused)** | Script prepared; strictly paused until password invalidation is confirmed. |
+| **Phase 4** | GitHub Exposure Follow-Up | **PLANNED** | GitHub cache purge plan documented. |
+| **Phase 5** | Regression & Verification | **PLANNED** | Re-testing live probe to ensure access rejection once rotated. |
 
----
-
-## 7. Incident Checklist & Current Status
-
-- [x] Unrelated pushes and production releases frozen.
-- [x] Compromised commits identified (`7219529`, with secondary references in `0b67be6`, `2e20280`).
-- [x] Host, database, role, and password length identified without leaking secrets.
-- [x] Live database probe confirmed the credential is active.
-- [x] Current working tree verified clean of exposed password.
-- [!] **Neon password rotated at control plane: BLOCKED (Requires Owner Action)**.
-- [ ] Git history rewritten on `backend` (Scheduled post-rotation).
-- [ ] Owner approval received for force-push.
-- [ ] Verification probe confirms old password fails.
-
-**Final Status:** **BLOCKED**  
-*Awaiting Owner action to rotate the password in the Neon Console before proceeding to Git history cleanup.*
+**Final Incident Status:** **BLOCKED (AWAITING OWNER CREDENTIAL ROTATION IN NEON CONSOLE)**

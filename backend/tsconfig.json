@@ -21,8 +21,5 @@
     "apps/*/src",
     "apps/*/test",
     "vitest.config.ts"
-  ],
-  "exclude": [
-    "apps/web"
   ]
 }

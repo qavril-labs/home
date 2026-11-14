@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
+import { CashRiver3D } from "../../scenes/CashRiver3D";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
 import {
@@ -340,6 +341,9 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack }) =>
             ))}
           </div>
         </div>
+
+        {/* 3D Cash River Visualization (Desktop with fine pointer & motion) */}
+        <CashRiver3D points={points} scenario={scenario} />
 
         {/* 2D Cash River Graphic */}
         <div className="p-4 bg-page border-line space-y-3">
