@@ -4,6 +4,7 @@ import type { Queryable } from "./pool";
 
 interface InvoiceRow {
   number: string;
+  customer_id: string;
   customer: string;
   invoice_date: string;
   currency: string;
@@ -29,7 +30,7 @@ export class PgInvoiceStore implements InvoiceStore {
 
   async get(number: string): Promise<InvoiceRecord | undefined> {
     const { rows } = await this.db.query<InvoiceRow>(
-      `SELECT number, customer, invoice_date::text, currency, total_minor, tax_minor, settled_minor,
+      `SELECT number, customer_id, customer, invoice_date::text, currency, total_minor, tax_minor, settled_minor,
               status, entry_id, payments
          FROM sales_invoices
         WHERE tenant_id = $1 AND company_id = $2 AND number = $3`,
@@ -43,8 +44,8 @@ export class PgInvoiceStore implements InvoiceStore {
     const { invoice, payments } = record;
     await this.db.query(
       `INSERT INTO sales_invoices (tenant_id, company_id, number, customer, invoice_date, currency,
-                                   total_minor, tax_minor, settled_minor, status, entry_id, payments, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now())
+                                   total_minor, tax_minor, settled_minor, status, entry_id, payments, updated_at, customer_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, now(), $13)
        ON CONFLICT (tenant_id, company_id, number) DO UPDATE
          SET settled_minor = EXCLUDED.settled_minor,
              status = EXCLUDED.status,
@@ -63,13 +64,14 @@ export class PgInvoiceStore implements InvoiceStore {
         invoice.status,
         invoice.entryId,
         payments,
+        invoice.customerId,
       ],
     );
   }
 
   async listOpen(): Promise<InvoiceRecord[]> {
     const { rows } = await this.db.query<InvoiceRow>(
-      `SELECT number, customer, invoice_date::text, currency, total_minor, tax_minor, settled_minor,
+      `SELECT number, customer_id, customer, invoice_date::text, currency, total_minor, tax_minor, settled_minor,
               status, entry_id, payments
          FROM sales_invoices
         WHERE tenant_id = $1 AND company_id = $2 AND status = 'OPEN'
@@ -83,6 +85,7 @@ export class PgInvoiceStore implements InvoiceStore {
 function toRecord(row: InvoiceRow): InvoiceRecord {
   const invoice: Invoice = {
     number: row.number,
+    customerId: row.customer_id,
     customer: row.customer,
     date: row.invoice_date,
     currency: row.currency.trim(),
