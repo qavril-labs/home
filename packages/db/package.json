@@ -20,6 +20,7 @@
     "@erp/money": "*",
     "@erp/numbering": "*",
     "@erp/tenancy": "*",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "@erp/sales": "*"
   }
 }

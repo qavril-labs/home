@@ -125,7 +125,7 @@ describe("voiding", () => {
     expect(voided.status).toBe("VOID");
     expect(await balance(ledger, "1200")).toEqual({ debit: "116.00", credit: "116.00" });
     expect(await balance(ledger, "4000")).toEqual({ debit: "100.00", credit: "100.00" });
-    expect(sales.outstanding()).toHaveLength(0);
+    expect(await sales.outstanding()).toHaveLength(0);
   });
 
   it("refuses to void an invoice that has been paid in part", async () => {

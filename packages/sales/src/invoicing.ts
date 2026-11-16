@@ -53,33 +53,58 @@ export interface Invoice {
   readonly entryId: string;
 }
 
-interface StoredInvoice {
-  invoice: Invoice;
-  payments: number;
+/** An invoice together with the number of payments recorded against it. */
+export interface InvoiceRecord {
+  readonly invoice: Invoice;
+  readonly payments: number;
+}
+
+/**
+ * Storage for invoices. The Postgres implementation runs inside the same transaction as the
+ * ledger entry and the document number, so a failure leaves neither a posted entry nor a gap.
+ */
+export interface InvoiceStore {
+  get(number: string): Promise<InvoiceRecord | undefined>;
+  save(record: InvoiceRecord): Promise<void>;
+  listOpen(): Promise<InvoiceRecord[]>;
+}
+
+/** In-memory store for tests and single-process use. Not transactional. */
+export class MemoryInvoiceStore implements InvoiceStore {
+  private readonly records = new Map<string, InvoiceRecord>();
+
+  async get(number: string): Promise<InvoiceRecord | undefined> {
+    return this.records.get(number);
+  }
+
+  async save(record: InvoiceRecord): Promise<void> {
+    this.records.set(record.invoice.number, record);
+  }
+
+  async listOpen(): Promise<InvoiceRecord[]> {
+    return [...this.records.values()].filter((record) => record.invoice.status === "OPEN");
+  }
 }
 
 /**
  * Sales invoices posted to the general ledger. Issuing debits receivables and credits income
  * and tax. A payment debits the bank and credits receivables. Voiding posts a reversal, and is
  * only allowed before any money has been received.
- *
- * Invoices are kept in memory here. The production version stores them in the same transaction
- * as the ledger entry and the document number, so a failure leaves no gap in the numbering.
  */
 export class SalesInvoicing {
-  private readonly invoices = new Map<string, StoredInvoice>();
-
   constructor(
     private readonly ledger: Ledger,
     private readonly numbering: NumberingService,
     private readonly tenantId: string,
     private readonly receivableAccount: string,
+    private readonly store: InvoiceStore = new MemoryInvoiceStore(),
   ) {}
 
   async issue(input: IssueInvoiceInput): Promise<Invoice> {
     validateLines(input.lines, input.currency);
-    const tax = input.lines.reduce((sum, line) => sum.add(line.tax ?? zeroOf(line.amount)), zeroOf(input.lines[0]!.amount));
-    const net = input.lines.reduce((sum, line) => sum.add(line.amount), zeroOf(input.lines[0]!.amount));
+    const zero = Money.zero(input.currency);
+    const net = input.lines.reduce((sum, line) => sum.add(line.amount), zero);
+    const tax = input.lines.reduce((sum, line) => sum.add(line.tax ?? zero), zero);
     const total = net.add(tax);
     if (total.minor <= 0n) {
       throw new DomainError("VALIDATION", "An invoice must have a total above zero");
@@ -110,17 +135,17 @@ export class SalesInvoicing {
       currency: input.currency,
       total,
       tax,
-      settled: zeroOf(total),
+      settled: zero,
       status: "OPEN",
       entryId: posted.id,
     };
-    this.invoices.set(number, { invoice, payments: 0 });
+    await this.store.save({ invoice, payments: 0 });
     return invoice;
   }
 
   async recordPayment(input: RecordPaymentInput): Promise<Invoice> {
-    const stored = this.require(input.invoice);
-    const { invoice } = stored;
+    const record = await this.require(input.invoice);
+    const { invoice } = record;
     if (invoice.status === "VOID") {
       throw new DomainError("CONFLICT", `Invoice ${invoice.number} is void`);
     }
@@ -137,7 +162,7 @@ export class SalesInvoicing {
       });
     }
 
-    const reference = `${invoice.number}/PAY/${stored.payments + 1}`;
+    const reference = `${invoice.number}/PAY/${record.payments + 1}`;
     await this.ledger.post({
       reference,
       date: input.date,
@@ -151,15 +176,15 @@ export class SalesInvoicing {
 
     const settled = invoice.settled.add(input.amount);
     const status: InvoiceStatus = settled.minor === invoice.total.minor ? "PAID" : "OPEN";
-    stored.invoice = { ...invoice, settled, status };
-    stored.payments += 1;
-    return stored.invoice;
+    const updated: Invoice = { ...invoice, settled, status };
+    await this.store.save({ invoice: updated, payments: record.payments + 1 });
+    return updated;
   }
 
   /** Cancels an invoice that has no payments, by posting the reversal of its entry. */
   async void(number: string, date: string): Promise<Invoice> {
-    const stored = this.require(number);
-    const { invoice } = stored;
+    const record = await this.require(number);
+    const { invoice } = record;
     if (invoice.status === "VOID") {
       throw new DomainError("CONFLICT", `Invoice ${number} is already void`);
     }
@@ -167,33 +192,27 @@ export class SalesInvoicing {
       throw new DomainError("CONFLICT", "An invoice with payments cannot be voided. Record a credit note instead.");
     }
     await this.ledger.reverse(invoice.entryId, { reference: `${number}/VOID`, date });
-    stored.invoice = { ...invoice, status: "VOID" };
-    return stored.invoice;
+    const updated: Invoice = { ...invoice, status: "VOID" };
+    await this.store.save({ invoice: updated, payments: record.payments });
+    return updated;
   }
 
-  get(number: string): Invoice | undefined {
-    return this.invoices.get(number)?.invoice;
+  async get(number: string): Promise<Invoice | undefined> {
+    return (await this.store.get(number))?.invoice;
   }
 
   /** Invoices with money still owed, oldest number first. */
-  outstanding(): Invoice[] {
-    return [...this.invoices.values()]
-      .map((stored) => stored.invoice)
-      .filter((invoice) => invoice.status === "OPEN")
-      .sort((a, b) => a.number.localeCompare(b.number));
+  async outstanding(): Promise<Invoice[]> {
+    return (await this.store.listOpen()).map((record) => record.invoice).sort((a, b) => a.number.localeCompare(b.number));
   }
 
-  private require(number: string): StoredInvoice {
-    const stored = this.invoices.get(number);
-    if (!stored) {
+  private async require(number: string): Promise<InvoiceRecord> {
+    const record = await this.store.get(number);
+    if (!record) {
       throw new DomainError("NOT_FOUND", `Invoice ${number} does not exist`);
     }
-    return stored;
+    return record;
   }
-}
-
-function zeroOf(amount: Money): Money {
-  return Money.zero(amount.currency);
 }
 
 function requireTaxAccount(line: InvoiceLine): string {
