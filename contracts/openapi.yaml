@@ -125,6 +125,115 @@ paths:
                 $ref: "#/components/schemas/Invoice"
         "409":
           $ref: "#/components/responses/Error"
+  /v1/master/parties:
+    get:
+      summary: List parties of a company (MDM-01)
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Parties, by name
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Party"
+    post:
+      summary: Create a customer, supplier or both (MDM-01)
+      description: Needs permission mdm.parties.write. A duplicate tax ID in the company is refused.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PartyInput"
+      responses:
+        "201":
+          description: The party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/master/parties/{id}/deactivate:
+    post:
+      summary: Deactivate a party (MDM-01)
+      description: Documents that already refer to it keep working. New invoices to it are refused.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId]
+              properties:
+                companyId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: The deactivated party
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/master/items:
+    get:
+      summary: List items of a company (MDM-02)
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Items, by code
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Item"
+    post:
+      summary: Create an item (MDM-02)
+      description: Needs permission mdm.items.write. The code is stored in upper case and must be unique in the company.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ItemInput"
+      responses:
+        "201":
+          description: The item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -171,14 +280,15 @@ components:
               additionalProperties: true
     IssueInvoice:
       type: object
-      required: [companyId, customer, date, currency, receivableAccount, lines]
+      required: [companyId, customerId, date, currency, receivableAccount, lines]
       properties:
         companyId:
           type: string
           format: uuid
-        customer:
+        customerId:
           type: string
-          maxLength: 160
+          format: uuid
+          description: An active party with kind CUSTOMER or BOTH in the same company.
         date:
           type: string
           format: date
@@ -275,3 +385,92 @@ components:
         currency:
           type: string
           example: KES
+    PartyInput:
+      type: object
+      required: [companyId, kind, name]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [CUSTOMER, SUPPLIER, BOTH]
+        name:
+          type: string
+          maxLength: 160
+        taxId:
+          type: string
+          maxLength: 40
+          nullable: true
+        email:
+          type: string
+          format: email
+          nullable: true
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+          nullable: true
+    Party:
+      type: object
+      required: [id, companyId, kind, name, active]
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum: [CUSTOMER, SUPPLIER, BOTH]
+        name:
+          type: string
+        taxId:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        currency:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+    ItemInput:
+      type: object
+      required: [companyId, code, name, unit]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        code:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 160
+        unit:
+          type: string
+          maxLength: 10
+          example: EA
+        revenueAccount:
+          type: string
+          nullable: true
+    Item:
+      type: object
+      required: [companyId, code, name, unit, active]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        unit:
+          type: string
+        revenueAccount:
+          type: string
+          nullable: true
+        active:
+          type: boolean

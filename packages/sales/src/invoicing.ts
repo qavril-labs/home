@@ -21,6 +21,9 @@ export interface InvoiceLine {
 }
 
 export interface IssueInvoiceInput {
+  /** Customer party ID from the party master. The caller checks the party is an active customer. */
+  readonly customerId: string;
+  /** Customer name, copied onto the invoice so it still reads correctly if the party is renamed. */
   readonly customer: string;
   /** YYYY-MM-DD. Chooses the fiscal period, the number's reset period and the exchange rate. */
   readonly date: string;
@@ -41,6 +44,7 @@ export type InvoiceStatus = "OPEN" | "PAID" | "VOID";
 
 export interface Invoice {
   readonly number: string;
+  readonly customerId: string;
   readonly customer: string;
   readonly date: string;
   readonly currency: string;
@@ -130,6 +134,7 @@ export class SalesInvoicing {
 
     const invoice: Invoice = {
       number,
+      customerId: input.customerId,
       customer: input.customer,
       date: input.date,
       currency: input.currency,

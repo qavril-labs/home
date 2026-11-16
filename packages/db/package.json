@@ -21,6 +21,7 @@
     "@erp/numbering": "*",
     "@erp/tenancy": "*",
     "pg": "^8.23.1",
-    "@erp/sales": "*"
+    "@erp/sales": "*",
+    "@erp/master-data": "*"
   }
 }

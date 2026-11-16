@@ -39,8 +39,8 @@ async function balance(ledger: Ledger, account: string, asOf = "2026-12-31") {
 describe("issuing invoices", () => {
   it("numbers invoices in sequence and posts a balanced entry", async () => {
     const { ledger, sales } = await setup();
-    const first = await sales.issue({ customer: "Blue Hills Cafe", date: "2026-01-15", currency: "KES", lines: [line("Coffee beans", "1000.00", "160.00")] });
-    const second = await sales.issue({ customer: "Kamau Stores", date: "2026-01-16", currency: "KES", lines: [line("Milk", "250.00")] });
+    const first = await sales.issue({ customerId: "cust-1", customer: "Blue Hills Cafe", date: "2026-01-15", currency: "KES", lines: [line("Coffee beans", "1000.00", "160.00")] });
+    const second = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-16", currency: "KES", lines: [line("Milk", "250.00")] });
 
     expect(first.number).toBe("INV-2026-000001");
     expect(second.number).toBe("INV-2026-000002");
@@ -57,7 +57,7 @@ describe("issuing invoices", () => {
     const { sales } = await setup();
     await expect(
       sales.issue({
-        customer: "Blue Hills Cafe",
+        customerId: "cust-1", customer: "Blue Hills Cafe",
         date: "2026-01-15",
         currency: "KES",
         lines: [{ description: "Tea", revenueAccount: "4000", amount: kes("100.00"), tax: kes("16.00") }],
@@ -67,11 +67,11 @@ describe("issuing invoices", () => {
 
   it("rejects empty invoices, zero amounts and a line in another currency", async () => {
     const { sales } = await setup();
-    await expect(sales.issue({ customer: "A", date: "2026-01-15", currency: "KES", lines: [] })).rejects.toBeInstanceOf(DomainError);
-    await expect(sales.issue({ customer: "A", date: "2026-01-15", currency: "KES", lines: [line("Free", "0.00")] })).rejects.toBeInstanceOf(DomainError);
+    await expect(sales.issue({ customerId: "cust-1", customer: "A", date: "2026-01-15", currency: "KES", lines: [] })).rejects.toBeInstanceOf(DomainError);
+    await expect(sales.issue({ customerId: "cust-1", customer: "A", date: "2026-01-15", currency: "KES", lines: [line("Free", "0.00")] })).rejects.toBeInstanceOf(DomainError);
     await expect(
       sales.issue({
-        customer: "A",
+        customerId: "cust-1", customer: "A",
         date: "2026-01-15",
         currency: "KES",
         lines: [{ description: "Dollar item", revenueAccount: "4000", amount: Money.fromDecimal("10.00", "USD") }],
@@ -83,7 +83,7 @@ describe("issuing invoices", () => {
 describe("payments", () => {
   it("settles an invoice in two payments and marks it paid", async () => {
     const { ledger, sales } = await setup();
-    const invoice = await sales.issue({ customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "600.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "600.00")] });
 
     const partial = await sales.recordPayment({ invoice: invoice.number, date: "2026-01-20", amount: kes("250.00"), bankAccount: "1000" });
     expect(partial.status).toBe("OPEN");
@@ -97,7 +97,7 @@ describe("payments", () => {
 
   it("refuses more than the amount outstanding and says how much is owed", async () => {
     const { sales } = await setup();
-    const invoice = await sales.issue({ customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
     await expect(
       sales.recordPayment({ invoice: invoice.number, date: "2026-01-20", amount: kes("100.01"), bankAccount: "1000" }),
     ).rejects.toMatchObject({ code: "VALIDATION", details: { outstanding: "100.00" } });
@@ -105,7 +105,7 @@ describe("payments", () => {
 
   it("refuses a zero or negative payment", async () => {
     const { sales } = await setup();
-    const invoice = await sales.issue({ customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
     await expect(sales.recordPayment({ invoice: invoice.number, date: "2026-01-20", amount: kes("0.00"), bankAccount: "1000" })).rejects.toBeInstanceOf(DomainError);
     await expect(sales.recordPayment({ invoice: invoice.number, date: "2026-01-20", amount: kes("-5.00"), bankAccount: "1000" })).rejects.toBeInstanceOf(DomainError);
   });
@@ -119,7 +119,7 @@ describe("payments", () => {
 describe("voiding", () => {
   it("reverses the entry so receivables and income return to zero", async () => {
     const { ledger, sales } = await setup();
-    const invoice = await sales.issue({ customer: "Blue Hills Cafe", date: "2026-01-15", currency: "KES", lines: [line("Tea", "100.00", "16.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Blue Hills Cafe", date: "2026-01-15", currency: "KES", lines: [line("Tea", "100.00", "16.00")] });
     const voided = await sales.void(invoice.number, "2026-01-16");
 
     expect(voided.status).toBe("VOID");
@@ -130,14 +130,14 @@ describe("voiding", () => {
 
   it("refuses to void an invoice that has been paid in part", async () => {
     const { sales } = await setup();
-    const invoice = await sales.issue({ customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
     await sales.recordPayment({ invoice: invoice.number, date: "2026-01-20", amount: kes("10.00"), bankAccount: "1000" });
     await expect(sales.void(invoice.number, "2026-01-21")).rejects.toMatchObject({ code: "CONFLICT" });
   });
 
   it("refuses to void twice and refuses payments on a void invoice", async () => {
     const { sales } = await setup();
-    const invoice = await sales.issue({ customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
+    const invoice = await sales.issue({ customerId: "cust-1", customer: "Kamau Stores", date: "2026-01-15", currency: "KES", lines: [line("Milk", "100.00")] });
     await sales.void(invoice.number, "2026-01-16");
     await expect(sales.void(invoice.number, "2026-01-17")).rejects.toMatchObject({ code: "CONFLICT" });
     await expect(sales.recordPayment({ invoice: invoice.number, date: "2026-01-18", amount: kes("1.00"), bankAccount: "1000" })).rejects.toMatchObject({ code: "CONFLICT" });
@@ -148,7 +148,7 @@ describe("rounding", () => {
   it("keeps half-cent-free totals exact when tax is added to odd amounts", async () => {
     const { sales } = await setup();
     const invoice = await sales.issue({
-      customer: "Odd Amounts Ltd",
+      customerId: "cust-1", customer: "Odd Amounts Ltd",
       date: "2026-01-15",
       currency: "KES",
       lines: [line("Item A", "33.33", "5.33"), line("Item B", "0.01", "0.00")],

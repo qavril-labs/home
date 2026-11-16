@@ -10,6 +10,7 @@ import { startTestDatabase, type TestDatabase } from "../src/testing/embedded";
 
 const clock = () => new FixedClock(new Date("2026-01-10T09:00:00Z"));
 const eur = (decimal: string) => Money.fromDecimal(decimal, "EUR");
+const CUSTOMER_ID = "44444444-4444-7444-8444-444444444444";
 
 describe("sales invoices in Postgres", () => {
   let db: TestDatabase;
@@ -53,7 +54,7 @@ describe("sales invoices in Postgres", () => {
       ]);
       const sales = new SalesInvoicing(ledger, numbering, tenantId, "1200", new PgInvoiceStore(tx, tenantId, company));
       return sales.issue({
-        customer: "Blue Hills Cafe",
+        customerId: CUSTOMER_ID, customer: "Blue Hills Cafe",
         date: "2026-01-15",
         currency: "EUR",
         lines: [{ description: "Coffee", revenueAccount: "4000", amount: eur("100.00"), taxAccount: "4000", tax: eur("19.00") }],
@@ -64,7 +65,7 @@ describe("sales invoices in Postgres", () => {
     const readBack = await withTenantTransaction(db.appPool, tenantId, async (tx) =>
       new PgInvoiceStore(tx, tenantId, company).get("INV-2026-000001"),
     );
-    expect(readBack?.invoice).toMatchObject({ customer: "Blue Hills Cafe", status: "OPEN", date: "2026-01-15" });
+    expect(readBack?.invoice).toMatchObject({ customerId: CUSTOMER_ID, customer: "Blue Hills Cafe", status: "OPEN", date: "2026-01-15" });
     expect(readBack?.invoice.total.toDecimal()).toBe("119.00");
   });
 
@@ -77,7 +78,7 @@ describe("sales invoices in Postgres", () => {
           { key: SALES_INVOICE_SEQUENCE, prefix: "INV-", padding: 6, reset: "YEARLY" },
         ]);
         const sales = new SalesInvoicing(ledger, numbering, tenantId, "1200", new PgInvoiceStore(tx, tenantId, company));
-        await sales.issue({ customer: "Rolled Back Ltd", date: "2026-01-16", currency: "EUR", lines: [{ description: "Tea", revenueAccount: "4000", amount: eur("10.00") }] });
+        await sales.issue({ customerId: CUSTOMER_ID, customer: "Rolled Back Ltd", date: "2026-01-16", currency: "EUR", lines: [{ description: "Tea", revenueAccount: "4000", amount: eur("10.00") }] });
         throw new Error("simulated failure after posting");
       }),
     ).rejects.toThrow("simulated failure");

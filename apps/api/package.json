@@ -20,6 +20,7 @@
     "@erp/tenancy": "*",
     "fastify": "^5.12.7",
     "zod": "^4.6.7",
-    "@erp/sales": "*"
+    "@erp/sales": "*",
+    "@erp/master-data": "*"
   }
 }

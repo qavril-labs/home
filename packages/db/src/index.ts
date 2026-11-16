@@ -7,3 +7,4 @@ export * from "./pool";
 export * from "./postgres";
 export * from "./transactions";
 export * from "./sales-store";
+export * from "./master-data-store";

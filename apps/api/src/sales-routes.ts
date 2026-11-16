@@ -11,6 +11,7 @@ import {
   PgCounterStore,
   PgInvoiceStore,
   PgLedgerStore,
+  PgPartyStore,
   PgTenantRepository,
   listEntitlements,
   withTenantTransaction,
@@ -27,7 +28,7 @@ const LineBody = z.object({
 
 const IssueBody = z.object({
   companyId: z.uuid(),
-  customer: z.string(),
+  customerId: z.uuid(),
   date: z.string(),
   currency: z.string(),
   receivableAccount: z.string(),
@@ -116,14 +117,19 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
 
   app.post("/v1/sales/invoices", async (request, reply) => {
     const body = IssueBody.parse(request.body);
-    const invoice = await withSales(request, "sal.invoices.write", body.companyId, (context) =>
-      invoicingFor(context, body.companyId, body.receivableAccount).issue({
-        customer: body.customer,
+    const invoice = await withSales(request, "sal.invoices.write", body.companyId, async (context) => {
+      const party = await new PgPartyStore(context.tx, context.tenantId).get(body.companyId, body.customerId);
+      if (!party || !party.active || (party.kind !== "CUSTOMER" && party.kind !== "BOTH")) {
+        throw new DomainError("VALIDATION", "Customer is not an active customer of this company");
+      }
+      return invoicingFor(context, body.companyId, body.receivableAccount).issue({
+        customerId: party.id,
+        customer: party.name,
         date: body.date,
         currency: body.currency,
         lines: body.lines.map(toInvoiceLine(body.currency)),
-      }),
-    );
+      });
+    });
     return reply.status(201).send(invoice);
   });
 

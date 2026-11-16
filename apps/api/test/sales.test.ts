@@ -16,6 +16,8 @@ describe("sales invoice API", () => {
   let otherToken: string;
   let bareCompanyId: string;
   let bareToken: string;
+  let customerId: string;
+  let otherCustomerId: string;
   let issuedNumber: string;
 
   const bootstrap = (slug: string) =>
@@ -38,6 +40,12 @@ describe("sales invoice API", () => {
     });
     return response.json().token as string;
   };
+
+  async function createCustomer(auth: string, company: string, name: string): Promise<string> {
+    const created = await call("POST", "/v1/master/parties", auth, { companyId: company, kind: "CUSTOMER", name });
+    expect(created.statusCode).toBe(201);
+    return created.json().id as string;
+  }
 
   const call = (method: "GET" | "POST", url: string, auth: string | null, payload?: object) =>
     app.inject({
@@ -70,9 +78,9 @@ describe("sales invoice API", () => {
     expect(year.statusCode).toBe(201);
   }
 
-  const invoiceBody = (company: string) => ({
+  const invoiceBody = (company: string, customer: string) => ({
     companyId: company,
-    customer: "Blue Hills Cafe",
+    customerId: customer,
     date: "2026-01-15",
     currency: "KES",
     receivableAccount: "1200",
@@ -90,6 +98,7 @@ describe("sales invoice API", () => {
     const enabled = await enable(first.json().tenant.id, SALES_PRODUCTS);
     expect(enabled.statusCode).toBe(200);
     await setUpLedger(token, companyId);
+    customerId = await createCustomer(token, companyId, "Blue Hills Cafe");
 
     // A second tenant that has not enabled the sales product, to check entitlements and isolation.
     const second = await bootstrap("other-co");
@@ -98,6 +107,7 @@ describe("sales invoice API", () => {
     otherToken = await login("other-co");
     await enable(second.json().tenant.id, SALES_PRODUCTS);
     await setUpLedger(otherToken, otherCompanyId);
+    otherCustomerId = await createCustomer(otherToken, otherCompanyId, "Other Customer");
 
     // A third tenant that has the ledger but not the sales product.
     const third = await bootstrap("bare-co");
@@ -114,7 +124,7 @@ describe("sales invoice API", () => {
   });
 
   it("issues an invoice with the next number and returns its totals", async () => {
-    const response = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId));
+    const response = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, customerId));
     expect(response.statusCode).toBe(201);
     const invoice = response.json();
     expect(invoice.number).toBe("INV-2026-000001");
@@ -161,13 +171,13 @@ describe("sales invoice API", () => {
   });
 
   it("refuses sales routes for a tenant that has not enabled SAL-04", async () => {
-    const response = await call("POST", "/v1/sales/invoices", bareToken, invoiceBody(bareCompanyId));
+    const response = await call("POST", "/v1/sales/invoices", bareToken, invoiceBody(bareCompanyId, customerId));
     expect(response.statusCode).toBe(403);
     expect(response.json().error.code).toBe("NOT_LICENSED");
   });
 
   it("requires a signed-in user", async () => {
-    const response = await call("POST", "/v1/sales/invoices", null, invoiceBody(companyId));
+    const response = await call("POST", "/v1/sales/invoices", null, invoiceBody(companyId, customerId));
     expect(response.statusCode).toBe(401);
   });
 
@@ -182,7 +192,7 @@ describe("sales invoice API", () => {
   });
 
   it("voids a fresh invoice that has no payments", async () => {
-    const issued = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId));
+    const issued = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, customerId));
     const number = issued.json().number as string;
     const voided = await call("POST", `/v1/sales/invoices/${number}/void`, token, {
       companyId,
