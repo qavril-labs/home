@@ -14,7 +14,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["html", { open: "never" }], ["list"]],
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://localhost:5173",
+    baseURL: process.env.E2E_BASE_URL || "http://localhost:5173/app/",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -35,9 +35,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "npm --prefix .. run dev:web",
+    command: "npm run dev:web",
     cwd: "..",
-    url: "http://localhost:5173",
+    url: "http://localhost:5173/app/",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },

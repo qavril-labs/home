@@ -596,6 +596,7 @@ export interface WarehouseStockSlot {
   warehouseName: string;
   aisle: string; // e.g. "A1", "B2"
   shelf: number;
+  binLocation?: string;
   sku: string;
   itemName: string;
   uom: string; // "pcs" | "kg" | "m" | "hrs"

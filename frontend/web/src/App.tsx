@@ -700,6 +700,7 @@ export const App: React.FC = () => {
               onApproveBill={handleApproveBill}
               onPayBill={handlePayBill}
               onDeleteBill={handleDeleteBill}
+              onNavigateToPurchasing={() => navigateToTab("purchasing")}
             />
           </div>
         ) : activeTab === "items" ? (
@@ -736,7 +737,10 @@ export const App: React.FC = () => {
           </div>
         ) : activeTab === "packs" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
-            <IndustryPacksHub />
+            <IndustryPacksHub
+              onNavigateBack={() => navigateToTab("dashboard")}
+              onNavigateToApprovals={() => navigateToTab("approvals")}
+            />
           </div>
         ) : activeTab === "import" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">

@@ -137,7 +137,7 @@ export const StockWarehouse3D: React.FC<StockWarehouse3DProps> = ({
       warehouseGroup.add(pallet);
 
       // Barcode / Bin Label Plate on front shelf beam
-      const barcodePlate = createRackBarcodePlate(slot.binLocation);
+      const barcodePlate = createRackBarcodePlate(slot.binLocation || `${slot.aisle}-S${slot.shelf}`);
       barcodePlate.position.set(bayX, shelfY - 0.04, 1.21);
       warehouseGroup.add(barcodePlate);
 

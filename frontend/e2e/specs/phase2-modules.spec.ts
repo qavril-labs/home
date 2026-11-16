@@ -128,4 +128,57 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     const toast = page.locator('.fixed[aria-live="polite"]');
     await expect(toast).toContainText(/Statement Imported/i);
   });
+
+  test("Financial Statements (FIN-05 / FIN-06) Flow", async ({ page }) => {
+    // 1. Navigate to Financial Statements
+    await page.getByRole("button", { name: /Financial Statements/i }).first().click();
+    await expect(page.getByRole("heading", { name: "Financial Statements" })).toBeVisible();
+
+    // 2. Verify P&L and Balance Sheet Tabs
+    await expect(page.getByRole("button", { name: /Profit & Loss/i })).toBeVisible();
+    const balanceSheetTab = page.getByRole("button", { name: /Balance Sheet/i });
+    await expect(balanceSheetTab).toBeVisible();
+
+    // 3. Switch to Balance Sheet Tab
+    await balanceSheetTab.click();
+    await expect(page.getByText("Assets = Liabilities + Equity")).toBeVisible();
+    await expect(page.getByText("Balanced")).toBeVisible();
+
+    // 4. Test Export triggers
+    const exportCsvBtn = page.getByRole("button", { name: /Export CSV/i });
+    await expect(exportCsvBtn).toBeVisible();
+    await exportCsvBtn.click();
+
+    const toast = page.locator('.fixed[aria-live="polite"]');
+    await expect(toast).toContainText(/Financial Statement exported/i);
+  });
+
+  test("Purchasing & 3-Way Matching (PRC-01 to PRC-04) Flow", async ({ page }) => {
+    // 1. Navigate to Purchasing
+    await page.getByRole("button", { name: /Purchasing & 3-Way/i }).first().click();
+    await expect(page.getByRole("heading", { name: "Purchasing & 3-Way Matching" })).toBeVisible();
+
+    // 2. Verify KPI summary cards
+    await expect(page.getByText("Purchase Orders", { exact: false }).first()).toBeVisible();
+    await expect(page.getByText("Dock Receipts", { exact: false }).first()).toBeVisible();
+    await expect(page.getByText("Match Accuracy", { exact: false })).toBeVisible();
+    await expect(page.getByText("Variances Under Review", { exact: false })).toBeVisible();
+
+    // 3. Verify 3-Way Matching Matrix table
+    await expect(page.getByText("Matched Triad")).toBeVisible();
+    await expect(page.getByText("PO Order")).toBeVisible();
+    await expect(page.getByText("GRN Dock")).toBeVisible();
+    await expect(page.getByText("AP Bill")).toBeVisible();
+    await expect(page.getByText("100% Matched")).toBeVisible();
+
+    // 4. Switch to Purchase Orders Tab (PRC-01)
+    await page.getByRole("button", { name: /Purchase Orders/i }).first().click();
+    await expect(page.getByText("PO Reference")).toBeVisible();
+    await expect(page.getByText("PO-2026-001")).toBeVisible();
+
+    // 5. Switch to Goods Receipts Tab (PRC-02)
+    await page.getByRole("button", { name: /Goods Receipts/i }).first().click();
+    await expect(page.getByText("GRN Number")).toBeVisible();
+    await expect(page.getByText("GRN-2026-001")).toBeVisible();
+  });
 });
