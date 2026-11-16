@@ -286,9 +286,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
 
   // Bot action handler
   const handleBotAction = (bot: BotInsight) => {
-    if (bot.id === "lou") {
+    if (bot.id === "lou" || bot.id === "ledger-lou") {
       if (onNavigateToBot) {
         onNavigateToBot("ledger-lou");
+        return;
+      }
+    }
+    if (bot.id === "tess" || bot.id === "ticket-tess") {
+      if (onNavigateToBot) {
+        onNavigateToBot("ticket-tess");
+        return;
+      }
+    }
+    if (bot.id === "ola" || bot.id === "onboard-ola") {
+      if (onNavigateToBot) {
+        onNavigateToBot("onboard-ola");
         return;
       }
     }

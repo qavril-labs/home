@@ -17,6 +17,7 @@ import {
   Palette,
   ChevronDown,
   ChevronRight,
+  Zap,
   X,
 } from "lucide-react";
 
@@ -75,7 +76,10 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "restock-rex", label: "Restock Rex", code: "AGT-04", icon: Bot },
       { id: "guard-gus", label: "Guard Gus", code: "AI-04", icon: Bot },
       { id: "forecast-finn", label: "Forecast Finn", code: "AIS-02", icon: Bot },
+      { id: "digital-twin", label: "Financial Twin", code: "AIS-02", icon: Zap },
       { id: "pip", label: "Pip", code: "AGT-02", icon: Bot },
+      { id: "ticket-tess", label: "Ticket Tess", code: "AGT-05", icon: Bot },
+      { id: "onboard-ola", label: "Onboard Ola", code: "HRM-10", icon: Bot },
       { id: "packs", label: "Industry Packs", code: "GAR/FMCG", icon: BrainCircuit },
     ],
   },

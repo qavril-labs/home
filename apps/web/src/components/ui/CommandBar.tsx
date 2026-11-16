@@ -15,6 +15,7 @@ import {
   Send,
   ShieldCheck,
   ExternalLink,
+  Zap,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { initialConversationalTurns } from "../../lib/api-mock";
@@ -177,12 +178,42 @@ export const CommandBar: React.FC<CommandBarProps> = ({
       },
     },
     {
+      id: "nav-digital-twin",
+      title: "Go to Financial Digital Twin & Stress Testing (AIS-02 / FIN-09)",
+      category: "Navigation",
+      icon: <Zap className="w-4 h-4 text-lime" />,
+      onSelect: () => {
+        onNavigate("digital-twin");
+        onClose();
+      },
+    },
+    {
       id: "nav-pip",
       title: "Go to Pip · Deal Closer & Pipeline (AGT-02)",
       category: "Navigation",
       icon: <Bot className="w-4 h-4 text-lime" />,
       onSelect: () => {
         onNavigate("pip");
+        onClose();
+      },
+    },
+    {
+      id: "nav-ticket-tess",
+      title: "Go to Ticket Tess · Customer Support Agent (AGT-05 / SAL-11)",
+      category: "Navigation",
+      icon: <Bot className="w-4 h-4 text-lime" />,
+      onSelect: () => {
+        onNavigate("ticket-tess");
+        onClose();
+      },
+    },
+    {
+      id: "nav-onboard-ola",
+      title: "Go to Onboard Ola · Staff Onboarding Agent (HRM-10 / PLT-01)",
+      category: "Navigation",
+      icon: <Bot className="w-4 h-4 text-violet" />,
+      onSelect: () => {
+        onNavigate("onboard-ola");
         onClose();
       },
     },
@@ -371,6 +402,36 @@ export const CommandBar: React.FC<CommandBarProps> = ({
           agentBadge: { name: "Document Intelligence", catalogId: "AI-01", color: "var(--q-cyan)", tier: 2 },
           provenanceRef: "DOC-EXTRACT-v1.0 · SHA-256:4a8b79...",
           actionLink: { label: "Inspect Bills (FIN-03)", targetTab: "payables" },
+        };
+      } else if (q.includes("stress") || q.includes("simulation") || q.includes("twin") || q.includes("what if") || q.includes("shock") || q.includes("scenario")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Financial Digital Twin (AIS-02 / FIN-09) is active. You can stress-test macroeconomic shocks (-25% demand drop, +22% supply inflation, or +45d debtor payment slippage) in real-time with dynamic runway projections.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Financial Digital Twin", catalogId: "AIS-02", color: "var(--q-lime)", tier: 2 },
+          provenanceRef: "UAAP-SIM-TWIN-v1.0 · MACRO-MODEL",
+          actionLink: { label: "Open Stress Simulation Studio", targetTab: "digital-twin" },
+        };
+      } else if (q.includes("ticket") || q.includes("support") || q.includes("helpdesk") || q.includes("tess")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Ticket Tess (AGT-05 / SAL-11) has 2 customer support tickets pending. Warranty verified for Nexus Precision Tools (#BRG-440 spindle replacement staged). Draft replies are ready for review.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Ticket Tess", catalogId: "AGT-05", color: "var(--q-lime)", tier: 1 },
+          provenanceRef: "UAAP-TESS-v1.0 · SAL-11",
+          actionLink: { label: "Open Ticket Tess Desk", targetTab: "ticket-tess" },
+        };
+      } else if (q.includes("onboard") || q.includes("ola") || q.includes("employee") || q.includes("hr") || q.includes("staff") || q.includes("joiner")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Onboard Ola (HRM-10 / PLT-01) reports Elena Rostova joins R&D on Nov 20. Tier 2 system permissions (MFG-03, CAD Vault) and hardware requisitions are drafted for manager authorization.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Onboard Ola", catalogId: "HRM-10", color: "var(--q-violet)", tier: 2 },
+          provenanceRef: "UAAP-OLA-v1.0 · HRM-10",
+          actionLink: { label: "Open Onboard Ola Roster", targetTab: "onboard-ola" },
         };
       } else {
         botResponse = {

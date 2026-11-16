@@ -807,6 +807,92 @@ export interface DomainEvent<T = Record<string, unknown>> {
 }
 
 // ==========================================
+// Financial Digital Twin & Stress Testing (AIS-02 / FIN-09)
+// ==========================================
+
+export interface ScenarioParameters {
+  scenarioName: string;
+  revenueGrowthDelta: number; // percentage, e.g. -25 for -25%
+  cogsInflationDelta: number; // percentage, e.g. 15 for +15%
+  opexHiringCount: number; // additional headcount
+  averageSalaryPerHire: string; // decimal string
+  dsoDaysDelta: number; // customer payment term shift (+30 days)
+  priceIncreaseDelta: number; // sales price adjustment %
+}
+
+export interface ScenarioBotAlert {
+  botId: string;
+  botName: string;
+  botColor: string;
+  headline: string;
+  severity: "watch" | "act" | "good";
+  recommendation: string;
+}
+
+export interface ScenarioProjection {
+  scenarioName: string;
+  projectedRunwayMonths: number;
+  projectedCash30d: string;
+  projectedCash60d: string;
+  projectedCash90d: string;
+  netCashflowDelta: string;
+  monthlyBurnRate: string;
+  riskScore: number; // 0 - 100
+  riskLevel: "low" | "moderate" | "severe" | "critical";
+  botAlerts: ScenarioBotAlert[];
+}
+
+// ==========================================
+// Ticket Tess Support Bot (AGT-05 / SAL-11 / SAL-12)
+// ==========================================
+
+export interface SupportTicket {
+  id: string;
+  ticketNumber: string;
+  customerName: string;
+  customerId: string;
+  subject: string;
+  priority: "low" | "medium" | "high" | "urgent";
+  status: "open" | "drafted" | "resolved" | "escalated";
+  receivedAt: string;
+  inquiryChannel: "email" | "whatsapp" | "portal";
+  inquiryText: string;
+  sentiment: "positive" | "neutral" | "frustrated" | "critical";
+  relatedInvoiceId?: string;
+  relatedOrderAmount?: string;
+  warrantyStatus: "active" | "expired" | "not_applicable";
+  draftedReply?: string;
+  confidenceScore: number;
+}
+
+// ==========================================
+// Onboard Ola People Agent (HRM-10 / HRM-01 / PLT-01)
+// ==========================================
+
+export interface OnboardingChecklistItem {
+  id: string;
+  title: string;
+  category: "access" | "compliance" | "hardware" | "hr";
+  status: "pending" | "approved" | "completed";
+  tierLevel: 1 | 2 | 3;
+}
+
+export interface OnboardingRecord {
+  id: string;
+  employeeName: string;
+  roleTitle: string;
+  department: string;
+  startDate: string;
+  status: "staged" | "review_pending" | "provisioned";
+  email: string;
+  managerName: string;
+  roleTier: "Tier 1" | "Tier 2" | "Tier 3 (Executive)";
+  checklist: OnboardingChecklistItem[];
+  requestedHardware: string[];
+  systemPermissions: string[];
+}
+
+// ==========================================
 // Document Intelligence & OCR (AI-01 / PLT-11)
 // ==========================================
 
@@ -853,6 +939,8 @@ export interface OcrDocument {
   lines: OcrLineItem[];
   boundingBoxes: OcrBoundingBox[];
 }
+
+
 
 
 

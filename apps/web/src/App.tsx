@@ -18,12 +18,15 @@ import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
 import { DocumentIntelligenceDrawer } from "./modules/documents/DocumentIntelligenceDrawer";
+import { FinancialDigitalTwinStudio } from "./modules/simulation/FinancialDigitalTwinStudio";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
 import { GuardGus } from "./modules/bots/GuardGus";
 import { ForecastFinn } from "./modules/bots/ForecastFinn";
 import { Pip } from "./modules/bots/Pip";
+import { TicketTess } from "./modules/bots/TicketTess";
+import { OnboardOla } from "./modules/bots/OnboardOla";
 import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient } from "./lib/api-client";
 import {
@@ -401,6 +404,10 @@ export const App: React.FC = () => {
       finn: "forecast-finn",
       "forecast-finn": "forecast-finn",
       pip: "pip",
+      tess: "ticket-tess",
+      "ticket-tess": "ticket-tess",
+      ola: "onboard-ola",
+      "onboard-ola": "onboard-ola",
     };
     navigateToTab(botRouteMap[botId] || botId);
   };
@@ -481,8 +488,19 @@ export const App: React.FC = () => {
           <GuardGus onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "forecast-finn" ? (
           <ForecastFinn onNavigateBack={() => navigateToTab("dashboard")} />
+        ) : activeTab === "digital-twin" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <FinancialDigitalTwinStudio
+              onOpenCashRiver3D={() => navigateToTab("forecast-finn")}
+              onNavigateToInbox={() => navigateToTab("approvals")}
+            />
+          </div>
         ) : activeTab === "pip" ? (
           <Pip onNavigateBack={() => navigateToTab("dashboard")} />
+        ) : activeTab === "ticket-tess" ? (
+          <TicketTess onNavigateBack={() => navigateToTab("dashboard")} />
+        ) : activeTab === "onboard-ola" ? (
+          <OnboardOla onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "approvals" ? (
           <ApprovalsInbox onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "ledger" ? (
