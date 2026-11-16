@@ -15,6 +15,8 @@ import {
   Send,
   ShieldCheck,
   ExternalLink,
+  Scale,
+  ShoppingCart,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { initialConversationalTurns } from "../../lib/api-mock";
@@ -225,6 +227,26 @@ export const CommandBar: React.FC<CommandBarProps> = ({
       },
     },
     {
+      id: "nav-financials",
+      title: "Go to Financial Statements (P&L & Balance Sheet FIN-05 / FIN-06)",
+      category: "Navigation",
+      icon: <Scale className="w-4 h-4 text-emerald-400" />,
+      onSelect: () => {
+        onNavigate("financials");
+        onClose();
+      },
+    },
+    {
+      id: "nav-purchasing",
+      title: "Go to Purchasing & 3-Way Matching (PRC-01 to PRC-04)",
+      category: "Navigation",
+      icon: <ShoppingCart className="w-4 h-4 text-amber-400" />,
+      onSelect: () => {
+        onNavigate("purchasing");
+        onClose();
+      },
+    },
+    {
       id: "nav-bank",
       title: "Go to Bank & Cash Reconciliation (FIN-04)",
       category: "Navigation",
@@ -263,9 +285,17 @@ export const CommandBar: React.FC<CommandBarProps> = ({
   useEffect(() => {
     if (isOpen) {
       setQuery("");
-      setTimeout(() => inputRef.current?.focus(), 50);
+      inputRef.current?.focus();
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [isOpen, mode]);
+  }, [isOpen, mode, onClose]);
 
   useEffect(() => {
     if (mode === "ai09") {
@@ -362,6 +392,7 @@ export const CommandBar: React.FC<CommandBarProps> = ({
 
   return (
     <div
+      data-testid="commandbar-overlay"
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4 bg-ink/60 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -398,9 +429,15 @@ export const CommandBar: React.FC<CommandBarProps> = ({
             </button>
           </div>
 
-          <kbd className="text-[10px] bg-panel border border-ink px-1.5 py-0.5 text-muted font-mono">
+          <button
+            type="button"
+            data-testid="commandbar-close-btn"
+            onClick={onClose}
+            aria-label="Close command palette"
+            className="text-[10px] bg-panel border border-ink px-1.5 py-0.5 text-muted font-mono hover:bg-page hover:text-text cursor-pointer"
+          >
             ESC to close
-          </kbd>
+          </button>
         </div>
 
         {/* MODE 1: COMMAND SEARCH */}
@@ -414,6 +451,12 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                 data-testid="commandbar-search-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    onClose();
+                  }
+                }}
                 placeholder="Type a command or jump to screen… (or switch to AI-09 Chat)"
                 className="w-full bg-transparent border-none outline-none text-sm font-bold text-text placeholder:text-muted"
               />

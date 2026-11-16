@@ -12,6 +12,7 @@ import {
   type Queryable,
 } from "@erp/db";
 import { Ledger, type AccountType } from "@erp/ledger";
+import { realtimeEvents } from "./invoicing-routes";
 
 async function firstCompany(tx: Queryable, tenantId: string): Promise<Company> {
   const { rows } = await tx.query<{ id: string }>(
@@ -119,6 +120,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
         metadata: body.metadata,
       });
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.party.created", created);
     return reply.status(201).send(created);
   });
 
@@ -126,10 +128,12 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
     const principal = await signedIn(request);
     const { id } = request.params as { id: string };
     const body = UpdatePartyBody.parse(request.body);
-    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+    const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
       return store.updateParty(id, body);
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.party.updated", updated);
+    return updated;
   });
 
   app.delete("/v1/master-data/parties/:id", async (request, reply) => {
@@ -139,6 +143,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
       await store.deleteParty(id);
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.party.deleted", { id });
     return reply.status(204).send();
   });
 
@@ -185,6 +190,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
         metadata: body.metadata,
       });
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.item.created", created);
     return reply.status(201).send(created);
   });
 
@@ -192,10 +198,12 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
     const principal = await signedIn(request);
     const { id } = request.params as { id: string };
     const body = UpdateItemBody.parse(request.body);
-    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+    const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
       return store.updateItem(id, body);
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.item.updated", updated);
+    return updated;
   });
 
   app.delete("/v1/master-data/items/:id", async (request, reply) => {
@@ -205,6 +213,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
       await store.deleteItem(id);
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.item.deleted", { id });
     return reply.status(204).send();
   });
 
@@ -233,6 +242,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
         type: body.type as AccountType,
       });
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.account.created", created);
     return reply.status(201).send(created);
   });
 
@@ -240,7 +250,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
     const principal = await signedIn(request);
     const { code } = request.params as { code: string };
     const body = UpdateAccountBody.parse(request.body);
-    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+    const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
       const store = new PgLedgerStore(tx, principal.tenantId);
       const { rows } = await tx.query<any>(
@@ -254,5 +264,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
       if (rows.length === 0) throw new DomainError("NOT_FOUND", `Account ${code} not found`);
       return rows[0];
     });
+    realtimeEvents.broadcast(principal.tenantId, "master_data.account.updated", updated);
+    return updated;
   });
 }

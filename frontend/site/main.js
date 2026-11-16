@@ -628,4 +628,154 @@
       });
     }
   }
+
+  // --- Dynamic CMS Hydration Routine ---
+  async function hydrateDynamicCms() {
+    var apiBase = config.apiBase;
+    if (!apiBase) return;
+
+    var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
+    var signal = controller ? controller.signal : undefined;
+    var timeoutId = controller ? setTimeout(function () { controller.abort(); }, 3000) : null;
+
+    // 1. Fetch Global Settings
+    try {
+      var sRes = await fetch(apiBase.replace(/\/$/, "") + "/v1/public/cms/settings", {
+        headers: { "accept": "application/json" },
+        signal: signal
+      });
+      if (sRes.ok) {
+        var settings = await sRes.json();
+        // Dynamic ticker announcement
+        if (settings && settings.announcement_text && settings.announcement_active !== false) {
+          var tickerTracks = document.querySelectorAll(".ticker-track");
+          tickerTracks.forEach(function (track) {
+            track.innerHTML = "<span>" + settings.announcement_text + "</span>" +
+                              "<span>" + settings.announcement_text + "</span>" +
+                              "<span>" + settings.announcement_text + "</span>";
+          });
+        }
+        // Dynamic contact email
+        if (settings && settings.contact_email) {
+          config.contactEmail = settings.contact_email;
+          document.querySelectorAll("a[href^='mailto:']").forEach(function (link) {
+            link.href = "mailto:" + settings.contact_email;
+            if (link.textContent.indexOf("@") !== -1) {
+              link.textContent = settings.contact_email;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // Graceful silence: retain pre-rendered HTML
+    }
+
+    // 2. Fetch Page Copy if this is a supported page
+    try {
+      var pathname = window.location.pathname.replace(/^\//, "").replace(/\.html$/, "") || "home";
+      if (pathname === "index" || pathname === "") pathname = "home";
+
+      var pRes = await fetch(apiBase.replace(/\/$/, "") + "/v1/public/cms/pages/" + pathname, {
+        headers: { "accept": "application/json" },
+        signal: signal
+      });
+      if (pRes.ok) {
+        var page = await pRes.json();
+        if (page && page.is_published !== false) {
+          if (page.title) document.title = page.title;
+          var kicker = document.querySelector("main .kicker, .hero-copy .kicker");
+          if (kicker && page.kicker) kicker.textContent = page.kicker;
+          var badge = document.querySelector(".hero-copy .sticker");
+          if (badge && page.hero_badge) badge.textContent = page.hero_badge;
+          var headline = document.querySelector(".hero-copy h1, main h1");
+          if (headline && page.hero_headline && !headline.classList.contains("display")) {
+            headline.textContent = page.hero_headline;
+          }
+          var lead = document.querySelector(".hero-copy .lead, main .lead");
+          if (lead && page.hero_subhead) lead.textContent = page.hero_subhead;
+        }
+      }
+    } catch (e) {
+      // Graceful silence: retain pre-rendered HTML
+    }
+
+    // 3. Dynamic FAQs on faq.html
+    if (window.location.pathname.indexOf("faq") !== -1) {
+      try {
+        var fRes = await fetch(apiBase.replace(/\/$/, "") + "/v1/public/cms/faqs", {
+          headers: { "accept": "application/json" },
+          signal: signal
+        });
+        if (fRes.ok) {
+          var faqs = await fRes.json();
+          if (Array.isArray(faqs) && faqs.length > 0) {
+            var mainEl = document.querySelector("main");
+            if (mainEl) {
+              var existingDynamic = document.getElementById("cms-dynamic-faqs");
+              if (!existingDynamic) {
+                var dynWrap = document.createElement("div");
+                dynWrap.id = "cms-dynamic-faqs";
+                dynWrap.style.margin = "24px 0";
+                dynWrap.innerHTML = faqs.filter(function (f) { return f.is_active; }).map(function (f) {
+                  return '<details class="faq-item" style="border-left: 4px solid var(--lime);">' +
+                         '<summary><strong>[' + (f.category || 'General') + ']</strong> ' + (f.question || '') + '</summary>' +
+                         '<p>' + (f.answer || '') + '</p>' +
+                         '</details>';
+                }).join("");
+                var firstDetails = mainEl.querySelector("details.faq-item");
+                if (firstDetails) {
+                  mainEl.insertBefore(dynWrap, firstDetails);
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // 4. Dynamic Articles on blog.html or case-studies.html
+    var isBlog = window.location.pathname.indexOf("blog") !== -1;
+    var isCaseStudy = window.location.pathname.indexOf("case-studies") !== -1;
+    if (isBlog || isCaseStudy) {
+      try {
+        var artType = isCaseStudy ? "case_study" : "blog";
+        var aRes = await fetch(apiBase.replace(/\/$/, "") + "/v1/public/cms/articles?type=" + artType, {
+          headers: { "accept": "application/json" },
+          signal: signal
+        });
+        if (aRes.ok) {
+          var articles = await aRes.json();
+          if (Array.isArray(articles) && articles.length > 0) {
+            var gridEl = document.querySelector("main .grid");
+            if (gridEl) {
+              var existingDynamicGrid = document.getElementById("cms-dynamic-articles");
+              if (!existingDynamicGrid) {
+                var dynGrid = document.createElement("div");
+                dynGrid.id = "cms-dynamic-articles";
+                dynGrid.style.display = "contents";
+                dynGrid.innerHTML = articles.filter(function (a) { return a.is_published; }).map(function (a) {
+                  return '<article class="item card-link" style="border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); background: var(--cream);">' +
+                         '<span class="kicker" style="font-size: 10px; margin-bottom: 6px;">' + (a.category || 'LIVE ARTICLE') + '</span>' +
+                         '<h3>' + (a.title || '') + '</h3>' +
+                         '<p>' + (a.excerpt || (a.content || '').substring(0, 120) + '...') + '</p>' +
+                         '<span class="more" style="font-weight: 700;">' + (a.read_time || '5 min read') + ' &rarr;</span>' +
+                         '</article>';
+                }).join("");
+                gridEl.insertBefore(dynGrid, gridEl.firstChild);
+              }
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+
+  // Run dynamic hydration
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", hydrateDynamicCms);
+  } else {
+    hydrateDynamicCms();
+  }
 })();

@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import type { WarehouseStockSlot } from "../types";
+import {
+  loadGlbModel,
+  createPalletProp,
+  createAgvForkliftProp,
+  createRackBarcodePlate,
+} from "../lib/model-loader";
 
 export interface StockWarehouse3DProps {
   stockSlots: WarehouseStockSlot[];
@@ -119,12 +125,24 @@ export const StockWarehouse3D: React.FC<StockWarehouse3DProps> = ({
       warehouseGroup.add(shelf);
     });
 
-    // Populate boxes for each stock slot
+    // Populate pallets, barcode plates, and stock boxes
     displaySlots.forEach((slot, idx) => {
       const bayX = startX + (idx % numBays) * baySpacing;
       const isLevel2 = slot.shelf % 2 === 0;
       const shelfY = isLevel2 ? 1.33 : 0.13;
-      const boxHeight = Math.max(0.35, Math.min(1.0, (slot.quantity / 80) * 0.9));
+
+      // Wooden Euro-Pallet prop under each inventory slot
+      const pallet = createPalletProp();
+      pallet.position.set(bayX, shelfY, 0);
+      warehouseGroup.add(pallet);
+
+      // Barcode / Bin Label Plate on front shelf beam
+      const barcodePlate = createRackBarcodePlate(slot.binLocation);
+      barcodePlate.position.set(bayX, shelfY - 0.04, 1.21);
+      warehouseGroup.add(barcodePlate);
+
+      // Stock inventory box (height reflects quantity)
+      const boxHeight = Math.max(0.35, Math.min(0.9, (slot.quantity / 80) * 0.85));
       const boxGeo = new THREE.BoxGeometry(0.7, boxHeight, 0.7);
       boxGeo.translate(0, boxHeight / 2, 0);
 
@@ -138,9 +156,25 @@ export const StockWarehouse3D: React.FC<StockWarehouse3DProps> = ({
       });
 
       const box = new THREE.Mesh(boxGeo, boxMat);
-      box.position.set(bayX, shelfY, 0);
+      box.position.set(bayX, shelfY + 0.1, 0); // Sits cleanly on the euro-pallet deck
       warehouseGroup.add(box);
       interactiveMeshes.push({ mesh: box, slot });
+    });
+
+    // Production-Grade AGV Forklift Bot Prop (Dock Transport)
+    const agvGroup = new THREE.Group();
+    const fallbackAgv = createAgvForkliftProp();
+    agvGroup.add(fallbackAgv);
+    agvGroup.position.set(startX + numBays * baySpacing * 0.5 + 0.6, 0, 1.4);
+    agvGroup.rotation.y = -Math.PI / 4;
+    warehouseGroup.add(agvGroup);
+
+    // Asynchronously upgrade with custom Blender GLB model if available
+    void loadGlbModel("/models/agv_forklift.glb").then((loadedAgv) => {
+      if (loadedAgv) {
+        agvGroup.clear();
+        agvGroup.add(loadedAgv);
+      }
     });
 
     // Raycasting & Interaction
@@ -193,6 +227,12 @@ export const StockWarehouse3D: React.FC<StockWarehouse3DProps> = ({
 
       // Smooth rotation damping
       warehouseGroup.rotation.y += (targetRotationY - warehouseGroup.rotation.y) * 0.1;
+
+      // Safety Beacon Pulse animation on AGV
+      const beacon = warehouseGroup.getObjectByName("SafetyBeacon") as THREE.Mesh | null;
+      if (beacon && beacon.material instanceof THREE.MeshStandardMaterial) {
+        beacon.material.emissiveIntensity = 0.8 + Math.sin(Date.now() * 0.008) * 0.7;
+      }
 
       // Raycast hover check
       raycaster.setFromCamera(mouse, camera);

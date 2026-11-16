@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
 import { Sidebar } from "./components/ui/Sidebar";
 import { CommandBar } from "./components/ui/CommandBar";
@@ -14,6 +14,8 @@ import { LedgerPage } from "./pages/LedgerPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { CrmPipelinePage } from "./pages/CrmPipelinePage";
 import { BankReconciliationPage } from "./pages/BankReconciliationPage";
+import { FinancialStatementsPage } from "./pages/FinancialStatementsPage";
+import { PurchasingPage } from "./pages/PurchasingPage";
 import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
@@ -24,7 +26,7 @@ import { GuardGus } from "./modules/bots/GuardGus";
 import { ForecastFinn } from "./modules/bots/ForecastFinn";
 import { Pip } from "./modules/bots/Pip";
 import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
-import { apiClient } from "./lib/api-client";
+import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
   initialMockAccounts,
   initialMockBills,
@@ -39,6 +41,12 @@ import {
   initialPipelineDeals,
   initialSalesQuotes,
   initialBankFeedLines,
+  initialProfitAndLossReport,
+  initialBalanceSheetReport,
+  initialPurchaseOrders,
+  initialGoodsReceiptNotes,
+  initialThreeWayMatches,
+  initialThreeWaySummary,
 } from "./lib/api-mock";
 import type {
   Account,
@@ -54,6 +62,9 @@ import type {
   PipelineDeal,
   SalesQuote,
   BankFeedLine,
+  PurchaseOrder,
+  GoodsReceiptNote,
+  ThreeWayMatchItem,
 } from "./types";
 
 function getTabFromLocation(): string {
@@ -67,12 +78,7 @@ function getTabFromLocation(): string {
 
 export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    try {
-      const sess = sessionStorage.getItem("qavril-session");
-      if (sess === "signed-out") return false;
-    } catch {
-      // ignore
-    }
+    if (typeof window !== "undefined" && window.location.hash.includes("signed-out")) return false;
     return true;
   });
 
@@ -95,7 +101,11 @@ export const App: React.FC = () => {
   const [pipelineDeals, setPipelineDeals] = useState<PipelineDeal[]>(initialPipelineDeals);
   const [salesQuotes, setSalesQuotes] = useState<SalesQuote[]>(initialSalesQuotes);
   const [bankFeedLines, setBankFeedLines] = useState<BankFeedLine[]>(initialBankFeedLines);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>(initialPurchaseOrders);
+  const [goodsReceipts, setGoodsReceipts] = useState<GoodsReceiptNote[]>(initialGoodsReceiptNotes);
+  const [threeWayMatches, setThreeWayMatches] = useState<ThreeWayMatchItem[]>(initialThreeWayMatches);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
+  const [syncStatus, setSyncStatus] = useState<"connected" | "connecting" | "disconnected">("connecting");
 
   // Sync URL hash and activeTab
   const navigateToTab = (tab: string) => {
@@ -107,44 +117,129 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const onHashChange = () => {
-      setActiveTab(getTabFromLocation());
+      const tab = getTabFromLocation();
+      if (tab === "signed-out") {
+        setApiSessionToken(null);
+        setIsAuthenticated(false);
+      }
+      setActiveTab(tab);
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
-  // Load Master Data & Invoices from Fastify HTTP Endpoints via contract client
+  // Global keyboard shortcuts (Ctrl+K for CommandBar, ESC to close)
   useEffect(() => {
-    if (!isAuthenticated) return;
-    let cancelled = false;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "k" || e.code === "KeyK")) {
+        e.preventDefault();
+        setIsCommandBarOpen((prev) => !prev);
+      } else if (e.key === "Escape" || e.key === "Esc" || e.code === "Escape") {
+        e.preventDefault();
+        setIsCommandBarOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, []);
 
-    async function loadFromBackend() {
-      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes] =
+  // Real-time Master Data & Invoicing Synchronization with DB (Fastify REST Endpoints)
+  const syncAllMasterData = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes, billsRes] =
         await Promise.all([
           apiClient.listParties(),
           apiClient.listItems(),
           apiClient.listAccounts(),
           apiClient.listInvoices(),
           apiClient.listJournalEntries(),
+          apiClient.listBills(),
         ]);
 
-      if (cancelled) return;
       setParties(partiesRes.data);
       setItems(itemsRes.data);
       setAccounts(accountsRes.data);
       setInvoices(invoicesRes.data.invoices);
       setInvoicesSummary(invoicesRes.data.summary);
       setJournals(journalsRes.data);
+      setBills(billsRes.data);
       setIsLiveApi(
-        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive
+        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive || invoicesRes.isLive
       );
+    } catch (err) {
+      console.warn("Real-time DB sync warning:", err);
     }
+  }, [isAuthenticated]);
 
-    void loadFromBackend();
+  // Real-time Event Subscription via SSE (Step 3 & 4)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const unsubscribe = apiClient.subscribeToEvents(
+      (event) => {
+        if (event.type.startsWith("master_data.party.")) {
+          void apiClient.listParties().then((res) => {
+            if (res.isLive) setParties(res.data);
+          });
+        } else if (event.type.startsWith("master_data.item.")) {
+          void apiClient.listItems().then((res) => {
+            if (res.isLive) setItems(res.data);
+          });
+        } else if (event.type.startsWith("master_data.account.")) {
+          void apiClient.listAccounts().then((res) => {
+            if (res.isLive) setAccounts(res.data);
+          });
+        } else if (event.type.startsWith("sales.invoice.") || event.type.startsWith("receivables.")) {
+          void apiClient.listInvoices().then((res) => {
+            if (res.isLive) {
+              setInvoices(res.data.invoices);
+              setInvoicesSummary(res.data.summary);
+            }
+          });
+        } else if (event.type.startsWith("purchasing.bill.")) {
+          void apiClient.listBills().then((res) => {
+            if (res.isLive) setBills(res.data);
+          });
+        }
+      },
+      (status) => {
+        setSyncStatus(status);
+        if (status === "connected") {
+          setIsLiveApi(true);
+        }
+      }
+    );
+
     return () => {
-      cancelled = true;
+      unsubscribe();
     };
   }, [isAuthenticated]);
+
+  // Realtime Active Sync: Initial load + interval (12s) + window focus listener
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void syncAllMasterData();
+
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void syncAllMasterData();
+      }
+    }, 12000);
+
+    const onFocus = () => {
+      void syncAllMasterData();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [isAuthenticated, syncAllMasterData]);
 
   // Journal actions
   const handleAddJournal = (entry: JournalEntry) => {
@@ -238,6 +333,13 @@ export const App: React.FC = () => {
   // Bills actions (FIN-03)
   const handleAddBill = (b: Bill) => {
     setBills((prev) => [b, ...prev]);
+    void apiClient.createBill(b).then((res) => {
+      if (res.isLive) {
+        setBills((prev) =>
+          prev.map((item) => (item.id === b.id ? res.data : item))
+        );
+      }
+    });
   };
 
   const handleApproveBill = (id: string) => {
@@ -258,6 +360,34 @@ export const App: React.FC = () => {
 
   const handleDeleteBill = (id: string) => {
     setBills((prev) => prev.filter((b) => b.id !== id));
+  };
+
+  // Purchasing & 3-Way Matching actions (PRC-01 to PRC-04)
+  const handleAddPurchaseOrder = (po: PurchaseOrder) => {
+    setPurchaseOrders((prev) => [po, ...prev]);
+  };
+
+  const handleUpdatePurchaseOrderStatus = (
+    id: string,
+    status: PurchaseOrder["status"]
+  ) => {
+    setPurchaseOrders((prev) =>
+      prev.map((po) => (po.id === id ? { ...po, status } : po))
+    );
+  };
+
+  const handleAddGoodsReceipt = (grn: GoodsReceiptNote) => {
+    setGoodsReceipts((prev) => [grn, ...prev]);
+  };
+
+  const handleApproveMatchOverride = (matchId: string, note: string) => {
+    setThreeWayMatches((prev) =>
+      prev.map((m) =>
+        m.id === matchId
+          ? { ...m, overrideApproved: true, overrideNote: note, toleranceOk: true }
+          : m
+      )
+    );
   };
 
   // Item Master actions (MDM-02 -> /v1/master-data/items)
@@ -400,15 +530,13 @@ export const App: React.FC = () => {
         <AppHeader
           workspaceName="Apex Production"
           activeTab={activeTab}
+          syncStatus={syncStatus}
           onOpenCommandBar={() => setIsCommandBarOpen(true)}
           onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
           onSignOut={() => {
-            try {
-              sessionStorage.setItem("qavril-session", "signed-out");
-            } catch {
-              // ignore
-            }
+            setApiSessionToken(null);
             setIsAuthenticated(false);
+            navigateToTab("signed-out");
           }}
         />
 
@@ -419,26 +547,14 @@ export const App: React.FC = () => {
             <Gate
               type="signed-out"
               onPrimaryAction={() => {
-                try {
-                  sessionStorage.setItem(
-                    "qavril-session",
-                    JSON.stringify({ token: "tok_demo", email: "user@apex.com" })
-                  );
-                } catch {
-                  // ignore
-                }
+                setApiSessionToken("tok_session_live");
                 setIsAuthenticated(true);
+                navigateToTab("dashboard");
               }}
               onSecondaryAction={() => {
-                try {
-                  sessionStorage.setItem(
-                    "qavril-session",
-                    JSON.stringify({ token: "tok_demo", email: "demo@apex.com" })
-                  );
-                } catch {
-                  // ignore
-                }
+                setApiSessionToken("tok_session_demo");
                 setIsAuthenticated(true);
+                navigateToTab("dashboard");
               }}
             />
           </div>
@@ -453,7 +569,10 @@ export const App: React.FC = () => {
         ) : activeTab === "guard-gus" ? (
           <GuardGus onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "forecast-finn" ? (
-          <ForecastFinn onNavigateBack={() => navigateToTab("dashboard")} />
+          <ForecastFinn
+            onNavigateBack={() => navigateToTab("dashboard")}
+            onNavigateToFinancials={() => navigateToTab("financials")}
+          />
         ) : activeTab === "pip" ? (
           <Pip onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "approvals" ? (
@@ -516,6 +635,35 @@ export const App: React.FC = () => {
                 )
               }
               onConvertToInvoice={(inv) => setInvoices((prev) => [inv, ...prev])}
+            />
+          </div>
+        ) : activeTab === "purchasing" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <PurchasingPage
+              purchaseOrders={purchaseOrders}
+              goodsReceiptNotes={goodsReceipts}
+              threeWayMatches={threeWayMatches}
+              threeWaySummary={initialThreeWaySummary}
+              suppliers={parties.filter(
+                (p) => p.type === "supplier" || p.type === "both"
+              )}
+              catalogItems={items}
+              onAddPurchaseOrder={handleAddPurchaseOrder}
+              onUpdatePurchaseOrderStatus={handleUpdatePurchaseOrderStatus}
+              onAddGoodsReceipt={handleAddGoodsReceipt}
+              onApproveMatchOverride={handleApproveMatchOverride}
+              onNavigateToPayables={() => navigateToTab("payables")}
+              onNavigateToInventory={() => navigateToTab("inventory")}
+              onNavigateToGuardGus={() => navigateToTab("guard-gus")}
+            />
+          </div>
+        ) : activeTab === "financials" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <FinancialStatementsPage
+              pnl={initialProfitAndLossReport}
+              balanceSheet={initialBalanceSheetReport}
+              onNavigateToForecastFinn={() => navigateToTab("forecast-finn")}
+              onNavigateToAccounts={() => navigateToTab("accounts")}
             />
           </div>
         ) : activeTab === "bank" ? (

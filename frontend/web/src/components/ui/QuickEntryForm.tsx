@@ -285,7 +285,6 @@ export const QuickEntryForm: React.FC<QuickEntryFormProps> = ({
           <p
             className="text-xs font-bold text-good bg-page p-2 border border-grid text-center"
             role="status"
-            aria-live="polite"
           >
             {statusMessage}
           </p>

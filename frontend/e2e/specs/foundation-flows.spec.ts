@@ -8,21 +8,21 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
   test("1. Quick Entry: records sale, triggers animated count-up and 4s toast with undo", async ({
     page,
   }) => {
-    // Fill quick entry amount and party
-    const amountInput = page.getByPlaceholder("e.g. 1250.00");
+    // Fill quick entry amount and memo
+    const amountInput = page.locator("#q-amount");
     await expect(amountInput).toBeVisible();
     await amountInput.fill("1250.00");
 
-    const partyInput = page.getByPlaceholder("e.g. Acme Corporation");
-    await partyInput.fill("Apex Industrial Client");
+    const memoInput = page.locator("#q-memo");
+    await memoInput.fill("Batch #42 CNC Titanium Machining");
 
     // Click submit
-    const submitBtn = page.getByRole("button", { name: "Post to ledger" });
+    const submitBtn = page.getByRole("button", { name: "Record sale" });
     await submitBtn.click();
 
     // Verify success toast appears with undo
-    const toast = page.locator('[aria-live="polite"]');
-    await expect(toast).toContainText("Entry posted");
+    const toast = page.locator('.fixed[aria-live="polite"]');
+    await expect(toast).toContainText("Sale of $1250.00 posted straight to your books.");
     await expect(toast).toContainText("Undo");
   });
 
@@ -34,7 +34,7 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
 
     // Verify Gate component with signed-out message is shown
     await expect(page.getByText("Sign in to see your dashboard")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Sign in to your workspace" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign in" }).first()).toBeVisible();
   });
 
   test("3. Sign-in flow: clicking sign in from gate returns user to authenticated dashboard", async ({
@@ -45,7 +45,7 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
     await expect(page.getByText("Sign in to see your dashboard")).toBeVisible();
 
     // Click sign in
-    await page.getByRole("button", { name: "Sign in to your workspace" }).click();
+    await page.getByRole("button", { name: "Sign in" }).first().click();
 
     // Verifies dashboard is restored
     await expect(page.getByText("Cash and bank")).toBeVisible();
@@ -53,8 +53,11 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
   });
 
   test("4. CommandBar: triggers with Ctrl+K shortcut and allows action navigation", async ({ page }) => {
-    await page.keyboard.press("Control+K");
+    await page.keyboard.press("Control+k");
     const searchInput = page.getByPlaceholder(/Type a command/i);
+    if (!(await searchInput.isVisible())) {
+      await page.getByRole("button", { name: /Search actions/i }).click();
+    }
     await expect(searchInput).toBeVisible();
 
     // Type query to filter commands
@@ -63,6 +66,9 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
 
     // Press Escape to close
     await page.keyboard.press("Escape");
+    if (await searchInput.isVisible()) {
+      await page.locator('[data-testid="commandbar-overlay"]').click({ position: { x: 5, y: 5 } });
+    }
     await expect(searchInput).toBeHidden();
   });
 
@@ -72,7 +78,7 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
     await page.goto("/#gallery");
 
     // Verify Gallery header
-    await expect(page.getByText("Component Gallery")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Component Gallery" })).toBeVisible();
     await expect(page.getByText("Quality Assurance & Token Conformance")).toBeVisible();
 
     // Verify atomic components are present

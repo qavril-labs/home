@@ -16,6 +16,8 @@ import { RateLimiter, type RateLimitOptions } from "./rate-limit";
 import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
+import { registerInvoicingRoutes } from "./invoicing-routes";
+import { registerCmsRoutes } from "./cms-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -210,6 +212,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
     if (
       request.url.startsWith("/v1/workspace/") ||
       request.url.startsWith("/v1/master-data/") ||
+      request.url.startsWith("/v1/invoicing/") ||
+      request.url.startsWith("/v1/events/") ||
       request.url === "/v1/me"
     ) {
       allowBrowserOrigin(request, reply);
@@ -337,6 +341,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
+  registerInvoicingRoutes(app, { pool, clock, authenticate });
+  registerCmsRoutes(app, pool, platformKey);
 
   return app;
 }

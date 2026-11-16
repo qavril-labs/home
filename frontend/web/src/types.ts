@@ -29,6 +29,8 @@ export interface WorkspaceTotals {
   revenue: string;
   expenses: string;
   profit: string;
+  receivable?: string;
+  payable?: string;
 }
 
 export interface WorkspaceInsights {
@@ -656,6 +658,59 @@ export interface BankFeedLine {
 }
 
 // ==========================================
+// Financial Statements (FIN-05 / FIN-06)
+// ==========================================
+
+export interface StatementLineItem {
+  id: string;
+  accountCode?: string;
+  label: string;
+  currentAmount: string; // decimal string
+  priorAmount: string;   // decimal string
+  isHeader?: boolean;
+  isTotal?: boolean;
+  indent?: number; // 0, 1, 2
+}
+
+export interface ProfitAndLossReport {
+  period: string;
+  priorPeriod: string;
+  currency: string;
+  grossRevenue: string;
+  cogsTotal: string;
+  grossProfit: string;
+  grossMarginPct: string;
+  operatingExpenses: string;
+  operatingIncome: string; // EBIT
+  operatingMarginPct: string;
+  taxTotal: string;
+  netIncome: string;
+  netMarginPct: string;
+  revenueLines: StatementLineItem[];
+  cogsLines: StatementLineItem[];
+  expenseLines: StatementLineItem[];
+}
+
+export interface BalanceSheetReport {
+  asOfDate: string;
+  currency: string;
+  totalAssets: string;
+  currentAssetsTotal: string;
+  nonCurrentAssetsTotal: string;
+  totalLiabilities: string;
+  currentLiabilitiesTotal: string;
+  nonCurrentLiabilitiesTotal: string;
+  totalEquity: string;
+  isBalanced: boolean;
+  varianceAmount: string;
+  currentAssetLines: StatementLineItem[];
+  nonCurrentAssetLines: StatementLineItem[];
+  currentLiabilityLines: StatementLineItem[];
+  nonCurrentLiabilityLines: StatementLineItem[];
+  equityLines: StatementLineItem[];
+}
+
+// ==========================================
 // Sprint 6+: Industry Pack Bots (GAR / FMCG) & AI-09
 // ==========================================
 
@@ -790,5 +845,114 @@ export interface ConversationalTurn {
     targetTab: string;
   };
 }
+
+// ---------------------------------------------------------------------------
+// PRC-01 to PRC-04: Purchasing & 3-Way Matching
+// ---------------------------------------------------------------------------
+
+export type PurchaseOrderStatus =
+  | "draft"
+  | "issued"
+  | "partially_received"
+  | "received"
+  | "billed"
+  | "closed"
+  | "cancelled";
+
+export interface PurchaseOrderLine {
+  id: string;
+  itemId: string;
+  sku: string;
+  description: string;
+  quantityOrdered: number;
+  quantityReceived: number;
+  quantityBilled: number;
+  unitPrice: string; // decimal string
+  lineTotal: string; // decimal string
+}
+
+export interface PurchaseOrder {
+  id: string; // PO-2026-001
+  supplierId: string;
+  supplierName: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
+  status: PurchaseOrderStatus;
+  lines: PurchaseOrderLine[];
+  currency: string;
+  total: string; // decimal string
+  notes?: string;
+  approvedBy?: string;
+}
+
+export type GoodsReceiptStatus = "received" | "inspected" | "quarantined";
+
+export interface GoodsReceiptLine {
+  id: string;
+  poLineId: string;
+  sku: string;
+  description: string;
+  quantityReceived: number;
+  quantityRejected: number;
+  batchLotNumber?: string;
+  warehouseId: string;
+  warehouseName: string;
+}
+
+export interface GoodsReceiptNote {
+  id: string; // GRN-2026-001
+  poId: string;
+  poRef: string;
+  supplierId: string;
+  supplierName: string;
+  receiptDate: string;
+  receivedBy: string;
+  status: GoodsReceiptStatus;
+  lines: GoodsReceiptLine[];
+  carrier?: string;
+  trackingNumber?: string;
+}
+
+export type ThreeWayMatchStatus =
+  | "MATCHED"
+  | "PRICE_VARIANCE"
+  | "QUANTITY_VARIANCE"
+  | "UNMATCHED_GRN"
+  | "UNMATCHED_BILL";
+
+export interface ThreeWayMatchItem {
+  id: string;
+  poId: string;
+  poRef: string;
+  grnId: string;
+  grnRef: string;
+  billId: string;
+  billRef: string;
+  supplierName: string;
+  sku: string;
+  description: string;
+  orderedQty: number;
+  receivedQty: number;
+  billedQty: number;
+  agreedUnitPrice: string; // decimal string
+  billedUnitPrice: string; // decimal string
+  poTotal: string; // decimal string
+  billTotal: string; // decimal string
+  qtyVariance: number; // billedQty - receivedQty
+  priceVariance: string; // decimal string
+  status: ThreeWayMatchStatus;
+  toleranceOk: boolean;
+  overrideApproved?: boolean;
+  overrideNote?: string;
+}
+
+export interface ThreeWayMatchSummary {
+  totalItems: number;
+  matchedCount: number;
+  varianceCount: number;
+  unmatchedCount: number;
+  totalValueUnderReview: string;
+}
+
 
 

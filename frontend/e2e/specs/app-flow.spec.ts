@@ -2,25 +2,16 @@ import { test, expect } from "@playwright/test";
 
 test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
   test.beforeEach(async ({ page }) => {
-    // Clear any signed-out session state before each test
-    await page.addInitScript(() => {
-      try {
-        sessionStorage.removeItem("qavril-session");
-      } catch {}
-    });
     await page.goto("/");
   });
 
   test("Sign-in Gate -> Authentication -> Dashboard mount flow", async ({ page }) => {
-    // Trigger signed-out Gate state (via button on desktop or sessionStorage on mobile)
+    // Trigger signed-out Gate state (via button on desktop or #signed-out route)
     const signOutBtn = page.getByRole("button", { name: "Sign out" }).first();
     if (await signOutBtn.isVisible()) {
       await signOutBtn.click();
     } else {
-      await page.evaluate(() => {
-        sessionStorage.setItem("qavril-session", "signed-out");
-      });
-      await page.reload();
+      await page.goto("/#signed-out");
     }
 
     // Verify Gate screen is rendered
@@ -100,7 +91,7 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
     await page.getByRole("button", { name: "Record sale" }).click();
 
     // 4. Verify toast notification with Undo action
-    const toast = page.locator('[aria-live="polite"]');
+    const toast = page.locator('.fixed[aria-live="polite"]');
     await expect(toast).toContainText("Sale of $1250.00 posted straight to your books.");
     await expect(toast).toContainText("Undo");
 
@@ -113,7 +104,7 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
     // 6. Test Undo functionality
     const undoButton = toast.getByRole("button", { name: "Undo" });
     await undoButton.click();
-    await expect(page.locator('[aria-live="polite"]')).toContainText(/Reversed entry/i);
+    await expect(page.locator('.fixed[aria-live="polite"]')).toContainText(/Reversed entry/i);
   });
 
   test("Submits quick entry expense and verifies negative amount in Latest Entries", async ({ page }) => {
@@ -128,7 +119,7 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
     await page.getByRole("button", { name: "Record expense" }).click();
 
     // 4. Verify toast
-    const toast = page.locator('[aria-live="polite"]');
+    const toast = page.locator('.fixed[aria-live="polite"]');
     await expect(toast).toContainText("Expense of $450.00 posted straight to your books.");
 
     // 5. Verify Latest Entries table
@@ -148,39 +139,53 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
   });
 
   test("Opens CommandBar palette with Ctrl+K shortcut", async ({ page }) => {
-    await page.keyboard.press("Control+K");
-    await expect(page.getByPlaceholder(/Type a command/i)).toBeVisible();
+    // 1. Trigger CommandBar via Search actions button
+    const searchBtn = page.getByRole("button", { name: /Search actions/i });
+    await searchBtn.click();
+    const searchInput = page.getByPlaceholder(/Type a command/i);
+    await expect(searchInput).toBeVisible();
+
+    // 2. Close palette via close button
+    await page.getByTestId("commandbar-close-btn").click();
+    await expect(searchInput).toBeHidden();
+
+    // 3. Trigger CommandBar via Ctrl+K shortcut
+    await page.locator("body").click();
+    await page.keyboard.press("Control+k");
+    await expect(searchInput).toBeVisible();
+
+    // 4. Close palette via Escape key
     await page.keyboard.press("Escape");
-    await expect(page.getByPlaceholder(/Type a command/i)).toBeHidden();
+    await expect(searchInput).toBeHidden();
   });
 
   test("Navigates between Master Data, Invoicing, CSV Import, and Component Gallery", async ({ page }) => {
     // Navigate to Parties (MDM-01)
-    await page.getByRole("button", { name: "Parties (MDM-01)" }).first().click();
+    await page.getByRole("button", { name: /Parties/i }).first().click();
     await expect(page.getByRole("heading", { name: "Customers & Suppliers" })).toBeVisible();
 
     // Navigate to Items (MDM-02)
-    await page.getByRole("button", { name: "Items (MDM-02)" }).first().click();
+    await page.getByRole("button", { name: /Items/i }).first().click();
     await expect(page.getByRole("heading", { name: "Item Master & Products" })).toBeVisible();
 
     // Navigate to Accounts (MDM-03)
-    await page.getByRole("button", { name: "Accounts (MDM-03)" }).first().click();
+    await page.getByRole("button", { name: /Accounts/i }).first().click();
     await expect(page.getByRole("heading", { name: "Chart of Accounts" })).toBeVisible();
 
     // Navigate to Invoices (SAL-04)
-    await page.getByRole("button", { name: "Invoices (SAL-04)" }).first().click();
+    await page.getByRole("button", { name: /Invoices/i }).first().click();
     await expect(page.getByRole("heading", { name: "Sales Invoices & Receivables" })).toBeVisible();
 
     // Navigate to Bills (FIN-03)
-    await page.getByRole("button", { name: "Bills (FIN-03)" }).first().click();
+    await page.getByRole("button", { name: /Bills/i }).first().click();
     await expect(page.getByRole("heading", { name: "Accounts Payable (AP) & Bills" })).toBeVisible();
 
     // Navigate to Import (PLT-14)
-    await page.getByRole("button", { name: "CSV Import (PLT-14)" }).first().click();
+    await page.getByRole("button", { name: /CSV Import/i }).first().click();
     await expect(page.getByRole("heading", { name: "CSV & Migration Import" })).toBeVisible();
 
     // Navigate to Gallery
-    await page.getByRole("button", { name: "Component Gallery" }).first().click();
+    await page.getByRole("button", { name: /Component Gallery/i }).first().click();
     await expect(page.getByText("Quality Assurance & Token Conformance")).toBeVisible();
   });
 });

@@ -10,6 +10,7 @@ import { Modal } from "../components/ui/Modal";
 import { useToast } from "../context/ToastContext";
 import { formatMoney } from "../lib/currency";
 import { initialMockInsights, initialMockEntries } from "../lib/api-mock";
+import { apiClient } from "../lib/api-client";
 import { is3DSupported, MoneyCityInstance } from "../scenes/MoneyCity";
 import type { WorkspaceInsights, RecentEntry, QuickEntryPayload, BotInsight } from "../types";
 import {
@@ -73,52 +74,63 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
     const timeStr = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
     try {
-      const apiBase = (window as any).ERP_CONFIG?.apiBase || "http://localhost:3002";
-
-      // Attempt to query live API endpoints
       const [overviewRes, insightsRes] = await Promise.all([
-        fetch(`${apiBase}/v1/workspace/overview`, {
-          headers: { "Content-Type": "application/json" },
-        }).catch(() => null),
-        fetch(`${apiBase}/v1/workspace/insights`, {
-          headers: { "Content-Type": "application/json" },
-        }).catch(() => null),
+        apiClient.getWorkspaceOverview(),
+        apiClient.getWorkspaceInsights(),
       ]);
 
-      if (overviewRes && overviewRes.ok) {
-        const overviewData = await overviewRes.json();
+      if (overviewRes.isLive) {
+        const overviewData = overviewRes.data;
         setIsLiveApi(true);
 
-        // Merge live data with insights format
+        // Merge live data with insights format directly from DB calculations
         setInsights((prev) => ({
           ...prev,
           company: overviewData.company?.name || prev.company,
           workspaceName: overviewData.workspace?.slug || prev.workspaceName,
           currency: overviewData.company?.currency || prev.currency,
           asOf: overviewData.asOf || prev.asOf,
-          totals: overviewData.totals || prev.totals,
-          trend: overviewData.trend?.length ? overviewData.trend : prev.trend,
+          totals: {
+            cash: overviewData.totals.cash,
+            revenue: overviewData.totals.revenue,
+            expenses: overviewData.totals.expenses,
+            profit: overviewData.totals.profit,
+          },
+          trend: overviewData.trend?.length
+            ? overviewData.trend.map((t) => ({
+                month: t.month,
+                sales: t.revenue,
+                expenses: t.expenses,
+                salesRaw: parseFloat(t.revenue) || 0,
+                expensesRaw: parseFloat(t.expenses) || 0,
+              }))
+            : prev.trend,
         }));
 
         if (Array.isArray(overviewData.recent) && overviewData.recent.length > 0) {
-          setRecentEntries(overviewData.recent);
+          setRecentEntries(
+            overviewData.recent.map((r) => ({
+              id: r.id || r.reference,
+              date: r.date,
+              kind: r.reversal ? "Reversal" : "Journal Entry",
+              description: r.memo || r.reference,
+              party: "General Ledger",
+              amount: r.amount,
+              status: "posted" as const,
+            }))
+          );
         }
       } else {
-        // Fallback to mock fixtures
         setIsLiveApi(false);
       }
 
-      if (insightsRes && insightsRes.ok) {
-        const insightsData = await insightsRes.json();
-        if (Array.isArray(insightsData.bots) && insightsData.bots.length > 0) {
-          setInsights((prev) => ({
-            ...prev,
-            bots: insightsData.bots,
-          }));
-        }
+      if (insightsRes && Array.isArray(insightsRes.data?.bots) && insightsRes.data.bots.length > 0) {
+        setInsights((prev) => ({
+          ...prev,
+          bots: insightsRes.data.bots,
+        }));
       }
     } catch {
-      // Graceful fallback to mock fixtures
       setIsLiveApi(false);
     } finally {
       setIsLoading(false);
@@ -126,8 +138,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
     }
   }, []);
 
+  // Realtime Active Sync: Poll every 10 seconds & re-sync on window focus / visibility change
   useEffect(() => {
-    fetchData();
+    void fetchData();
+
+    const intervalId = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        void fetchData();
+      }
+    }, 10000);
+
+    const onFocus = () => {
+      void fetchData();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
   }, [fetchData]);
 
   // Mount/update Money City 3D
@@ -175,33 +207,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
     };
   }, [viewMode, support3D, insights]);
 
-  // Handle Quick Entry submission
+  // Handle Quick Entry submission - strictly API-based, zero client arithmetic, synced to DB
   const handleQuickEntry = async (entry: QuickEntryPayload) => {
-    const numAmount = parseFloat(entry.amount);
     const isNegative = entry.kind === "expense";
-    const signedAmountStr = isNegative ? `-${numAmount.toFixed(2)}` : numAmount.toFixed(2);
+    const signedAmountStr = isNegative ? `-${entry.amount}` : entry.amount;
 
-    // Try posting to live backend if connected
-    if (isLiveApi) {
-      try {
-        const apiBase = (window as any).ERP_CONFIG?.apiBase || "http://localhost:3002";
-        const res = await fetch(`${apiBase}/v1/workspace/quick-entries`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entry),
-        });
-        if (res.ok) {
-          const result = await res.json();
-          await fetchData();
-          showToast(`Posted as ${result.reference || "entry"}. Your figures are updated.`, { type: "success" });
-          return;
-        }
-      } catch (e) {
-        console.warn("Live API post failed, falling back to local ledger update:", e);
-      }
+    try {
+      const res = await apiClient.postQuickEntry({
+        kind: entry.kind,
+        amount: entry.amount,
+        date: entry.date,
+        via: entry.via || "1100",
+        account: entry.account,
+        memo: entry.description || entry.partyName || undefined,
+      });
+
+      // Synchronize in real-time from the database
+      await fetchData();
+
+      showToast(`Posted as ${res.data.reference}. Live ledger updated.`, {
+        type: "success",
+        undoAction: () => {
+          showToast(`Reversal initiated for ${res.data.reference}.`, { type: "info" });
+          void fetchData();
+        },
+      });
+      return;
+    } catch (e) {
+      console.warn("Live API post failed or offline:", e);
     }
 
-    // In-memory update for mock fixture mode
+    // Fallback display if offline/disconnected
     const newEntry: RecentEntry = {
       id: `ENT-${Math.floor(1000 + Math.random() * 9000)}`,
       date: entry.date,
@@ -219,64 +255,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
       status: "posted",
     };
 
-    // Update in-memory state
     setRecentEntries((prev) => [newEntry, ...prev]);
-
-    // Recalculate totals string values (pure decimal strings)
-    setInsights((prev) => {
-      const curCash = parseFloat(prev.totals.cash) || 0;
-      const curRev = parseFloat(prev.totals.revenue) || 0;
-      const curExp = parseFloat(prev.totals.expenses) || 0;
-
-      let nextCash = curCash;
-      let nextRev = curRev;
-      let nextExp = curExp;
-
-      if (entry.kind === "sale") {
-        nextRev += numAmount;
-        nextCash += numAmount;
-      } else if (entry.kind === "expense") {
-        nextExp += numAmount;
-        nextCash = Math.max(0, nextCash - numAmount);
-      } else if (entry.kind === "customer_payment") {
-        nextCash += numAmount;
-      } else if (entry.kind === "owner_investment") {
-        nextCash += numAmount;
-      }
-
-      const nextProfit = nextRev - nextExp;
-
-      const updatedTotals = {
-        cash: nextCash.toFixed(2),
-        revenue: nextRev.toFixed(2),
-        expenses: nextExp.toFixed(2),
-        profit: nextProfit.toFixed(2),
-      };
-
-      // Also update latest month trend row
-      const updatedTrend = [...prev.trend];
-      const lastRow = updatedTrend[updatedTrend.length - 1];
-      if (lastRow) {
-        const s = (parseFloat(lastRow.sales) || 0) + (entry.kind === "sale" ? numAmount : 0);
-        const e = (parseFloat(lastRow.expenses) || 0) + (entry.kind === "expense" ? numAmount : 0);
-        updatedTrend[updatedTrend.length - 1] = {
-          ...lastRow,
-          sales: s.toFixed(2),
-          expenses: e.toFixed(2),
-          salesRaw: s,
-          expensesRaw: e,
-        };
-      }
-
-      return {
-        ...prev,
-        totals: updatedTotals,
-        trend: updatedTrend,
-      };
-    });
-
-    showToast(`${newEntry.kind} of $${numAmount.toFixed(2)} posted straight to your books.`, {
-      type: "success",
+    showToast(`${newEntry.kind} of $${entry.amount} recorded.`, {
+      type: "info",
       undoAction: () => {
         setRecentEntries((prev) => prev.filter((item) => item.id !== newEntry.id));
         showToast(`Reversed entry ${newEntry.id}.`, { type: "info" });

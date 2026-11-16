@@ -6,6 +6,7 @@ import { Moon, Sun, Search, Menu } from "lucide-react";
 export interface AppHeaderProps {
   workspaceName?: string;
   activeTab?: string;
+  syncStatus?: "connected" | "connecting" | "disconnected";
   onOpenCommandBar?: () => void;
   onSignOut?: () => void;
   onToggleSidebar?: () => void;
@@ -14,6 +15,7 @@ export interface AppHeaderProps {
 export const AppHeader: React.FC<AppHeaderProps> = ({
   workspaceName = "Apex Production",
   activeTab = "dashboard",
+  syncStatus = "connected",
   onOpenCommandBar,
   onSignOut,
   onToggleSidebar,
@@ -73,6 +75,35 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <span className="w-2 h-2 rounded-full bg-good animate-pulse"></span>
             <span className="text-xs font-bold text-text truncate max-w-[130px]">
               {workspaceName}
+            </span>
+          </div>
+
+          {/* Realtime DB Sync badge */}
+          <div
+            className={`hidden lg:flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-mono font-bold border-line shadow-[2px_2px_0_var(--q-ink)] ${
+              syncStatus === "connected"
+                ? "bg-lime text-ink"
+                : syncStatus === "connecting"
+                ? "bg-yellow text-ink"
+                : "bg-pink text-white"
+            }`}
+            title={`Database Realtime Sync: ${syncStatus.toUpperCase()}`}
+          >
+            <span
+              className={`w-2 h-2 rounded-full ${
+                syncStatus === "connected"
+                  ? "bg-good animate-pulse"
+                  : syncStatus === "connecting"
+                  ? "bg-watch animate-ping"
+                  : "bg-bad"
+              }`}
+            />
+            <span>
+              {syncStatus === "connected"
+                ? "REALTIME DB SYNC"
+                : syncStatus === "connecting"
+                ? "CONNECTING DB..."
+                : "OFFLINE / RECONNECTING"}
             </span>
           </div>
 

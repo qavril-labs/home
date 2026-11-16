@@ -1,4 +1,5 @@
 export * from "./entitlements";
+export * from "./invoicing-store";
 export * from "./leads";
 export * from "./ledger-store";
 export * from "./master-data-store";

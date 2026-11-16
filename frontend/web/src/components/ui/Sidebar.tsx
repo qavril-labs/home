@@ -10,6 +10,8 @@ import {
   Warehouse,
   Kanban,
   CheckSquare,
+  Scale,
+  ShoppingCart,
   Sparkles,
   Bot,
   BrainCircuit,
@@ -60,7 +62,9 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: "invoices", label: "Invoices", code: "SAL-04", icon: FileText },
       { id: "payables", label: "Bills", code: "FIN-03", icon: Receipt },
+      { id: "purchasing", label: "Purchasing & 3-Way", code: "PRC-01", icon: ShoppingCart },
       { id: "ledger", label: "General Ledger", code: "FIN-01", icon: BookOpen },
+      { id: "financials", label: "Financial Statements", code: "FIN-05", icon: Scale },
       { id: "inventory", label: "Inventory", code: "INV-01", icon: Warehouse },
       { id: "crm", label: "CRM Pipeline", code: "SAL-01", icon: Kanban },
       { id: "bank", label: "Bank Rec", code: "FIN-04", icon: CheckSquare },
@@ -72,6 +76,10 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "approvals", label: "Approvals Inbox", code: "PLT-07", icon: Sparkles },
       { id: "ledger-lou", label: "Ledger Lou", code: "AGT-03", icon: Bot },
       { id: "chase-chloe", label: "Chase Chloe", code: "FIN-14", icon: Bot },
+      { id: "restock-rex", label: "Restock Rex", code: "AGT-04", icon: Bot },
+      { id: "guard-gus", label: "Guard Gus", code: "AI-04", icon: Bot },
+      { id: "forecast-finn", label: "Forecast Finn", code: "AIS-02", icon: Bot },
+      { id: "pip", label: "Pip", code: "AGT-02", icon: Bot },
       { id: "packs", label: "Industry Packs", code: "GAR/FMCG", icon: BrainCircuit },
     ],
   },
@@ -177,6 +185,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <button
                         key={item.id}
                         type="button"
+                        aria-label={item.code ? `${item.label} (${item.code})` : item.label}
                         onClick={() => {
                           onNavigate(item.id);
                           onCloseMobile();

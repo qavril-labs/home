@@ -6,6 +6,7 @@
 import type {
   Account,
   AccountType,
+  Bill,
   CustomerStatement,
   Invoice,
   InvoicesSummary,
@@ -22,6 +23,7 @@ import type {
 } from "../types";
 import {
   initialMockAccounts,
+  initialMockBills,
   initialMockInvoices,
   initialMockInvoicesSummary,
   initialMockItems,
@@ -114,23 +116,23 @@ function getApiBaseUrl(): string {
   return "http://localhost:3002";
 }
 
+let inMemorySessionToken: string | null = null;
+
+export function setApiSessionToken(token: string | null): void {
+  inMemorySessionToken = token;
+}
+
+export function getApiSessionToken(): string | null {
+  return inMemorySessionToken;
+}
+
 function getAuthHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (typeof window !== "undefined") {
-    try {
-      const raw = sessionStorage.getItem("qavril-session");
-      if (raw && raw !== "signed-out") {
-        const parsed = JSON.parse(raw) as { token?: string };
-        if (parsed.token) {
-          headers.Authorization = `Bearer ${parsed.token}`;
-        }
-      }
-    } catch {
-      // Ignore storage parse errors
-    }
+  if (inMemorySessionToken) {
+    headers.Authorization = `Bearer ${inMemorySessionToken}`;
   }
   return headers;
 }
@@ -689,5 +691,200 @@ export const apiClient = {
     } catch {
       return { data: initialMockInsights, isLive: false, endpoint };
     }
+  },
+
+  // ── PLT-23 & FIN-01: Workspace Live Overview & Realtime Ledger Sync ────────
+  async getWorkspaceOverview(): Promise<
+    ApiResult<{
+      principal: { email: string; roles: string[] };
+      workspace: { slug: string; name: string };
+      company: { id: string; name: string; currency: string; country: string };
+      products: string[];
+      booksReady: boolean;
+      asOf: string;
+      totals: {
+        cash: string;
+        revenue: string;
+        expenses: string;
+        profit: string;
+        receivable: string;
+        payable: string;
+      };
+      trend: Array<{ month: string; revenue: string; expenses: string }>;
+      insights: Record<string, unknown>;
+      accounts: Array<{ code: string; name: string; type: string; balance: string }>;
+      recent: Array<{
+        id: string;
+        reference: string;
+        date: string;
+        memo?: string;
+        reversal: boolean;
+        amount: string;
+        accounts: string[];
+      }>;
+    }>
+  > {
+    const endpoint = "/v1/workspace/overview";
+    try {
+      const data = await requestJson<{
+        principal: { email: string; roles: string[] };
+        workspace: { slug: string; name: string };
+        company: { id: string; name: string; currency: string; country: string };
+        products: string[];
+        booksReady: boolean;
+        asOf: string;
+        totals: {
+          cash: string;
+          revenue: string;
+          expenses: string;
+          profit: string;
+          receivable: string;
+          payable: string;
+        };
+        trend: Array<{ month: string; revenue: string; expenses: string }>;
+        insights: Record<string, unknown>;
+        accounts: Array<{ code: string; name: string; type: string; balance: string }>;
+        recent: Array<{
+          id: string;
+          reference: string;
+          date: string;
+          memo?: string;
+          reversal: boolean;
+          amount: string;
+          accounts: string[];
+        }>;
+      }>(endpoint);
+      return { data, isLive: true, endpoint };
+    } catch {
+      return {
+        data: {
+          principal: { email: "operator@apex.com", roles: ["owner"] },
+          workspace: { slug: "apex", name: "Apex Production" },
+          company: { id: "cmp_apex", name: "Apex Production LLC", currency: "USD", country: "US" },
+          products: ["FIN-01", "MDM-01", "MDM-02", "MDM-03", "SAL-04"],
+          booksReady: true,
+          asOf: new Date().toISOString().slice(0, 10),
+          totals: {
+            cash: initialMockInsights.totals.cash,
+            revenue: initialMockInsights.totals.revenue,
+            expenses: initialMockInsights.totals.expenses,
+            profit: initialMockInsights.totals.profit,
+            receivable: initialMockInsights.totals.receivable ?? "18450.00",
+            payable: initialMockInsights.totals.payable ?? "8650.00",
+          },
+          trend: initialMockInsights.trend.map((t) => ({
+            month: t.month,
+            revenue: t.sales,
+            expenses: t.expenses,
+          })),
+          insights: {},
+          accounts: [],
+          recent: [],
+        },
+        isLive: false,
+        endpoint,
+      };
+    }
+  },
+
+  async postQuickEntry(payload: {
+    kind: "sale" | "expense" | "customer_payment" | "owner_investment";
+    amount: string;
+    date: string;
+    via: "1000" | "1100" | "1200" | "2000";
+    memo?: string;
+    account?: string;
+  }): Promise<ApiResult<{ id: string; reference: string }>> {
+    const endpoint = "/v1/workspace/quick-entries";
+    const res = await requestJson<{ id: string; reference: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async postStarterBooks(): Promise<ApiResult<{ status: string }>> {
+    const endpoint = "/v1/workspace/starter-books";
+    const res = await requestJson<{ status: string }>(endpoint, {
+      method: "POST",
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async listBills(): Promise<ApiResult<Bill[]>> {
+    const endpoint = "/v1/invoicing/bills";
+    try {
+      const res = await requestJson<{ bills: Bill[] }>(endpoint);
+      return { data: res.bills, isLive: true, endpoint };
+    } catch {
+      return { data: initialMockBills, isLive: false, endpoint };
+    }
+  },
+
+  async createBill(bill: Bill): Promise<ApiResult<Bill>> {
+    const endpoint = "/v1/invoicing/bills";
+    try {
+      const created = await requestJson<Bill>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(bill),
+      });
+      return { data: created, isLive: true, endpoint };
+    } catch {
+      return { data: bill, isLive: false, endpoint };
+    }
+  },
+
+  subscribeToEvents(
+    onEvent: (event: { type: string; tenantId: string; occurredAt: string; payload: any }) => void,
+    onStatusChange?: (status: "connected" | "connecting" | "disconnected") => void,
+  ): () => void {
+    if (typeof window === "undefined") return () => {};
+
+    const token = getApiSessionToken() || "tok_demo";
+    const url = `${getApiBaseUrl()}/v1/events/stream?token=${encodeURIComponent(token)}`;
+    let eventSource: EventSource | null = null;
+    let isCancelled = false;
+
+    function connect() {
+      if (isCancelled) return;
+      onStatusChange?.("connecting");
+      try {
+        eventSource = new EventSource(url);
+        eventSource.onopen = () => {
+          onStatusChange?.("connected");
+        };
+        eventSource.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            if (data && data.type !== "connected") {
+              onEvent(data);
+            }
+          } catch {
+            // Ignore malformed ping or comment
+          }
+        };
+        eventSource.onerror = () => {
+          onStatusChange?.("disconnected");
+          eventSource?.close();
+          eventSource = null;
+          if (!isCancelled) {
+            setTimeout(connect, 3000);
+          }
+        };
+      } catch {
+        onStatusChange?.("disconnected");
+      }
+    }
+
+    connect();
+
+    return () => {
+      isCancelled = true;
+      if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+      }
+      onStatusChange?.("disconnected");
+    };
   },
 };

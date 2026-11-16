@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CMS Admin Panel | QAVRIL LABS</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <!-- Admin Header -->
+  <header class="admin-header">
+    <div class="header-inner">
+      <div class="brand">
+        <a href="../index.html" class="logo" title="View live site">
+          <span class="logo-mark">Q/L</span>
+          <span class="logo-text">QAVRIL/LABS</span>
+        </a>
+        <span class="admin-badge">CMS ADMIN</span>
+      </div>
+
+      <nav class="admin-nav" id="admin-nav">
+        <button class="nav-btn active" data-tab="overview">Overview</button>
+        <button class="nav-btn" data-tab="pages">Pages CMS</button>
+        <button class="nav-btn" data-tab="articles">Articles & Blogs</button>
+        <button class="nav-btn" data-tab="faqs">FAQs</button>
+        <button class="nav-btn" data-tab="leads">Inbound Leads</button>
+        <button class="nav-btn" data-tab="settings">Site Settings</button>
+      </nav>
+
+      <div class="header-actions">
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle theme">◐</button>
+        <a href="../index.html" target="_blank" class="btn btn-outline btn-sm">Live Site ↗</a>
+        <button id="btn-logout" class="btn btn-sm btn-danger">Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Gate Modal -->
+  <dialog id="login-dialog" class="admin-modal">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>CMS Authentication</h2>
+      </div>
+      <p class="modal-desc">Enter the Platform Admin Key to access the live content management panel.</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="admin-key">Admin Access Key</label>
+          <input type="password" id="admin-key" required placeholder="Enter platform key..." autocomplete="current-password">
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-lime btn-block">Unlock CMS Panel</button>
+        </div>
+        <p id="login-error" class="form-error" style="display:none;"></p>
+        <div class="demo-hint">
+          <span>Local dev key: <code>change-me-to-32-or-more-random-characters</code></span>
+        </div>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- Main Content Layout -->
+  <main class="admin-main">
+    <div class="container">
+      
+      <!-- TAB 1: OVERVIEW -->
+      <section id="tab-overview" class="admin-tab active">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Content Operations</span>
+            <h1>CMS Operations Dashboard</h1>
+          </div>
+          <div class="status-bar">
+            <span id="backend-status-chip" class="status-chip chip-ok">● Connected to Live Neon API</span>
+          </div>
+        </div>
+
+        <!-- 4 KPI Tiles -->
+        <div class="kpi-grid">
+          <div class="kpi-tile tile-lime">
+            <span class="kpi-label">PAGES MANAGED</span>
+            <span class="kpi-value" id="kpi-pages">3</span>
+            <span class="kpi-sub">Hero & core landing routes</span>
+          </div>
+          <div class="kpi-tile tile-violet">
+            <span class="kpi-label">ARTICLES & CASES</span>
+            <span class="kpi-value" id="kpi-articles">0</span>
+            <span class="kpi-sub">Blogs, case studies & news</span>
+          </div>
+          <div class="kpi-tile tile-yellow">
+            <span class="kpi-label">ACTIVE FAQS</span>
+            <span class="kpi-value" id="kpi-faqs">3</span>
+            <span class="kpi-sub">Synced with JSON-LD schema</span>
+          </div>
+          <div class="kpi-tile tile-orange">
+            <span class="kpi-label">INBOUND LEADS</span>
+            <span class="kpi-value" id="kpi-leads">0</span>
+            <span class="kpi-sub">Trials & consultation bookings</span>
+          </div>
+        </div>
+
+        <!-- Quick Content Actions & Recent Leads -->
+        <div class="grid-2">
+          <div class="card">
+            <h2>Quick CMS Actions</h2>
+            <p>Publish instant updates across the marketing website in real-time.</p>
+            <div class="action-buttons-list">
+              <button class="btn btn-block btn-lime" onclick="Admin.openNewArticleDrawer()">+ Write New Blog Post / Case Study</button>
+              <button class="btn btn-block btn-outline" onclick="Admin.switchTab('pages')">✏ Edit Landing Page Content</button>
+              <button class="btn btn-block btn-outline" onclick="Admin.openNewFaqDrawer()">+ Add FAQ Item</button>
+              <button class="btn btn-block btn-outline" onclick="Admin.switchTab('settings')">⚙ Update Ticker & Announcements</button>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>Recent Inbound Inquiries</h2>
+            <div id="recent-leads-list" class="leads-compact-list">
+              <div class="empty-state">No inquiries received yet. Submissions from <code>/book.html</code> will appear here.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: PAGES CMS -->
+      <section id="tab-pages" class="admin-tab">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Page Copy & SEO</span>
+            <h1>Pages Content Manager</h1>
+          </div>
+        </div>
+
+        <div class="grid-layout">
+          <div class="card page-selector-card">
+            <h3>Select Page to Edit</h3>
+            <div id="pages-list" class="pages-list"></div>
+          </div>
+
+          <div class="card page-editor-card">
+            <h2 id="editing-page-title">Edit Page</h2>
+            <form id="page-edit-form">
+              <input type="hidden" id="edit-page-slug">
+              <div class="form-grid">
+                <div class="form-group full">
+                  <label for="page-title">Page Title (Browser & SEO)</label>
+                  <input type="text" id="page-title" required>
+                </div>
+                <div class="form-group full">
+                  <label for="page-meta-desc">Meta Description</label>
+                  <textarea id="page-meta-desc" rows="2"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="page-kicker">Hero Kicker (Overline Tag)</label>
+                  <input type="text" id="page-kicker">
+                </div>
+                <div class="form-group">
+                  <label for="page-hero-badge">Hero Release Badge</label>
+                  <input type="text" id="page-hero-badge">
+                </div>
+                <div class="form-group full">
+                  <label for="page-hero-headline">Hero Main Headline</label>
+                  <input type="text" id="page-hero-headline">
+                </div>
+                <div class="form-group full">
+                  <label for="page-hero-subhead">Hero Subheadline / Value Proposition</label>
+                  <textarea id="page-hero-subhead" rows="3"></textarea>
+                </div>
+                <div class="form-group checkbox-group">
+                  <label>
+                    <input type="checkbox" id="page-is-published" checked>
+                    <span>Publish live on website</span>
+                  </label>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-lime">Save Page Content</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: ARTICLES CMS -->
+      <section id="tab-articles" class="admin-tab">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Knowledge & Case Studies</span>
+            <h1>Articles, Blogs & Case Studies</h1>
+          </div>
+          <div>
+            <button class="btn btn-lime" onclick="Admin.openNewArticleDrawer()">+ Create New Article</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-actions">
+            <div class="filter-group">
+              <button class="btn-filter active" data-filter="all">All</button>
+              <button class="btn-filter" data-filter="blog">Blog Posts</button>
+              <button class="btn-filter" data-filter="case_study">Case Studies</button>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Title & Slug</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Author</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="articles-table-body">
+                <tr><td colspan="6" class="text-center">Loading articles...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: FAQS CMS -->
+      <section id="tab-faqs" class="admin-tab">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Knowledge Base</span>
+            <h1>Frequently Asked Questions</h1>
+          </div>
+          <div>
+            <button class="btn btn-lime" onclick="Admin.openNewFaqDrawer()">+ Add FAQ</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Question & Answer</th>
+                  <th>Order</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="faqs-table-body">
+                <tr><td colspan="5" class="text-center">Loading FAQs...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 5: LEADS INBOX -->
+      <section id="tab-leads" class="admin-tab">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Demand Generation</span>
+            <h1>Inbound Consultation & Demo Leads</h1>
+          </div>
+          <div>
+            <button class="btn btn-outline" onclick="Admin.exportLeadsCsv()">Export CSV</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Contact Name</th>
+                  <th>Email</th>
+                  <th>Company</th>
+                  <th>Interest</th>
+                  <th>Preferred Slot</th>
+                  <th>Message</th>
+                </tr>
+              </thead>
+              <tbody id="leads-table-body">
+                <tr><td colspan="7" class="text-center">Loading inbound leads...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 6: SETTINGS -->
+      <section id="tab-settings" class="admin-tab">
+        <div class="tab-header">
+          <div>
+            <span class="kicker">Global Config</span>
+            <h1>Site Settings & Announcement Ticker</h1>
+          </div>
+        </div>
+
+        <div class="card max-w-720">
+          <form id="settings-form">
+            <div class="form-group">
+              <label for="set-brand-name">Brand Name</label>
+              <input type="text" id="set-brand-name" required>
+            </div>
+            <div class="form-group">
+              <label for="set-tagline">Corporate Tagline</label>
+              <input type="text" id="set-tagline" required>
+            </div>
+            <div class="form-group">
+              <label for="set-contact-email">Primary Contact & Lead Notification Email</label>
+              <input type="email" id="set-contact-email" required>
+            </div>
+            <div class="form-group">
+              <label for="set-announcement-text">Global Announcement Ticker Banner Text</label>
+              <input type="text" id="set-announcement-text" required>
+            </div>
+            <div class="form-group checkbox-group">
+              <label>
+                <input type="checkbox" id="set-announcement-active" checked>
+                <span>Enable announcement ticker across all website headers</span>
+              </label>
+            </div>
+            <div class="card-footer">
+              <button type="submit" class="btn btn-lime">Save Global Settings</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Slide-out Drawer: Article Editor -->
+  <aside id="article-drawer" class="admin-drawer" aria-hidden="true">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2 id="article-drawer-title">New Article</h2>
+        <button type="button" class="btn-close" onclick="Admin.closeArticleDrawer()">&times;</button>
+      </div>
+      <form id="article-form" class="drawer-body">
+        <input type="hidden" id="art-id">
+        <div class="form-group">
+          <label for="art-title">Title</label>
+          <input type="text" id="art-title" required placeholder="e.g. Why One Immutable Double-Entry Ledger Matters">
+        </div>
+        <div class="form-group">
+          <label for="art-slug">URL Slug</label>
+          <input type="text" id="art-slug" required placeholder="e.g. why-one-ledger">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="art-type">Type</label>
+            <select id="art-type">
+              <option value="blog">Blog Post</option>
+              <option value="case_study">Case Study</option>
+              <option value="news">Press / Release</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="art-category">Category Tag</label>
+            <input type="text" id="art-category" placeholder="e.g. Architecture, Finance">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="art-author">Author</label>
+            <input type="text" id="art-author" value="QAVRIL LABS Team">
+          </div>
+          <div class="form-group">
+            <label for="art-read-time">Read Time</label>
+            <input type="text" id="art-read-time" value="5 min read">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="art-excerpt">Short Excerpt (Cards & SEO)</label>
+          <textarea id="art-excerpt" rows="2" placeholder="Brief summary of the article..."></textarea>
+        </div>
+        <div class="form-group">
+          <label for="art-content">Content (Markdown Supported)</label>
+          <textarea id="art-content" rows="12" required placeholder="# Heading&#10;&#10;Write article content in Markdown here..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="art-featured">
+              <span>Featured on Homepage</span>
+            </label>
+          </div>
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" id="art-published" checked>
+              <span>Published Live</span>
+            </label>
+          </div>
+        </div>
+        <div class="drawer-actions">
+          <button type="submit" class="btn btn-lime btn-block">Save & Publish Article</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Slide-out Drawer: FAQ Editor -->
+  <aside id="faq-drawer" class="admin-drawer" aria-hidden="true">
+    <div class="drawer-panel">
+      <div class="drawer-head">
+        <h2 id="faq-drawer-title">Add FAQ Item</h2>
+        <button type="button" class="btn-close" onclick="Admin.closeFaqDrawer()">&times;</button>
+      </div>
+      <form id="faq-form" class="drawer-body">
+        <input type="hidden" id="faq-id">
+        <div class="form-group">
+          <label for="faq-category">Category</label>
+          <input type="text" id="faq-category" required placeholder="e.g. Security, Architecture, Pricing">
+        </div>
+        <div class="form-group">
+          <label for="faq-question">Question</label>
+          <input type="text" id="faq-question" required placeholder="Question text...">
+        </div>
+        <div class="form-group">
+          <label for="faq-answer">Answer</label>
+          <textarea id="faq-answer" rows="5" required placeholder="Full answer text..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="faq-order">Display Order</label>
+            <input type="number" id="faq-order" value="1">
+          </div>
+          <div class="form-group checkbox-group" style="align-self: flex-end;">
+            <label>
+              <input type="checkbox" id="faq-active" checked>
+              <span>Active on site</span>
+            </label>
+          </div>
+        </div>
+        <div class="drawer-actions">
+          <button type="submit" class="btn btn-lime btn-block">Save FAQ</button>
+        </div>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Confirm Dialog Modal -->
+  <dialog id="confirm-dialog" class="admin-modal">
+    <div class="modal-card">
+      <h2 id="confirm-title">Confirm Action</h2>
+      <p id="confirm-message">Are you sure you want to proceed?</p>
+      <div class="modal-actions">
+        <button id="confirm-cancel" class="btn btn-outline">Cancel</button>
+        <button id="confirm-proceed" class="btn btn-danger">Confirm Delete</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Live Toast Notification Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Scripts -->
+  <script src="../config.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

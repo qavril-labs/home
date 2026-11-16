@@ -2,18 +2,12 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation", () => {
   test.beforeEach(async ({ page }) => {
-    // Clear any signed-out session state before each test
-    await page.addInitScript(() => {
-      try {
-        sessionStorage.removeItem("qavril-session");
-      } catch {}
-    });
     await page.goto("/");
   });
 
   test("Inventory & Warehouses (INV-01 to INV-05) Flow", async ({ page, isMobile }) => {
     // 1. Navigate to Inventory
-    await page.getByRole("button", { name: "Inventory (INV-01)" }).first().click();
+    await page.getByRole("button", { name: /Inventory/i }).first().click();
     await expect(page.getByRole("heading", { name: "Inventory & Warehouses" })).toBeVisible();
 
     // 2. Verify 4 KPI cards
@@ -58,7 +52,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     await page.getByRole("button", { name: "Dispatch Transfer" }).click();
 
     // Verify toast
-    const toast = page.locator('[aria-live="polite"]');
+    const toast = page.locator('.fixed[aria-live="polite"]');
     await expect(toast).toContainText(/Stock Transfer Dispatched/i);
 
     // Verify record in table
@@ -67,7 +61,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
 
   test("CRM Pipeline & Quotes (SAL-01 & SAL-02) Flow", async ({ page }) => {
     // 1. Navigate to CRM Pipeline
-    await page.getByRole("button", { name: "CRM Pipeline (SAL-01)" }).first().click();
+    await page.getByRole("button", { name: /CRM Pipeline/i }).first().click();
     await expect(page.getByRole("heading", { name: "CRM Pipeline & Quotes" })).toBeVisible();
 
     // 2. Verify 4 KPI cards
@@ -86,7 +80,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     const advanceBtn = page.getByRole("button", { name: "Advance" }).first();
     if (await advanceBtn.isVisible()) {
       await advanceBtn.click();
-      const toast = page.locator('[aria-live="polite"]');
+      const toast = page.locator('.fixed[aria-live="polite"]');
       await expect(toast).toContainText(/Stage Advanced/i);
     }
 
@@ -102,14 +96,14 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     const convertBtn = page.getByRole("button", { name: "Convert to Invoice" }).first();
     if (await convertBtn.isVisible()) {
       await convertBtn.click();
-      const toast = page.locator('[aria-live="polite"]');
+      const toast = page.locator('.fixed[aria-live="polite"]');
       await expect(toast).toContainText(/Invoice Generated/i);
     }
   });
 
   test("Bank & Cash Reconciliation (FIN-04) Flow", async ({ page }) => {
     // 1. Navigate to Bank Rec
-    await page.getByRole("button", { name: "Bank Rec (FIN-04)" }).first().click();
+    await page.getByRole("button", { name: /Bank Rec/i }).first().click();
     await expect(page.getByRole("heading", { name: "Bank & Cash Reconciliation" })).toBeVisible();
 
     // 2. Verify 4 KPI cards
@@ -122,7 +116,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     const confirmMatchBtn = page.getByRole("button", { name: "Confirm Match" }).first();
     if (await confirmMatchBtn.isVisible()) {
       await confirmMatchBtn.click();
-      const toast = page.locator('[aria-live="polite"]');
+      const toast = page.locator('.fixed[aria-live="polite"]');
       await expect(toast).toContainText(/Bank Line Reconciled/i);
     }
 
@@ -131,7 +125,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     await expect(importFeedBtn).toBeVisible();
     await importFeedBtn.click();
 
-    const toast = page.locator('[aria-live="polite"]');
+    const toast = page.locator('.fixed[aria-live="polite"]');
     await expect(toast).toContainText(/Statement Imported/i);
   });
 });

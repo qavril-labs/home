@@ -21,9 +21,10 @@ import {
 
 export interface ForecastFinnProps {
   onNavigateBack?: () => void;
+  onNavigateToFinancials?: () => void;
 }
 
-export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack }) => {
+export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNavigateToFinancials }) => {
   const { showToast } = useToast();
 
   // State
@@ -112,6 +113,15 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack }) =>
         </div>
 
         <div className="flex items-center gap-2">
+          {onNavigateToFinancials && (
+            <button
+              type="button"
+              onClick={onNavigateToFinancials}
+              className="px-2.5 py-1 text-[11px] font-bold bg-page border border-line hover:bg-cream text-text shadow-sm"
+            >
+              View Financial Statements (FIN-05) →
+            </button>
+          )}
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-line ${
               isLiveApi ? "bg-lime text-ink" : "bg-cream text-ink"

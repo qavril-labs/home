@@ -114,7 +114,7 @@ check(/apiBase:/.test(config) && /contactEmail:/.test(config), "config.js: apiBa
 
 // 6b. Search and AI discovery: every indexable page has one title, one description, one H1, a canonical,
 // social tags, valid JSON-LD, and appears in the sitemap with a date.
-const indexable = pages.filter((page) => page !== "404.html");
+const indexable = pages.filter((page) => page !== "404.html" && !page.startsWith("admin/") && !html[page].includes("noindex"));
 const sitemapPaths = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+\/([^<]*)<\/loc>/g)].map((m) => m[1]));
 for (const page of indexable) {
   const text = html[page];
