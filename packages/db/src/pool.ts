@@ -9,5 +9,9 @@ export interface Queryable {
 }
 
 export function createPool(connectionString: string, max = 10): Pool {
-  return new pg.Pool({ connectionString, max });
+  const pool = new pg.Pool({ connectionString, max });
+  // An idle client can be closed by the server, for example when a database is dropped. Without a listener
+  // that becomes an uncaught exception. The pool discards the client, and the next query opens a new one.
+  pool.on("error", () => undefined);
+  return pool;
 }
