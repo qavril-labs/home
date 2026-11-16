@@ -940,6 +940,96 @@ export interface OcrDocument {
   boundingBoxes: OcrBoundingBox[];
 }
 
+// ==========================================
+// Logistics, Shipping & Fleet Telemetry (LOG-01 / LOG-04)
+// ==========================================
+
+export interface ConsignmentShipment {
+  id: string;
+  trackingNumber: string;
+  carrier: "DHL Express" | "FedEx Freight" | "Apex Internal Fleet" | "Maersk Line";
+  originCity: string;
+  originCoords: [number, number]; // [x, y] in normalized space (-100 to 100)
+  destinationCity: string;
+  destCoords: [number, number];
+  status: "in_transit" | "out_for_delivery" | "delivered" | "exception";
+  vehicleType: "van" | "heavy_truck" | "air_freight" | "cargo_ship";
+  eta: string;
+  value: string; // decimal string
+  carbonKg: number;
+  driverName?: string;
+  vehiclePlate?: string;
+  proofOfDelivery?: {
+    signedBy: string;
+    signedAt: string;
+    signatureHash: string;
+    photoUrl?: string;
+  };
+}
+
+export interface FleetVehicle {
+  id: string;
+  code: string;
+  driverName: string;
+  plateNumber: string;
+  status: "moving" | "idle" | "loading" | "maintenance";
+  positionCoords: [number, number];
+  speedKmh: number;
+  fuelPct: number;
+  activeConsignmentId?: string;
+}
+
+export interface CarrierRateQuote {
+  carrier: string;
+  serviceLevel: string;
+  transitDays: number;
+  cost: string; // decimal string
+  co2EstimateKg: number;
+  isRecommended?: boolean;
+}
+
+// ==========================================
+// Offline Operations Shell (PLT-19)
+// ==========================================
+
+export interface QueuedOfflineAction {
+  id: string;
+  timestamp: string;
+  actionType: "quick_sale" | "inventory_count" | "pod_signature" | "bill_scan";
+  payload: Record<string, unknown>;
+  syncStatus: "pending" | "syncing" | "synced" | "failed";
+  retryCount: number;
+  errorMessage?: string;
+}
+
+// ==========================================
+// Workspace Settings & Governance (PLT-18 / PLT-20 / AGT-06)
+// ==========================================
+
+export interface ModuleLicense {
+  moduleId: string;
+  moduleName: string;
+  catalogCategory: string;
+  isEnabled: boolean;
+  tierRequirement: "core" | "growth" | "enterprise";
+  monthlyPrice: string; // decimal string
+}
+
+export interface AuditLogRecord {
+  id: string;
+  timestamp: string;
+  actorType: "human" | "agent";
+  actorName: string;
+  action: string;
+  targetEntity: string;
+  targetId: string;
+  policyTier: 1 | 2 | 3;
+  approvalStatus: "auto_approved" | "human_approved" | "rejected";
+  approverName?: string;
+  sha256Proof: string;
+}
+
+
 
 
 

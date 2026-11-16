@@ -18,6 +18,8 @@ import {
   ChevronDown,
   ChevronRight,
   Zap,
+  Truck,
+  Sliders,
   X,
 } from "lucide-react";
 
@@ -65,6 +67,7 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "inventory", label: "Inventory", code: "INV-01", icon: Warehouse },
       { id: "crm", label: "CRM Pipeline", code: "SAL-01", icon: Kanban },
       { id: "bank", label: "Bank Rec", code: "FIN-04", icon: CheckSquare },
+      { id: "logistics", label: "Logistics & Fleet", code: "LOG-01", icon: Truck },
     ],
   },
   {
@@ -87,6 +90,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Platform & Tools",
     items: [
       { id: "import", label: "CSV Import", code: "PLT-14", icon: FileSpreadsheet },
+      { id: "settings", label: "Settings & Audit", code: "PLT-18", icon: Sliders },
       { id: "gallery", label: "Component Gallery", code: "UI-LIB", icon: Palette },
     ],
   },

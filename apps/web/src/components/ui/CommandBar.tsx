@@ -16,9 +16,13 @@ import {
   ShieldCheck,
   ExternalLink,
   Zap,
+  Truck,
+  Sliders,
+  CheckCircle2,
 } from "lucide-react";
 import { useTheme } from "../../context/ThemeContext";
 import { initialConversationalTurns } from "../../lib/api-mock";
+import { parseNaturalLanguageCommand, type ParsedNlpIntent } from "../../lib/nlp-command-parser";
 import type { ConversationalTurn } from "../../types";
 
 export interface CommandItem {
@@ -55,6 +59,25 @@ export const CommandBar: React.FC<CommandBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const chatBottomRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = useTheme();
+
+  // Natural language intent detection
+  const nlpIntent = mode === "commands" ? parseNaturalLanguageCommand(query) : null;
+
+  const handleExecuteNlp = (intent: ParsedNlpIntent) => {
+    if (intent.kind === "navigate" && intent.payload.tab) {
+      onNavigate(intent.payload.tab);
+      onClose();
+    } else if (intent.kind === "create_invoice") {
+      onNavigate("invoices");
+      onClose();
+    } else if (intent.kind === "create_expense") {
+      onOpenQuickEntry("expense");
+      onClose();
+    } else if (intent.kind === "create_party") {
+      onOpenContactDrawer();
+      onClose();
+    }
+  };
 
   const commands: CommandItem[] = [
     {
@@ -224,6 +247,26 @@ export const CommandBar: React.FC<CommandBarProps> = ({
       icon: <Sparkles className="w-4 h-4 text-cyan" />,
       onSelect: () => {
         onNavigate("packs");
+        onClose();
+      },
+    },
+    {
+      id: "nav-logistics",
+      title: "Go to Logistics, Shipping & 3D Fleet Map (LOG-01 / LOG-04)",
+      category: "Navigation",
+      icon: <Truck className="w-4 h-4 text-pink" />,
+      onSelect: () => {
+        onNavigate("logistics");
+        onClose();
+      },
+    },
+    {
+      id: "nav-settings",
+      title: "Go to Workspace Settings, Licensing & Audit (PLT-18 / AGT-06)",
+      category: "Navigation",
+      icon: <Sliders className="w-4 h-4 text-yellow" />,
+      onSelect: () => {
+        onNavigate("settings");
         onClose();
       },
     },
@@ -433,6 +476,26 @@ export const CommandBar: React.FC<CommandBarProps> = ({
           provenanceRef: "UAAP-OLA-v1.0 · HRM-10",
           actionLink: { label: "Open Onboard Ola Roster", targetTab: "onboard-ola" },
         };
+      } else if (q.includes("logistics") || q.includes("fleet") || q.includes("shipping") || q.includes("carrier") || q.includes("freight")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Logistics Hub (LOG-01 / LOG-04) reports 3 shipments in transit totaling $26,860.00. Interactive 3D Fleet Map is tracking transit routes, carrier rates, and digital proof-of-delivery.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Fleet Telemetry", catalogId: "LOG-04", color: "var(--q-cyan)", tier: 1 },
+          provenanceRef: "LOG-FLEET-v1.0 · GPS-SYNC",
+          actionLink: { label: "Open Logistics & 3D Fleet Map", targetTab: "logistics" },
+        };
+      } else if (q.includes("settings") || q.includes("license") || q.includes("audit") || q.includes("governance")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Workspace Settings & Governance Hub (PLT-18 / AGT-06) is active. Manage active module licenses, fiscal year lock dates, and inspect immutable SHA-256 audit proofs.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Governance Hub", catalogId: "PLT-18", color: "var(--q-yellow)", tier: 2 },
+          provenanceRef: "PLT-18-LICENSE-v1.0",
+          actionLink: { label: "Open Workspace Settings", targetTab: "settings" },
+        };
       } else {
         botResponse = {
           id: `turn-a-${Date.now()}`,
@@ -516,11 +579,42 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                     e.preventDefault();
                     onClose();
                   }
+                  if (e.key === "Enter" && nlpIntent) {
+                    e.preventDefault();
+                    handleExecuteNlp(nlpIntent);
+                  }
                 }}
-                placeholder="Type a command or jump to screen… (or switch to AI-09 Chat)"
+                placeholder="Type command or natural prompt (e.g. 'Bill Acme $4,500' or 'Show ledger')…"
                 className="w-full bg-transparent border-none outline-none text-sm font-bold text-text placeholder:text-muted"
               />
             </div>
+
+            {/* Live Natural Language Intent Parser Pill */}
+            {nlpIntent && (
+              <div className="mx-3 my-2 p-2.5 bg-yellow/20 border-line shadow-[2px_2px_0_var(--q-ink)] flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-5 h-5 bg-ink text-yellow border border-ink flex items-center justify-center font-mono font-black text-xs shrink-0">
+                    ⚡
+                  </span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-mono font-bold uppercase text-muted">
+                      AI Intent Detected ({Math.round(nlpIntent.confidence * 100)}% confidence)
+                    </span>
+                    <span className="text-xs font-bold text-ink truncate">
+                      {nlpIntent.summary}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleExecuteNlp(nlpIntent)}
+                  className="px-2.5 py-1 text-xs font-mono font-black bg-lime text-ink border border-ink shadow-[1px_1px_0_var(--q-ink)] hover:bg-yellow shrink-0 flex items-center gap-1 cursor-pointer"
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Execute [Enter]
+                </button>
+              </div>
+            )}
 
             <div className="max-h-[380px] overflow-y-auto p-2">
               {filtered.length === 0 ? (

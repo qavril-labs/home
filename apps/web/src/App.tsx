@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
 import { Sidebar } from "./components/ui/Sidebar";
 import { CommandBar } from "./components/ui/CommandBar";
+import { AgentFlightDeck, type PendingAction } from "./components/ui/AgentFlightDeck";
 import { ToastContainer } from "./components/ui/Toast";
 import { Gate } from "./components/ui/Gate";
 import { Dashboard } from "./pages/Dashboard";
@@ -20,6 +21,10 @@ import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
 import { DocumentIntelligenceDrawer } from "./modules/documents/DocumentIntelligenceDrawer";
 import { FinancialDigitalTwinStudio } from "./modules/simulation/FinancialDigitalTwinStudio";
 import { AutopilotMissionControlDrawer } from "./modules/autopilot/AutopilotMissionControlDrawer";
+import { LogisticsHub } from "./modules/logistics/LogisticsHub";
+import { WorkspaceSettingsHub } from "./modules/settings/WorkspaceSettingsHub";
+import { MobileBottomNav } from "./components/ui/MobileBottomNav";
+import { OfflineQueueDrawer } from "./modules/offline/OfflineQueueDrawer";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
@@ -88,6 +93,7 @@ export const App: React.FC = () => {
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [isOcrDrawerOpen, setIsOcrDrawerOpen] = useState<boolean>(false);
   const [isAutopilotDrawerOpen, setIsAutopilotDrawerOpen] = useState<boolean>(false);
+  const [isOfflineDrawerOpen, setIsOfflineDrawerOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
@@ -106,6 +112,54 @@ export const App: React.FC = () => {
   const [salesQuotes, setSalesQuotes] = useState<SalesQuote[]>(initialSalesQuotes);
   const [bankFeedLines, setBankFeedLines] = useState<BankFeedLine[]>(initialBankFeedLines);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
+  const [isFlightDeckOpen, setIsFlightDeckOpen] = useState<boolean>(false);
+  const [flightDeckActions, setFlightDeckActions] = useState<PendingAction[]>([
+    {
+      id: "act-chloe-1",
+      agentName: "Chase Chloe",
+      agentRole: "Debtor Recovery (FIN-14)",
+      avatarColor: "bg-yellow",
+      type: "collections_reminder",
+      title: "Overdue Reminder: Horizon Aerospace ($1,480.00)",
+      detail: "Invoice INV-2026-003 is 9 days overdue. Courtesy Net 30 template with ACH link ready.",
+      confidence: 98,
+      impactAmount: "$1,480.00",
+      suggestedAction: "Dispatch Reminder",
+      timestamp: "10 mins ago",
+      onApprove: () => {},
+      onDismiss: () => {},
+    },
+    {
+      id: "act-lou-1",
+      agentName: "Ledger Lou",
+      agentRole: "Ledger Autopilot (AGT-03)",
+      avatarColor: "bg-cyan",
+      type: "reconciliation_match",
+      title: "Reconcile Stripe Payout ($4,550.00)",
+      detail: "Exact match found against Sales Invoice INV-2026-001 with 0.1% fee variance.",
+      confidence: 99,
+      impactAmount: "$4,550.00",
+      suggestedAction: "Post 3-Way Match",
+      timestamp: "24 mins ago",
+      onApprove: () => {},
+      onDismiss: () => {},
+    },
+    {
+      id: "act-rex-1",
+      agentName: "Restock Rex",
+      agentRole: "Inventory Autopilot (AGT-04)",
+      avatarColor: "bg-orange",
+      type: "reorder_alert",
+      title: "Reorder: Titanium Grade 5 Billet",
+      detail: "Current stock (2 units) is below safety buffer (10 units). PO-2026-004 staged.",
+      confidence: 96,
+      impactAmount: "$3,417.50",
+      suggestedAction: "Submit PO",
+      timestamp: "1 hr ago",
+      onApprove: () => {},
+      onDismiss: () => {},
+    },
+  ]);
 
   // Sync URL hash and activeTab
   const navigateToTab = (tab: string) => {
@@ -642,6 +696,14 @@ export const App: React.FC = () => {
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <IndustryPacksHub />
           </div>
+        ) : activeTab === "logistics" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <LogisticsHub />
+          </div>
+        ) : activeTab === "settings" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <WorkspaceSettingsHub />
+          </div>
         ) : activeTab === "import" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <ImportPage />
@@ -698,8 +760,44 @@ export const App: React.FC = () => {
         onNavigateToInbox={() => navigateToTab("approvals")}
       />
 
+      {/* Mobile & Offline Operations Queue Drawer (PLT-19) */}
+      <OfflineQueueDrawer
+        isOpen={isOfflineDrawerOpen}
+        onClose={() => setIsOfflineDrawerOpen(false)}
+      />
+
+      {/* Mobile Bottom Navigation Bar (md:hidden) */}
+      {isAuthenticated && (
+        <MobileBottomNav
+          activeTab={activeTab}
+          onNavigate={navigateToTab}
+          onOpenOfflineDrawer={() => setIsOfflineDrawerOpen(true)}
+        />
+      )}
+
       {/* Global Toast Container */}
       <ToastContainer />
+
+      {/* Autonomous Agent Flight Deck */}
+      {isAuthenticated && (
+        <AgentFlightDeck
+          isOpen={isFlightDeckOpen}
+          onToggleOpen={() => setIsFlightDeckOpen((prev) => !prev)}
+          actions={flightDeckActions.map((act) => ({
+            ...act,
+            onApprove: () => {
+              setFlightDeckActions((prev) => prev.filter((a) => a.id !== act.id));
+            },
+            onDismiss: () => {
+              setFlightDeckActions((prev) => prev.filter((a) => a.id !== act.id));
+            },
+          }))}
+          onApproveAll={() => {
+            setFlightDeckActions([]);
+          }}
+          onNavigateToAgent={(agentRoute) => navigateToTab(agentRoute)}
+        />
+      )}
       </div>
     </div>
   );
