@@ -42,8 +42,8 @@ import type {
 } from "../types";
 
 export const initialMockInsights: WorkspaceInsights = {
-  company: "Apex Precision Tools Ltd",
-  workspaceName: "Apex Production",
+  company: "Example Tools Ltd",
+  workspaceName: "Example Tools Ltd",
   currency: "USD",
   asOf: "2026-11-10",
   totals: {

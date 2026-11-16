@@ -663,7 +663,7 @@ export const apiClient = {
         recipient: email,
         recipientName: displayName,
         subject: `Courtesy reminder: Invoice ${invoice.invoiceNumber} ($${invoice.balanceDue})`,
-        message: `Hi ${displayName} team, friendly reminder from Apex Production: Invoice ${invoice.invoiceNumber} ($${invoice.balanceDue}) was due on ${invoice.dueDate}. Please let us know when payment has been scheduled. Thank you!`,
+        message: `Hi ${displayName} team, friendly reminder from Example Tools Ltd: Invoice ${invoice.invoiceNumber} ($${invoice.balanceDue}) was due on ${invoice.dueDate}. Please let us know when payment has been scheduled. Thank you!`,
         tone: invoice.status === "overdue" ? "firm" : "friendly",
         status: "draft",
       },

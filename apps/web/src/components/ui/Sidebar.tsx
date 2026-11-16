@@ -97,7 +97,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
   isOpenMobile,
   onCloseMobile,
-  workspaceName = "Apex Production",
+  workspaceName = "Example Tools Ltd",
 }) => {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 

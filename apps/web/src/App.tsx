@@ -19,6 +19,7 @@ import { GalleryPage } from "./pages/GalleryPage";
 import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
 import { DocumentIntelligenceDrawer } from "./modules/documents/DocumentIntelligenceDrawer";
 import { FinancialDigitalTwinStudio } from "./modules/simulation/FinancialDigitalTwinStudio";
+import { AutopilotMissionControlDrawer } from "./modules/autopilot/AutopilotMissionControlDrawer";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
@@ -86,6 +87,7 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => getTabFromLocation());
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [isOcrDrawerOpen, setIsOcrDrawerOpen] = useState<boolean>(false);
+  const [isAutopilotDrawerOpen, setIsAutopilotDrawerOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
@@ -421,7 +423,7 @@ export const App: React.FC = () => {
           onNavigate={navigateToTab}
           isOpenMobile={isSidebarOpenMobile}
           onCloseMobile={() => setIsSidebarOpenMobile(false)}
-          workspaceName="Apex Production"
+          workspaceName="Example Tools Ltd"
         />
       )}
 
@@ -429,10 +431,11 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
         {/* App Header per UI Contract */}
         <AppHeader
-          workspaceName="Apex Production"
+          workspaceName="Example Tools Ltd"
           activeTab={activeTab}
           onOpenCommandBar={() => setIsCommandBarOpen(true)}
           onOpenOcrDrawer={() => setIsOcrDrawerOpen(true)}
+          onOpenAutopilot={() => setIsAutopilotDrawerOpen(true)}
           onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
           onSignOut={() => {
             try {
@@ -477,7 +480,10 @@ export const App: React.FC = () => {
             />
           </div>
         ) : activeTab === "dashboard" ? (
-          <Dashboard onNavigateToBot={handleNavigateBot} />
+          <Dashboard
+            onNavigateToBot={handleNavigateBot}
+            onOpenAutopilot={() => setIsAutopilotDrawerOpen(true)}
+          />
         ) : activeTab === "ledger-lou" ? (
           <LedgerLou onNavigateBack={() => navigateToTab("dashboard")} />
         ) : activeTab === "chase-chloe" ? (
@@ -683,6 +689,13 @@ export const App: React.FC = () => {
         onBillCreated={(newBill) => {
           setBills((prev) => [newBill, ...prev]);
         }}
+      />
+
+      {/* Autonomous Autopilot Mission Control Drawer */}
+      <AutopilotMissionControlDrawer
+        isOpen={isAutopilotDrawerOpen}
+        onClose={() => setIsAutopilotDrawerOpen(false)}
+        onNavigateToInbox={() => navigateToTab("approvals")}
       />
 
       {/* Global Toast Container */}

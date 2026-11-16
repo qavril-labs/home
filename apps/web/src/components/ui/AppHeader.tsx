@@ -1,27 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "./Button";
-import { Moon, Sun, Search, Menu, FileText } from "lucide-react";
+import { Moon, Sun, Search, Menu, FileText, Volume2, VolumeX, Zap } from "lucide-react";
 import { LiveEventTicker } from "./LiveEventTicker";
+import { sound } from "../../lib/sound-effects";
 
 export interface AppHeaderProps {
   workspaceName?: string;
   activeTab?: string;
   onOpenCommandBar?: () => void;
   onOpenOcrDrawer?: () => void;
+  onOpenAutopilot?: () => void;
   onSignOut?: () => void;
   onToggleSidebar?: () => void;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
-  workspaceName = "Apex Production",
+  workspaceName = "Example Tools Ltd",
   activeTab = "dashboard",
   onOpenCommandBar,
   onOpenOcrDrawer,
+  onOpenAutopilot,
   onSignOut,
   onToggleSidebar,
 }) => {
   const { theme, toggleTheme } = useTheme();
+  const [isMuted, setIsMuted] = useState<boolean>(() => sound.getIsMuted());
+
+  const handleToggleSound = () => {
+    const next = sound.toggleMute();
+    setIsMuted(next);
+  };
 
   return (
     <header className="sticky top-0 z-20 w-full bg-panel border-b-line shadow-sm">
@@ -83,8 +92,39 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             <span>AI-01 OCR</span>
           </button>
 
+          {/* Autopilot Mission Control Trigger */}
+          {onOpenAutopilot && (
+            <button
+              type="button"
+              data-testid="header-autopilot-btn"
+              onClick={onOpenAutopilot}
+              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-lime text-ink border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-lime/90 transition-colors cursor-pointer"
+              title="Open Autonomous Autopilot Mission Control"
+            >
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span>Autopilot Active</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-ink animate-ping" />
+            </button>
+          )}
+
           {/* Real-Time Live Event Stream Ticker (SSE) */}
           <LiveEventTicker />
+
+          {/* Audio Synthesizer Toggle */}
+          <button
+            type="button"
+            data-testid="header-sound-btn"
+            onClick={handleToggleSound}
+            aria-label={isMuted ? "Unmute audio feedback" : "Mute audio feedback"}
+            className="w-9 h-9 flex items-center justify-center bg-panel border-line shadow-[2px_2px_0_var(--q-ink)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--q-ink)] transition-all cursor-pointer"
+            title={isMuted ? "Sound: Muted (Click to enable audio feedback)" : "Sound: Active (Web Audio Synthesizer)"}
+          >
+            {isMuted ? (
+              <VolumeX className="w-4 h-4 text-muted" />
+            ) : (
+              <Volume2 className="w-4 h-4 text-good" />
+            )}
+          </button>
 
           {/* Workspace badge */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-page border-line shadow-[2px_2px_0_var(--q-ink)]">

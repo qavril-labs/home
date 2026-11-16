@@ -16,13 +16,16 @@ import {
   Boxes,
   BarChart3,
   RotateCw,
+  Zap,
+  Sparkles,
 } from "lucide-react";
 
 export interface DashboardProps {
   onNavigateToBot?: (botId: string) => void;
+  onOpenAutopilot?: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot, onOpenAutopilot }) => {
   const { showToast } = useToast();
 
   // Data states
@@ -500,6 +503,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigateToBot }) => {
             <RotateCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
             <span>Sync</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Autopilot Sentinel Pulse Strip */}
+      <div className="neo-card p-3.5 bg-page border-line flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm" data-testid="dashboard-autopilot-banner">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-lime text-ink border border-ink shadow-[1.5px_1.5px_0_var(--q-ink)] flex items-center justify-center font-bold shrink-0">
+            <Zap className="w-4 h-4 fill-current" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-display font-black text-xs uppercase tracking-wider text-text">
+                Autonomous Autopilot Sentinel · Active Swarm
+              </span>
+              <span className="w-2 h-2 rounded-full bg-good animate-ping" />
+            </div>
+            <p className="text-[11px] text-muted">
+              8 AI Sentinels collaborating · 38 Tier-1 actions auto-executed today · Dual-control enforced
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {onOpenAutopilot && (
+            <Button
+              variant="lime"
+              size="sm"
+              onClick={onOpenAutopilot}
+              data-testid="dashboard-mission-control-btn"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              Open Mission Control
+            </Button>
+          )}
         </div>
       </div>
 
