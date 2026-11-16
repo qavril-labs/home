@@ -1,12 +1,14 @@
 import React from "react";
 import { useTheme } from "../../context/ThemeContext";
 import { Button } from "./Button";
-import { Moon, Sun, Search, Menu } from "lucide-react";
+import { Moon, Sun, Search, Menu, FileText } from "lucide-react";
+import { LiveEventTicker } from "./LiveEventTicker";
 
 export interface AppHeaderProps {
   workspaceName?: string;
   activeTab?: string;
   onOpenCommandBar?: () => void;
+  onOpenOcrDrawer?: () => void;
   onSignOut?: () => void;
   onToggleSidebar?: () => void;
 }
@@ -15,6 +17,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   workspaceName = "Apex Production",
   activeTab = "dashboard",
   onOpenCommandBar,
+  onOpenOcrDrawer,
   onSignOut,
   onToggleSidebar,
 }) => {
@@ -67,6 +70,21 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               Ctrl+K
             </kbd>
           </button>
+
+          {/* OCR Document Capture Inspector Trigger (AI-01) */}
+          <button
+            type="button"
+            data-testid="header-ocr-btn"
+            onClick={onOpenOcrDrawer}
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-lime hover:text-ink transition-colors cursor-pointer"
+            title="Scan Supplier Bill / Invoice (AI-01 OCR Inspector)"
+          >
+            <FileText className="w-3.5 h-3.5 text-cyan" />
+            <span>AI-01 OCR</span>
+          </button>
+
+          {/* Real-Time Live Event Stream Ticker (SSE) */}
+          <LiveEventTicker />
 
           {/* Workspace badge */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-page border-line shadow-[2px_2px_0_var(--q-ink)]">

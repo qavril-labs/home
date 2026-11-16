@@ -17,6 +17,7 @@ import { BankReconciliationPage } from "./pages/BankReconciliationPage";
 import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
 import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
+import { DocumentIntelligenceDrawer } from "./modules/documents/DocumentIntelligenceDrawer";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
@@ -68,6 +69,9 @@ function getTabFromLocation(): string {
 export const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     try {
+      if (typeof window !== "undefined" && window.location.hash.includes("signed-out")) {
+        return false;
+      }
       const sess = sessionStorage.getItem("qavril-session");
       if (sess === "signed-out") return false;
     } catch {
@@ -78,6 +82,7 @@ export const App: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<string>(() => getTabFromLocation());
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
+  const [isOcrDrawerOpen, setIsOcrDrawerOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
@@ -107,10 +112,29 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const onHashChange = () => {
-      setActiveTab(getTabFromLocation());
+      const tab = getTabFromLocation();
+      if (tab === "signed-out") {
+        setIsAuthenticated(false);
+      }
+      setActiveTab(tab);
     };
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  // Global keyboard shortcuts (Ctrl+K for CommandBar, ESC to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === "k" || e.code === "KeyK")) {
+        e.preventDefault();
+        setIsCommandBarOpen((prev) => !prev);
+      } else if (e.key === "Escape" || e.key === "Esc" || e.code === "Escape") {
+        e.preventDefault();
+        setIsCommandBarOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, []);
 
   // Load Master Data & Invoices from Fastify HTTP Endpoints via contract client
@@ -401,6 +425,7 @@ export const App: React.FC = () => {
           workspaceName="Apex Production"
           activeTab={activeTab}
           onOpenCommandBar={() => setIsCommandBarOpen(true)}
+          onOpenOcrDrawer={() => setIsOcrDrawerOpen(true)}
           onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
           onSignOut={() => {
             try {
@@ -428,6 +453,7 @@ export const App: React.FC = () => {
                   // ignore
                 }
                 setIsAuthenticated(true);
+                navigateToTab("dashboard");
               }}
               onSecondaryAction={() => {
                 try {
@@ -439,6 +465,7 @@ export const App: React.FC = () => {
                   // ignore
                 }
                 setIsAuthenticated(true);
+                navigateToTab("dashboard");
               }}
             />
           </div>
@@ -552,6 +579,7 @@ export const App: React.FC = () => {
               onApproveBill={handleApproveBill}
               onPayBill={handlePayBill}
               onDeleteBill={handleDeleteBill}
+              onOpenOcrInspector={() => setIsOcrDrawerOpen(true)}
             />
           </div>
         ) : activeTab === "items" ? (
@@ -627,6 +655,16 @@ export const App: React.FC = () => {
         onOpenQuickEntry={() => navigateToTab("dashboard")}
         onOpenContactDrawer={() => navigateToTab("contacts")}
         onOpenItemDrawer={() => navigateToTab("items")}
+        onOpenOcrDrawer={() => setIsOcrDrawerOpen(true)}
+      />
+
+      {/* AI-01 Document Intelligence & OCR Visual Extraction Inspector Drawer */}
+      <DocumentIntelligenceDrawer
+        isOpen={isOcrDrawerOpen}
+        onClose={() => setIsOcrDrawerOpen(false)}
+        onBillCreated={(newBill) => {
+          setBills((prev) => [newBill, ...prev]);
+        }}
       />
 
       {/* Global Toast Container */}

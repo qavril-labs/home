@@ -5,8 +5,6 @@ import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 export const ToastContainer: React.FC = () => {
   const { toasts, dismissToast } = useToast();
 
-  if (toasts.length === 0) return null;
-
   return (
     <div
       aria-live="polite"

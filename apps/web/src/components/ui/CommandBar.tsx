@@ -35,6 +35,7 @@ export interface CommandBarProps {
   onOpenQuickEntry: (kind: "sale" | "expense") => void;
   onOpenContactDrawer: () => void;
   onOpenItemDrawer: () => void;
+  onOpenOcrDrawer?: () => void;
 }
 
 export const CommandBar: React.FC<CommandBarProps> = ({
@@ -44,6 +45,7 @@ export const CommandBar: React.FC<CommandBarProps> = ({
   onOpenQuickEntry,
   onOpenContactDrawer,
   onOpenItemDrawer,
+  onOpenOcrDrawer,
 }) => {
   const [mode, setMode] = useState<"commands" | "ai09">("commands");
   const [query, setQuery] = useState("");
@@ -91,6 +93,16 @@ export const CommandBar: React.FC<CommandBarProps> = ({
       icon: <Package className="w-4 h-4 text-cyan" />,
       onSelect: () => {
         onOpenItemDrawer();
+        onClose();
+      },
+    },
+    {
+      id: "scan-ocr",
+      title: "Scan Supplier Bill / Invoice (AI-01 OCR Inspector)",
+      category: "Actions",
+      icon: <FileSpreadsheet className="w-4 h-4 text-lime" />,
+      onSelect: () => {
+        onOpenOcrDrawer?.();
         onClose();
       },
     },
@@ -264,8 +276,16 @@ export const CommandBar: React.FC<CommandBarProps> = ({
     if (isOpen) {
       setQuery("");
       setTimeout(() => inputRef.current?.focus(), 50);
+
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
     }
-  }, [isOpen, mode]);
+  }, [isOpen, mode, onClose]);
 
   useEffect(() => {
     if (mode === "ai09") {
@@ -342,6 +362,16 @@ export const CommandBar: React.FC<CommandBarProps> = ({
           provenanceRef: "PLT-07-APPROVALS-v1.0",
           actionLink: { label: "Go to Approvals Inbox", targetTab: "approvals" },
         };
+      } else if (q.includes("ocr") || q.includes("scan") || q.includes("receipt") || q.includes("capture") || q.includes("doc")) {
+        botResponse = {
+          id: `turn-a-${Date.now()}`,
+          role: "assistant",
+          text: "Document Intelligence (AI-01 / PLT-11) is active. Precision Supplies Ltd bill (INV-99382 for $3,639.75) is extracted with 99.4% confidence and SHA-256 provenance hash. Open the visual inspector to verify bounding boxes.",
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          agentBadge: { name: "Document Intelligence", catalogId: "AI-01", color: "var(--q-cyan)", tier: 2 },
+          provenanceRef: "DOC-EXTRACT-v1.0 · SHA-256:4a8b79...",
+          actionLink: { label: "Inspect Bills (FIN-03)", targetTab: "payables" },
+        };
       } else {
         botResponse = {
           id: `turn-a-${Date.now()}`,
@@ -398,9 +428,15 @@ export const CommandBar: React.FC<CommandBarProps> = ({
             </button>
           </div>
 
-          <kbd className="text-[10px] bg-panel border border-ink px-1.5 py-0.5 text-muted font-mono">
+          <button
+            type="button"
+            data-testid="commandbar-close-btn"
+            onClick={onClose}
+            aria-label="Close command palette"
+            className="text-[10px] bg-panel border border-ink px-1.5 py-0.5 text-muted font-mono hover:bg-page hover:text-text cursor-pointer"
+          >
             ESC to close
-          </kbd>
+          </button>
         </div>
 
         {/* MODE 1: COMMAND SEARCH */}
@@ -414,6 +450,12 @@ export const CommandBar: React.FC<CommandBarProps> = ({
                 data-testid="commandbar-search-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    onClose();
+                  }
+                }}
                 placeholder="Type a command or jump to screen… (or switch to AI-09 Chat)"
                 className="w-full bg-transparent border-none outline-none text-sm font-bold text-text placeholder:text-muted"
               />

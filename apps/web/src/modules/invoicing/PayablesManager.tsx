@@ -29,6 +29,7 @@ export interface PayablesManagerProps {
   onApproveBill: (id: string) => void;
   onPayBill: (id: string) => void;
   onDeleteBill: (id: string) => void;
+  onOpenOcrInspector?: () => void;
 }
 
 export const PayablesManager: React.FC<PayablesManagerProps> = ({
@@ -39,6 +40,7 @@ export const PayablesManager: React.FC<PayablesManagerProps> = ({
   onApproveBill,
   onPayBill,
   onDeleteBill,
+  onOpenOcrInspector,
 }) => {
   const { showToast } = useToast();
   const [filter, setFilter] = useState<"all" | "pending_approval" | "approved" | "overdue" | "paid">("all");
@@ -250,10 +252,23 @@ export const PayablesManager: React.FC<PayablesManagerProps> = ({
           </p>
         </div>
 
-        <Button variant="lime" size="md" onClick={openCreateDrawer}>
-          <Plus className="w-4 h-4 mr-1" />
-          Record vendor bill
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          {onOpenOcrInspector && (
+            <Button
+              variant="cyan"
+              size="md"
+              data-testid="payables-ocr-btn"
+              onClick={onOpenOcrInspector}
+            >
+              <FileCheck className="w-4 h-4 mr-1" />
+              Scan Bill via OCR (AI-01)
+            </Button>
+          )}
+          <Button variant="lime" size="md" onClick={openCreateDrawer}>
+            <Plus className="w-4 h-4 mr-1" />
+            Record vendor bill
+          </Button>
+        </div>
       </div>
 
       {/* AP Aging Schedule Tiles */}

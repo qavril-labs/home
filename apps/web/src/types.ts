@@ -791,4 +791,68 @@ export interface ConversationalTurn {
   };
 }
 
+// ==========================================
+// Domain Events Specification (contracts/events.md)
+// ==========================================
+
+export interface DomainEvent<T = Record<string, unknown>> {
+  id: string; // unique UUID v7 or ULID
+  tenantId: string; // isolated tenant
+  type: string; // dot-notated event name, e.g. "ledger.entry.posted"
+  version: number; // schema version (starts at 1)
+  occurredAt: string; // ISO 8601 UTC timestamp
+  producer: string; // service identifier, e.g. "@erp/api"
+  correlationId?: string; // causal tracing ID
+  data: T; // strongly-typed payload
+}
+
+// ==========================================
+// Document Intelligence & OCR (AI-01 / PLT-11)
+// ==========================================
+
+export interface OcrBoundingBox {
+  id: string;
+  fieldKey: "vendorName" | "invoiceNumber" | "invoiceDate" | "dueDate" | "currency" | "subtotal" | "taxTotal" | "totalAmount" | "lineItem";
+  label: string;
+  box: {
+    top: number; // percentage 0-100
+    left: number; // percentage 0-100
+    width: number; // percentage 0-100
+    height: number; // percentage 0-100
+  };
+  extractedValue: string;
+  confidence: number; // e.g. 0.992 for 99.2%
+}
+
+export interface OcrLineItem {
+  id: string;
+  description: string;
+  sku?: string;
+  quantity: number;
+  unitPrice: string; // decimal string
+  lineTotal: string; // decimal string
+  confidence: number;
+}
+
+export interface OcrDocument {
+  id: string;
+  filename: string;
+  fileSize: string;
+  mimeType: string;
+  uploadedAt: string;
+  status: "processing" | "extracted" | "verified" | "posted";
+  provenanceSha256: string;
+  vendorName: string;
+  invoiceNumber: string;
+  invoiceDate: string;
+  dueDate: string;
+  currency: string;
+  subtotal: string; // decimal string
+  taxTotal: string; // decimal string
+  totalAmount: string; // decimal string
+  lines: OcrLineItem[];
+  boundingBoxes: OcrBoundingBox[];
+}
+
+
 

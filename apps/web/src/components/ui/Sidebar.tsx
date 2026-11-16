@@ -72,6 +72,10 @@ const NAV_SECTIONS: NavSection[] = [
       { id: "approvals", label: "Approvals Inbox", code: "PLT-07", icon: Sparkles },
       { id: "ledger-lou", label: "Ledger Lou", code: "AGT-03", icon: Bot },
       { id: "chase-chloe", label: "Chase Chloe", code: "FIN-14", icon: Bot },
+      { id: "restock-rex", label: "Restock Rex", code: "AGT-04", icon: Bot },
+      { id: "guard-gus", label: "Guard Gus", code: "AI-04", icon: Bot },
+      { id: "forecast-finn", label: "Forecast Finn", code: "AIS-02", icon: Bot },
+      { id: "pip", label: "Pip", code: "AGT-02", icon: Bot },
       { id: "packs", label: "Industry Packs", code: "GAR/FMCG", icon: BrainCircuit },
     ],
   },
@@ -177,6 +181,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       <button
                         key={item.id}
                         type="button"
+                        aria-label={item.code ? `${item.label} (${item.code})` : item.label}
                         onClick={() => {
                           onNavigate(item.id);
                           onCloseMobile();
