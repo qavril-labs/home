@@ -15,6 +15,7 @@ import { DomainError, newId, systemClock, type Clock } from "@erp/kernel";
 import { RateLimiter, type RateLimitOptions } from "./rate-limit";
 import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
+import { registerSalesRoutes } from "./sales-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -328,6 +329,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
 
   registerLedgerRoutes(app, { pool, clock, authenticate });
+  registerSalesRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
 
   return app;
