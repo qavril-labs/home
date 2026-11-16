@@ -202,4 +202,103 @@ describe("sales invoice API", () => {
     expect(voided.statusCode).toBe(200);
     expect(voided.json().status).toBe("VOID");
   });
+  it("refuses an invoice to a deactivated customer", async () => {
+    const id = await createCustomer(token, companyId, "Closed Account Ltd");
+    const off = await call("POST", `/v1/master/parties/${id}/deactivate`, token, { companyId });
+    expect(off.statusCode).toBe(200);
+    const response = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, id));
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.message).toContain("active customer");
+  });
+
+  it("issues a quote, accepts it into one invoice, and refuses a second acceptance", async () => {
+    const quote = await call("POST", "/v1/sales/quotes", token, {
+      companyId,
+      customerId,
+      date: "2026-02-01",
+      currency: "KES",
+      lines: [{ description: "Quoted coffee", revenueAccount: "4000", amount: "500.00", taxAccount: "2100", tax: "80.00" }],
+    });
+    expect(quote.statusCode).toBe(201);
+    const number = quote.json().number as string;
+    expect(number).toMatch(/^QUO-2026-/);
+
+    const accepted = await call("POST", `/v1/sales/quotes/${number}/accept`, token, {
+      companyId,
+      date: "2026-02-02",
+      receivableAccount: "1200",
+    });
+    expect(accepted.statusCode).toBe(201);
+    expect(accepted.json()).toMatchObject({ status: "OPEN" });
+    expect(accepted.json().total.amount).toBe("580.00");
+
+    const stored = await call("GET", `/v1/sales/quotes/${number}?companyId=${companyId}`, token);
+    expect(stored.json()).toMatchObject({ status: "ACCEPTED", invoice: accepted.json().number });
+
+    const again = await call("POST", `/v1/sales/quotes/${number}/accept`, token, { companyId, date: "2026-02-03", receivableAccount: "1200" });
+    expect(again.statusCode).toBe(409);
+  });
+
+  it("cancels an open quote", async () => {
+    const quote = await call("POST", "/v1/sales/quotes", token, {
+      companyId,
+      customerId,
+      date: "2026-02-04",
+      currency: "KES",
+      lines: [{ description: "Cancelled job", revenueAccount: "4000", amount: "50.00" }],
+    });
+    const number = quote.json().number as string;
+    const cancelled = await call("POST", `/v1/sales/quotes/${number}/cancel`, token, { companyId });
+    expect(cancelled.statusCode).toBe(200);
+    expect(cancelled.json().status).toBe("CANCELLED");
+  });
+
+  it("credits part of an open invoice and returns the credit note", async () => {
+    const issued = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, customerId));
+    const number = issued.json().number as string;
+    const note = await call("POST", `/v1/sales/invoices/${number}/credit-notes`, token, {
+      companyId,
+      date: "2026-02-10",
+      receivableAccount: "1200",
+      currency: "KES",
+      lines: [{ description: "Returned beans", revenueAccount: "4000", amount: "100.00", taxAccount: "2100", tax: "16.00" }],
+    });
+    expect(note.statusCode).toBe(201);
+    expect(note.json().number).toMatch(/^CN-2026-/);
+    expect(note.json().total.amount).toBe("116.00");
+
+    const fetched = await call("GET", `/v1/sales/credit-notes/${note.json().number}?companyId=${companyId}`, token);
+    expect(fetched.statusCode).toBe(200);
+    expect(fetched.json().invoice).toBe(number);
+
+    const invoice = await call("GET", `/v1/sales/invoices/${number}?companyId=${companyId}`, token);
+    expect(invoice.json().credited.amount).toBe("116.00");
+  });
+
+  it("refuses a credit above the amount still owed", async () => {
+    const issued = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, customerId));
+    const number = issued.json().number as string;
+    const response = await call("POST", `/v1/sales/invoices/${number}/credit-notes`, token, {
+      companyId,
+      date: "2026-02-11",
+      receivableAccount: "1200",
+      currency: "KES",
+      lines: [{ description: "Too much", revenueAccount: "4000", amount: "2000.00" }],
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.details).toMatchObject({ outstanding: "1160.00" });
+  });
+
+  it("does not show a quote to another tenant", async () => {
+    const quote = await call("POST", "/v1/sales/quotes", token, {
+      companyId,
+      customerId,
+      date: "2026-02-12",
+      currency: "KES",
+      lines: [{ description: "Private", revenueAccount: "4000", amount: "10.00" }],
+    });
+    const number = quote.json().number as string;
+    const theirs = await call("GET", `/v1/sales/quotes/${number}?companyId=${otherCompanyId}`, otherToken);
+    expect(theirs.statusCode).toBe(404);
+  });
 });

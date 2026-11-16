@@ -234,6 +234,154 @@ paths:
           $ref: "#/components/responses/Error"
         "409":
           $ref: "#/components/responses/Error"
+  /v1/sales/invoices/{number}/credit-notes:
+    post:
+      summary: Credit part or all of an invoice (SAL-04)
+      description: |
+        Posts the lines back to income and tax and debits receivables. The credit cannot be more
+        than the amount still owed. Needs permission sal.invoices.credit.
+      parameters:
+        - $ref: "#/components/parameters/InvoiceNumber"
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreditNoteInput"
+      responses:
+        "201":
+          description: The credit note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditNote"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/sales/credit-notes/{number}:
+    get:
+      summary: Get one credit note
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The credit note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreditNote"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/sales/quotes:
+    post:
+      summary: Create a quote (SAL-04)
+      description: A quote posts nothing to the ledger. It gets a QUO- number. Needs permission sal.quotes.write.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteInput"
+      responses:
+        "201":
+          description: The quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "400":
+          $ref: "#/components/responses/Error"
+  /v1/sales/quotes/{number}:
+    get:
+      summary: Get one quote
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/sales/quotes/{number}/accept:
+    post:
+      summary: Accept a quote into an invoice
+      description: Issues an invoice with the same lines. The quote becomes ACCEPTED. A second acceptance is refused.
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptQuote"
+      responses:
+        "201":
+          description: The invoice issued from the quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invoice"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/sales/quotes/{number}/cancel:
+    post:
+      summary: Cancel an open quote
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [companyId]
+              properties:
+                companyId:
+                  type: string
+                  format: uuid
+      responses:
+        "200":
+          description: The cancelled quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+        "409":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -474,3 +622,104 @@ components:
           nullable: true
         active:
           type: boolean
+    CreditNoteInput:
+      type: object
+      required: [companyId, date, receivableAccount, currency, lines]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        receivableAccount:
+          type: string
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/InvoiceLine"
+    CreditNote:
+      type: object
+      required: [number, invoice, date, currency, total, tax, entryId]
+      properties:
+        number:
+          type: string
+          example: CN-2026-000001
+        invoice:
+          type: string
+        date:
+          type: string
+          format: date
+        currency:
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+        tax:
+          $ref: "#/components/schemas/Money"
+        entryId:
+          type: string
+          format: uuid
+    QuoteInput:
+      type: object
+      required: [companyId, customerId, date, currency, lines]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        customerId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/InvoiceLine"
+    AcceptQuote:
+      type: object
+      required: [companyId, date, receivableAccount]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        receivableAccount:
+          type: string
+    Quote:
+      type: object
+      required: [number, customerId, customer, date, currency, total, tax, status]
+      properties:
+        number:
+          type: string
+          example: QUO-2026-000001
+        customerId:
+          type: string
+          format: uuid
+        customer:
+          type: string
+        date:
+          type: string
+          format: date
+        currency:
+          type: string
+        total:
+          $ref: "#/components/schemas/Money"
+        tax:
+          $ref: "#/components/schemas/Money"
+        status:
+          type: string
+          enum: [OPEN, ACCEPTED, CANCELLED]
+        invoice:
+          type: string
+          nullable: true

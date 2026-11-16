@@ -5,6 +5,8 @@ import type { NumberingService } from "@erp/numbering";
 
 /** Sequence key the caller registers with NumberingService for sales invoices. */
 export const SALES_INVOICE_SEQUENCE = "SALES_INVOICE";
+/** Sequence key for credit notes. */
+export const CREDIT_NOTE_SEQUENCE = "CREDIT_NOTE";
 
 const MAX_LINES = 100;
 
@@ -42,6 +44,43 @@ export interface RecordPaymentInput {
 
 export type InvoiceStatus = "OPEN" | "PAID" | "VOID";
 
+export interface CreditNoteInput {
+  /** Invoice the credit applies to. */
+  readonly invoice: string;
+  readonly date: string;
+  /** Lines being credited, at the same accounts the invoice used. Amounts are positive. */
+  readonly lines: readonly InvoiceLine[];
+}
+
+export interface CreditNote {
+  readonly number: string;
+  readonly invoice: string;
+  readonly date: string;
+  readonly currency: string;
+  /** Net plus tax credited. */
+  readonly total: Money;
+  readonly tax: Money;
+  readonly entryId: string;
+}
+
+/** Storage for credit notes. Runs in the same transaction as the ledger entry, as invoices do. */
+export interface CreditNoteStore {
+  save(note: CreditNote): Promise<void>;
+  get(number: string): Promise<CreditNote | undefined>;
+}
+
+export class MemoryCreditNoteStore implements CreditNoteStore {
+  private readonly notes = new Map<string, CreditNote>();
+
+  async save(note: CreditNote): Promise<void> {
+    this.notes.set(note.number, note);
+  }
+
+  async get(number: string): Promise<CreditNote | undefined> {
+    return this.notes.get(number);
+  }
+}
+
 export interface Invoice {
   readonly number: string;
   readonly customerId: string;
@@ -53,6 +92,8 @@ export interface Invoice {
   readonly tax: Money;
   /** Money received so far, in the invoice currency. */
   readonly settled: Money;
+  /** Credit notes issued against this invoice, in the invoice currency. */
+  readonly credited: Money;
   readonly status: InvoiceStatus;
   readonly entryId: string;
 }
@@ -102,6 +143,7 @@ export class SalesInvoicing {
     private readonly tenantId: string,
     private readonly receivableAccount: string,
     private readonly store: InvoiceStore = new MemoryInvoiceStore(),
+    private readonly creditNotes: CreditNoteStore = new MemoryCreditNoteStore(),
   ) {}
 
   async issue(input: IssueInvoiceInput): Promise<Invoice> {
@@ -141,6 +183,7 @@ export class SalesInvoicing {
       total,
       tax,
       settled: zero,
+      credited: zero,
       status: "OPEN",
       entryId: posted.id,
     };
@@ -160,7 +203,7 @@ export class SalesInvoicing {
     if (input.amount.minor <= 0n) {
       throw new DomainError("VALIDATION", "A payment must be above zero");
     }
-    const outstanding = invoice.total.minor - invoice.settled.minor;
+    const outstanding = invoice.total.minor - invoice.settled.minor - invoice.credited.minor;
     if (input.amount.minor > outstanding) {
       throw new DomainError("VALIDATION", "Payment is more than the amount outstanding", {
         outstanding: Money.of(outstanding, invoice.currency).toDecimal(),
@@ -180,10 +223,62 @@ export class SalesInvoicing {
     });
 
     const settled = invoice.settled.add(input.amount);
-    const status: InvoiceStatus = settled.minor === invoice.total.minor ? "PAID" : "OPEN";
+    const status: InvoiceStatus = settled.minor + invoice.credited.minor === invoice.total.minor ? "PAID" : "OPEN";
     const updated: Invoice = { ...invoice, settled, status };
     await this.store.save({ invoice: updated, payments: record.payments + 1 });
     return updated;
+  }
+
+  /**
+   * Credits part or all of an invoice. Posts the lines back to the income and tax accounts and
+   * debits the receivable. The credit cannot be more than the amount still owed.
+   */
+  async creditNote(input: CreditNoteInput): Promise<CreditNote> {
+    const record = await this.require(input.invoice);
+    const { invoice } = record;
+    if (invoice.status === "VOID") {
+      throw new DomainError("CONFLICT", `Invoice ${invoice.number} is void`);
+    }
+    validateLines(input.lines, invoice.currency);
+    const zero = Money.zero(invoice.currency);
+    const tax = input.lines.reduce((sum, line) => sum.add(line.tax ?? zero), zero);
+    const total = input.lines.reduce((sum, line) => sum.add(line.amount), zero).add(tax);
+    if (total.minor <= 0n) {
+      throw new DomainError("VALIDATION", "A credit note must be above zero");
+    }
+    const owed = SalesInvoicing.outstandingOf(invoice);
+    if (total.minor > owed.minor) {
+      throw new DomainError("VALIDATION", "Credit is more than the amount outstanding", { outstanding: owed.toDecimal() });
+    }
+
+    const number = await this.numbering.next(this.tenantId, CREDIT_NOTE_SEQUENCE, input.date);
+    const posted = await this.ledger.post({
+      reference: number,
+      date: input.date,
+      currency: invoice.currency,
+      memo: `Credit note ${number} against ${invoice.number}`,
+      lines: [
+        ...input.lines.flatMap((line) => {
+          const debits = [{ account: line.revenueAccount, side: "DEBIT" as const, amount: line.amount, memo: line.description }];
+          if (line.tax && line.tax.minor > 0n) {
+            debits.push({ account: requireTaxAccount(line), side: "DEBIT" as const, amount: line.tax, memo: `Tax on ${line.description}` });
+          }
+          return debits;
+        }),
+        { account: this.receivableAccount, side: "CREDIT", amount: total },
+      ],
+    });
+
+    const note: CreditNote = { number, invoice: invoice.number, date: input.date, currency: invoice.currency, total, tax, entryId: posted.id };
+    await this.creditNotes.save(note);
+    const credited = invoice.credited.add(total);
+    const status: InvoiceStatus = invoice.settled.minor + credited.minor === invoice.total.minor ? "PAID" : "OPEN";
+    await this.store.save({ invoice: { ...invoice, credited, status }, payments: record.payments });
+    return note;
+  }
+
+  async getCreditNote(number: string): Promise<CreditNote | undefined> {
+    return this.creditNotes.get(number);
   }
 
   /** Cancels an invoice that has no payments, by posting the reversal of its entry. */
@@ -193,13 +288,18 @@ export class SalesInvoicing {
     if (invoice.status === "VOID") {
       throw new DomainError("CONFLICT", `Invoice ${number} is already void`);
     }
-    if (invoice.settled.minor > 0n) {
-      throw new DomainError("CONFLICT", "An invoice with payments cannot be voided. Record a credit note instead.");
+    if (invoice.settled.minor > 0n || invoice.credited.minor > 0n) {
+      throw new DomainError("CONFLICT", "An invoice with payments or credit notes cannot be voided. Record a credit note instead.");
     }
     await this.ledger.reverse(invoice.entryId, { reference: `${number}/VOID`, date });
     const updated: Invoice = { ...invoice, status: "VOID" };
     await this.store.save({ invoice: updated, payments: record.payments });
     return updated;
+  }
+
+  /** Amount still owed on an invoice, in its currency. */
+  static outstandingOf(invoice: Invoice): Money {
+    return Money.of(invoice.total.minor - invoice.settled.minor - invoice.credited.minor, invoice.currency);
   }
 
   async get(number: string): Promise<Invoice | undefined> {

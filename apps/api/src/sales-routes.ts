@@ -5,13 +5,22 @@ import { Ledger } from "@erp/ledger";
 import { Money } from "@erp/money";
 import { DomainError, type Clock } from "@erp/kernel";
 import { NumberingService } from "@erp/numbering";
-import { SALES_INVOICE_SEQUENCE, SalesInvoicing, type InvoiceLine } from "@erp/sales";
+import {
+  CREDIT_NOTE_SEQUENCE,
+  SALES_INVOICE_SEQUENCE,
+  SALES_QUOTE_SEQUENCE,
+  SalesInvoicing,
+  SalesQuotes,
+  type InvoiceLine,
+} from "@erp/sales";
 import { assertEntitled, type Company } from "@erp/tenancy";
 import {
   PgCounterStore,
+  PgCreditNoteStore,
   PgInvoiceStore,
   PgLedgerStore,
   PgPartyStore,
+  PgQuoteStore,
   PgTenantRepository,
   listEntitlements,
   withTenantTransaction,
@@ -47,6 +56,28 @@ const VoidBody = z.object({
   companyId: z.uuid(),
   date: z.string(),
   receivableAccount: z.string(),
+});
+
+const QuoteBody = z.object({
+  companyId: z.uuid(),
+  customerId: z.uuid(),
+  date: z.string(),
+  currency: z.string(),
+  lines: z.array(LineBody).min(1),
+});
+
+const AcceptBody = z.object({
+  companyId: z.uuid(),
+  date: z.string(),
+  receivableAccount: z.string(),
+});
+
+const CreditNoteBody = z.object({
+  companyId: z.uuid(),
+  date: z.string(),
+  receivableAccount: z.string(),
+  currency: z.string(),
+  lines: z.array(LineBody).min(1),
 });
 
 const CompanyQuery = z.object({ companyId: z.uuid() });
@@ -95,6 +126,15 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
     });
   }
 
+  /** Every sales document number comes from the same counters, inside the request transaction. */
+  function numberingFor(context: SalesContext): NumberingService {
+    return new NumberingService(new PgCounterStore(context.tx), [
+      { key: SALES_INVOICE_SEQUENCE, prefix: "INV-", padding: 6, reset: "YEARLY" },
+      { key: CREDIT_NOTE_SEQUENCE, prefix: "CN-", padding: 6, reset: "YEARLY" },
+      { key: SALES_QUOTE_SEQUENCE, prefix: "QUO-", padding: 6, reset: "YEARLY" },
+    ]);
+  }
+
   /** Builds the invoicing service for one request, with the caller's receivable account. */
   function invoicingFor(context: SalesContext, companyId: string, receivableAccount: string): SalesInvoicing {
     const ledger = new Ledger(
@@ -103,25 +143,39 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
       context.company.baseCurrency,
       context.clock,
     );
-    const numbering = new NumberingService(new PgCounterStore(context.tx), [
-      { key: SALES_INVOICE_SEQUENCE, prefix: "INV-", padding: 6, reset: "YEARLY" },
-    ]);
     return new SalesInvoicing(
       ledger,
-      numbering,
+      numberingFor(context),
       context.tenantId,
       receivableAccount,
       new PgInvoiceStore(context.tx, context.tenantId, companyId),
+      new PgCreditNoteStore(context.tx, context.tenantId, companyId),
     );
+  }
+
+  /** Quotes are built on the same invoicing service, so accepting one reuses its numbering and ledger. */
+  function quotesFor(context: SalesContext, companyId: string, receivableAccount: string): SalesQuotes {
+    return new SalesQuotes(
+      invoicingFor(context, companyId, receivableAccount),
+      numberingFor(context),
+      context.tenantId,
+      new PgQuoteStore(context.tx, context.tenantId, companyId),
+    );
+  }
+
+  /** Loads a customer and refuses it unless it is active and may be invoiced. */
+  async function requireActiveCustomer(context: SalesContext, companyId: string, customerId: string) {
+    const party = await new PgPartyStore(context.tx, context.tenantId).get(companyId, customerId);
+    if (!party || !party.active || (party.kind !== "CUSTOMER" && party.kind !== "BOTH")) {
+      throw new DomainError("VALIDATION", "Customer is not an active customer of this company");
+    }
+    return party;
   }
 
   app.post("/v1/sales/invoices", async (request, reply) => {
     const body = IssueBody.parse(request.body);
     const invoice = await withSales(request, "sal.invoices.write", body.companyId, async (context) => {
-      const party = await new PgPartyStore(context.tx, context.tenantId).get(body.companyId, body.customerId);
-      if (!party || !party.active || (party.kind !== "CUSTOMER" && party.kind !== "BOTH")) {
-        throw new DomainError("VALIDATION", "Customer is not an active customer of this company");
-      }
+      const party = await requireActiveCustomer(context, body.companyId, body.customerId);
       return invoicingFor(context, body.companyId, body.receivableAccount).issue({
         customerId: party.id,
         customer: party.name,
@@ -171,6 +225,84 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
       }
       return invoice;
     });
+  });
+
+  app.post("/v1/sales/invoices/:number/credit-notes", async (request, reply) => {
+    const { number } = NumberParams.parse(request.params);
+    const body = CreditNoteBody.parse(request.body);
+    const note = await withSales(request, "sal.invoices.credit", body.companyId, (context) =>
+      invoicingFor(context, body.companyId, body.receivableAccount).creditNote({
+        invoice: number,
+        date: body.date,
+        lines: body.lines.map(toInvoiceLine(body.currency)),
+      }),
+    );
+    return reply.status(201).send(note);
+  });
+
+  app.get("/v1/sales/credit-notes/:number", async (request) => {
+    const { number } = NumberParams.parse(request.params);
+    const query = CompanyQuery.parse(request.query);
+    return withSales(request, "sal.invoices.read", query.companyId, async (context) => {
+      const note = await invoicingFor(context, query.companyId, "").getCreditNote(number);
+      if (!note) {
+        throw new DomainError("NOT_FOUND", `Credit note ${number} does not exist`);
+      }
+      return note;
+    });
+  });
+
+  app.post("/v1/sales/quotes", async (request, reply) => {
+    const body = QuoteBody.parse(request.body);
+    const quote = await withSales(request, "sal.quotes.write", body.companyId, async (context) => {
+      const party = await requireActiveCustomer(context, body.companyId, body.customerId);
+      return quotesFor(context, body.companyId, "").create({
+        customerId: party.id,
+        customer: party.name,
+        date: body.date,
+        currency: body.currency,
+        lines: body.lines.map(toInvoiceLine(body.currency)),
+      });
+    });
+    return reply.status(201).send(quote);
+  });
+
+  app.get("/v1/sales/quotes/:number", async (request) => {
+    const { number } = NumberParams.parse(request.params);
+    const query = CompanyQuery.parse(request.query);
+    return withSales(request, "sal.quotes.read", query.companyId, async (context) => {
+      const quote = await quotesFor(context, query.companyId, "").get(number);
+      if (!quote) {
+        throw new DomainError("NOT_FOUND", `Quote ${number} does not exist`);
+      }
+      return quote;
+    });
+  });
+
+  app.post("/v1/sales/quotes/:number/accept", async (request, reply) => {
+    const { number } = NumberParams.parse(request.params);
+    const body = AcceptBody.parse(request.body);
+    const invoice = await withSales(request, "sal.quotes.write", body.companyId, async (context) => {
+      const quote = await quotesFor(context, body.companyId, body.receivableAccount).get(number);
+      if (!quote) {
+        throw new DomainError("NOT_FOUND", `Quote ${number} does not exist`);
+      }
+      // The customer may have been deactivated since the quote was made.
+      await requireActiveCustomer(context, body.companyId, quote.customerId);
+      return quotesFor(context, body.companyId, body.receivableAccount).accept(number, {
+        date: body.date,
+        receivableAccount: body.receivableAccount,
+      });
+    });
+    return reply.status(201).send(invoice);
+  });
+
+  app.post("/v1/sales/quotes/:number/cancel", async (request) => {
+    const { number } = NumberParams.parse(request.params);
+    const body = CompanyQuery.parse(request.body);
+    return withSales(request, "sal.quotes.write", body.companyId, (context) =>
+      quotesFor(context, body.companyId, "").cancel(number),
+    );
   });
 
   app.get("/v1/sales/invoices", async (request) => {
