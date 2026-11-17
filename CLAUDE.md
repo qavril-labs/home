@@ -9,7 +9,7 @@ Read these before changing code:
 
 ## Commands
 
-The repository is two separate npm projects. Claude Code works only in `backend/` and `contracts/` (worktree `E:\SaaS\.worktrees\backend`, branch `lane/backend`); Antigravity works only in `frontend/`. Run backend commands with `npm --prefix backend ...` from the root, or plain `npm ...` inside `backend/`.
+The repository is two separate npm projects. Claude Code works only in `backend/` and `contracts/` (worktree `E:\SaaS\.worktrees\backend`, branch `lane/backend`); Antigravity works only in `frontend/`. The product split into separate repositories (platform, procurement, stores, sales, production, finance, plus the web app) is recorded in [docs/product-platform-decisions.md](docs/product-platform-decisions.md); until each product's repository is live, the rules above still apply in this repository. Run backend commands with `npm --prefix backend ...` from the root, or plain `npm ...` inside `backend/`.
 
 - `npm --prefix backend install`: install the backend workspaces.
 - `npm --prefix backend test`: unit tests plus Postgres integration tests. Set `TEST_DATABASE_URL` to a server whose role can create databases and roles (for example a local superuser). Without it, tests start an embedded Postgres, which does not start on the Windows machine used so far.
