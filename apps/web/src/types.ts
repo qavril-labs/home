@@ -995,7 +995,7 @@ export interface CarrierRateQuote {
 export interface QueuedOfflineAction {
   id: string;
   timestamp: string;
-  actionType: "quick_sale" | "inventory_count" | "pod_signature" | "bill_scan";
+  actionType: "quick_sale" | "inventory_count" | "pod_signature" | "bill_scan" | "pos_sale";
   payload: Record<string, unknown>;
   syncStatus: "pending" | "syncing" | "synced" | "failed";
   retryCount: number;

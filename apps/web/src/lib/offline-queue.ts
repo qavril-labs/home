@@ -1,4 +1,5 @@
 import type { QueuedOfflineAction } from "../types";
+import { liveApi, readLiveSession } from "./live-api";
 import { eventBus } from "./event-stream";
 import { sound } from "./sound-effects";
 
@@ -71,7 +72,12 @@ class OfflineQueueManager {
     sound.playAutopilotPing();
     const pending = this.queue.filter((a) => a.syncStatus === "pending");
 
-    pending.forEach((item) => {
+    let syncedCount = 0;
+    for (const item of pending) {
+      if (item.actionType === "pos_sale") {
+        if (await this.sendSale(item)) syncedCount += 1;
+        continue;
+      }
       // Emit corresponding domain event
       eventBus.emit({
         type: `offline.${item.actionType}.synced`,
@@ -79,13 +85,45 @@ class OfflineQueueManager {
         data: item.payload,
       });
       item.syncStatus = "synced";
-    });
+      syncedCount += 1;
+    }
 
     this.saveToStorage();
-    if (pending.length > 0) {
+    if (syncedCount > 0) {
       sound.playSuccessChime();
     }
-    return { syncedCount: pending.length };
+    return { syncedCount };
+  }
+
+  /**
+   * Sends a till sale to the server. A sale the server keeps for review counts as sent, because it is stored and
+   * someone will decide it. A sale the server refuses stays in the queue with the reason, so nothing is lost.
+   */
+  private async sendSale(item: QueuedOfflineAction): Promise<boolean> {
+    const session = readLiveSession();
+    if (!session) {
+      item.syncStatus = "pending";
+      item.errorMessage = "Sign in to send this sale.";
+      return false;
+    }
+    item.syncStatus = "syncing";
+    try {
+      const response = await liveApi.syncSales(session.token, item.payload.body as Record<string, unknown>);
+      const result = response.results[0];
+      if (result && result.status !== "REJECTED") {
+        item.syncStatus = "synced";
+        item.errorMessage = undefined;
+        return true;
+      }
+      item.syncStatus = "failed";
+      item.errorMessage = result ? result.reasons.join("; ") : "The server did not return a result for this sale.";
+      return false;
+    } catch (error) {
+      item.retryCount += 1;
+      item.syncStatus = "pending";
+      item.errorMessage = error instanceof Error ? error.message : "The sale could not be sent.";
+      return false;
+    }
   }
 
   public clear() {

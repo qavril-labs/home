@@ -20,6 +20,7 @@ import {
   Zap,
   Truck,
   Sliders,
+  ShoppingCart,
   X,
 } from "lucide-react";
 
@@ -62,6 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: "Finance & Sales",
     items: [
       { id: "invoices", label: "Invoices", code: "SAL-04", icon: FileText },
+      { id: "till", label: "Till", code: "POS-01", icon: ShoppingCart },
       { id: "payables", label: "Bills", code: "FIN-03", icon: Receipt },
       { id: "ledger", label: "General Ledger", code: "FIN-01", icon: BookOpen },
       { id: "inventory", label: "Inventory", code: "INV-01", icon: Warehouse },

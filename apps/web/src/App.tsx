@@ -12,7 +12,8 @@ import { AccountsPage } from "./pages/AccountsPage";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { PayablesManager } from "./modules/invoicing/PayablesManager";
 import { LedgerPage } from "./pages/LedgerPage";
-import { InventoryPage } from "./pages/InventoryPage";
+import { StockPage } from "./modules/stock/StockPage";
+import { TillPage } from "./modules/till/TillPage";
 import { CrmPipelinePage } from "./pages/CrmPipelinePage";
 import { BankReconciliationPage } from "./pages/BankReconciliationPage";
 import { ImportPage } from "./pages/ImportPage";
@@ -43,9 +44,6 @@ import {
   initialMockItems,
   initialMockJournals,
   initialMockParties,
-  initialWarehouses,
-  initialWarehouseStock,
-  initialStockTransfers,
   initialPipelineDeals,
   initialSalesQuotes,
   initialBankFeedLines,
@@ -58,9 +56,6 @@ import type {
   JournalEntry,
   Party,
   ProductItem,
-  WarehouseLocation,
-  WarehouseStockSlot,
-  StockTransfer,
   PipelineDeal,
   SalesQuote,
   BankFeedLine,
@@ -105,9 +100,6 @@ export const App: React.FC = () => {
   );
   const [bills, setBills] = useState<Bill[]>(initialMockBills);
   const [journals, setJournals] = useState<JournalEntry[]>(initialMockJournals);
-  const [warehouses] = useState<WarehouseLocation[]>(initialWarehouses);
-  const [stockSlots] = useState<WarehouseStockSlot[]>(initialWarehouseStock);
-  const [transfers, setTransfers] = useState<StockTransfer[]>(initialStockTransfers);
   const [pipelineDeals, setPipelineDeals] = useState<PipelineDeal[]>(initialPipelineDeals);
   const [salesQuotes, setSalesQuotes] = useState<SalesQuote[]>(initialSalesQuotes);
   const [bankFeedLines, setBankFeedLines] = useState<BankFeedLine[]>(initialBankFeedLines);
@@ -590,19 +582,9 @@ export const App: React.FC = () => {
             />
           </div>
         ) : activeTab === "inventory" ? (
-          <div className="max-w-[1240px] mx-auto px-4 pt-8">
-            <InventoryPage
-              warehouses={warehouses}
-              stockSlots={stockSlots}
-              transfers={transfers}
-              onAddTransfer={(t) => setTransfers((prev) => [t, ...prev])}
-              onUpdateTransferStatus={(id, status) =>
-                setTransfers((prev) =>
-                  prev.map((t) => (t.id === id ? { ...t, status } : t))
-                )
-              }
-            />
-          </div>
+          <StockPage />
+        ) : activeTab === "till" ? (
+          <TillPage />
         ) : activeTab === "crm" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <CrmPipelinePage

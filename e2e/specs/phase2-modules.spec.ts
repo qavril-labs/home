@@ -11,58 +11,25 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
     await page.goto("/");
   });
 
-  test("Inventory & Warehouses (INV-01 to INV-05) Flow", async ({ page, isMobile }) => {
+  test("Inventory & Warehouses (INV-01) shows live stock only, and no invented figures", async ({ page }) => {
     // 1. Navigate to Inventory
     await page.getByRole("button", { name: "Inventory (INV-01)" }).first().click();
     await expect(page.getByRole("heading", { name: "Inventory & Warehouses" })).toBeVisible();
 
-    // 2. Verify 4 KPI cards
-    await expect(page.getByText("Total Units In Stock")).toBeVisible();
-    await expect(page.getByText("Active Warehouses")).toBeVisible();
-    await expect(page.getByText("Low Stock Warnings")).toBeVisible();
-    await expect(page.getByText("In-Transit Transfers")).toBeVisible();
+    // 2. Without a live session the screen says so and shows no stock figures. The demo sign-in is not a live session.
+    await expect(page.getByRole("heading", { name: "Sign in to see live stock" })).toBeVisible();
+    await expect(page.getByText("Total Units In Stock")).toHaveCount(0);
+    await expect(page.getByText("Automated E2E Transfer Test")).toHaveCount(0);
 
-    // 3. Test 2D / 3D view toggle
-    const toggle2D = page.getByRole("button", { name: /2D Stock Grid/i });
-    await expect(toggle2D).toBeVisible();
-    await toggle2D.click();
+    // 3. The section tabs are there once the screen is connected; without a session only the header shows.
+    await expect(page.getByRole("button", { name: "Receive stock" })).toHaveCount(0);
+  });
 
-    // Verify 2D Table headers
-    await expect(page.getByRole("columnheader", { name: "SKU" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Item Description" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Stock Qty" })).toBeVisible();
-
-    // Filter by specific warehouse
-    const eastDepotBtn = page.getByRole("button", { name: /WH-EAST/i });
-    if (await eastDepotBtn.isVisible()) {
-      await eastDepotBtn.click();
-      await expect(page.getByText("WH-EAST").first()).toBeVisible();
-    }
-
-    if (!isMobile) {
-      // Switch back to 3D View
-      const toggle3D = page.getByRole("button", { name: /3D Warehouse View/i });
-      await toggle3D.click();
-    }
-
-    // 4. Test Stock Transfers (INV-02)
-    await expect(page.getByRole("heading", { name: /Stock Transfers & Movements/i })).toBeVisible();
-
-    // Open Transfer Drawer
-    await page.getByRole("button", { name: "New Stock Transfer" }).click();
-    await expect(page.getByRole("heading", { name: /Initiate Stock Transfer/i })).toBeVisible();
-
-    // Fill transfer notes and submit
-    const notesInput = page.getByPlaceholder(/Replenishment for Vanguard aerospace/i);
-    await notesInput.fill("Automated E2E Transfer Test");
-    await page.getByRole("button", { name: "Dispatch Transfer" }).click();
-
-    // Verify toast
-    const toast = page.locator('[aria-live="polite"]');
-    await expect(toast).toContainText(/Stock Transfer Dispatched/i);
-
-    // Verify record in table
-    await expect(page.getByText("Automated E2E Transfer Test").first()).toBeVisible();
+  test("Till (POS-01) opens and, without a live session, shows no sale figures", async ({ page }) => {
+    await page.getByRole("button", { name: "Till (POS-01)" }).first().click();
+    await expect(page.getByRole("heading", { name: "Till" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in to see live stock" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Complete the sale" })).toHaveCount(0);
   });
 
   test("CRM Pipeline & Quotes (SAL-01 & SAL-02) Flow", async ({ page }) => {
