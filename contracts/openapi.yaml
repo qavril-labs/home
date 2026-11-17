@@ -1032,6 +1032,66 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PosReviewResult"
+  /v1/companies:
+    get:
+      summary: The companies of the signed-in tenant
+      description: Lets a client choose which company its screens work on. Needs a session; no permission.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The companies, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [companies]
+                properties:
+                  companies:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, legalName, countryCode, baseCurrency, fiscalYearStartMonth]
+                      properties:
+                        id:
+                          type: string
+                          format: uuid
+                        legalName:
+                          type: string
+                        countryCode:
+                          type: string
+                        baseCurrency:
+                          type: string
+                        fiscalYearStartMonth:
+                          type: integer
+        "401":
+          $ref: "#/components/responses/Error"
+  /v1/pos/sales/price:
+    post:
+      summary: Price a sale in progress, without writing anything (POS-01)
+      description: |
+        Gives the totals, the change owed, and the problems that would send this sale to review, using the same
+        rules as posting a sale. Tenders may be empty while the cashier is still entering them. Nothing is stored
+        and no stock moves. Needs permission pos.sale.record and the POS-01, INV-01, INV-03 and FIN-01 products.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PosPriceInput"
+      responses:
+        "200":
+          description: The priced sale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosPriceResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -2154,3 +2214,118 @@ components:
             reconciled:
               type: boolean
               description: True when the stock account moved by exactly the value of the batches created.
+    PosPriceInput:
+      type: object
+      required: [companyId, warehouse, date, currency, lines, tenders]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+        date:
+          type: string
+        currency:
+          type: string
+          description: Must be the company currency.
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [itemCode, qty, unitPrice, taxRateBps, taxMode, revenueAccount, tracked]
+            properties:
+              itemCode:
+                type: string
+              description:
+                type: string
+              qty:
+                type: string
+              unitPrice:
+                type: string
+              discount:
+                type: string
+              taxRateBps:
+                type: string
+              taxMode:
+                type: string
+                enum: [EXCLUSIVE, INCLUSIVE]
+              revenueAccount:
+                type: string
+              tracked:
+                type: boolean
+        tenders:
+          type: array
+          maxItems: 10
+          description: May be empty while the cashier is still entering the payments.
+          items:
+            type: object
+            required: [method, amount]
+            properties:
+              method:
+                type: string
+                enum: [CASH, CARD, MOBILE]
+              amount:
+                type: string
+        billDiscount:
+          type: object
+          required: [amount, reason]
+          properties:
+            amount:
+              type: string
+            reason:
+              type: string
+            approvalId:
+              type: string
+              format: uuid
+        discountApprovalAbove:
+          type: string
+          description: The bill discount threshold above which an approval is needed.
+    PosPriceResult:
+      type: object
+      required: [currency, lines, billDiscount, subtotal, tax, total, tendered, change, problems]
+      properties:
+        currency:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+            properties:
+              itemCode:
+                type: string
+              description:
+                type: string
+              qty:
+                type: string
+              tracked:
+                type: boolean
+              unitPrice:
+                $ref: "#/components/schemas/Amount"
+              discount:
+                $ref: "#/components/schemas/Amount"
+              billDiscount:
+                $ref: "#/components/schemas/Amount"
+              net:
+                $ref: "#/components/schemas/Amount"
+              tax:
+                $ref: "#/components/schemas/Amount"
+              total:
+                $ref: "#/components/schemas/Amount"
+        billDiscount:
+          $ref: "#/components/schemas/Amount"
+        subtotal:
+          $ref: "#/components/schemas/Amount"
+        tax:
+          $ref: "#/components/schemas/Amount"
+        total:
+          $ref: "#/components/schemas/Amount"
+        tendered:
+          $ref: "#/components/schemas/Amount"
+        change:
+          $ref: "#/components/schemas/Amount"
+        problems:
+          type: array
+          description: Why the sale would go to review. Empty when it would post.
+          items:
+            type: string

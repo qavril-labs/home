@@ -11,10 +11,14 @@ import {
   POS_SALE_SEQUENCE,
   PosRegister,
   TENDER_METHODS,
+  checkTenders,
+  priceSale,
   type PosDecision,
   type PosSale,
   type SaleInput,
+  type SaleLineInput,
   type SaleStatus,
+  type Tender,
 } from "@erp/pos";
 import { DomainError, type Clock } from "@erp/kernel";
 import { assertEntitled, type Company } from "@erp/tenancy";
@@ -102,6 +106,21 @@ const ReviewBody = z.object({
   billDiscountApprovalId: z.uuid().optional(),
   discountApprovalAbove: AMOUNT.optional(),
   accounts: AccountsBody,
+});
+
+/**
+ * A price preview: the same pricing and payment rules as a sale, computed on the server so the till never does
+ * money arithmetic. Nothing is written. Tenders may be empty while the cashier is still entering them.
+ */
+const PreviewBody = z.object({
+  companyId: z.uuid(),
+  warehouse: z.string().min(1).max(60),
+  date: DATE,
+  currency: z.string().regex(/^[A-Z]{3}$/, "Currency as a three-letter code"),
+  lines: z.array(LineBody).min(1).max(200),
+  tenders: z.array(TenderBody).max(10),
+  billDiscount: BillDiscountBody.optional(),
+  discountApprovalAbove: AMOUNT.optional(),
 });
 
 const SaleParams = z.object({ id: z.uuid() });
@@ -267,6 +286,77 @@ export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): voi
   });
 
   /**
+   * Prices a sale the cashier is still entering, without writing anything. Returns the totals, the change owed,
+   * and the problems that would send the sale to review: a short payment, a bill discount needing approval, stock
+   * that is not there, or a closed period. The sale itself is still checked again when it is synced.
+   */
+  app.post("/v1/pos/sales/price", async (request) => {
+    const body = PreviewBody.parse(request.body);
+    const principal = await deps.authenticate(request);
+    requirePermission(principal, "pos.sale.record");
+    const company = await companyFor(principal, body.companyId);
+    if (body.currency !== company.baseCurrency) {
+      throw new DomainError("VALIDATION", `Sales are priced in the company currency, ${company.baseCurrency}`);
+    }
+    const currency = company.baseCurrency;
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const billDiscount = body.billDiscount ? Money.fromDecimal(body.billDiscount.amount, currency) : Money.zero(currency);
+      const priced = priceSale(body.lines.map((line) => saleLine(line, currency)), currency, { billDiscount });
+      const tenders: Tender[] = body.tenders.map((tender) => ({ method: tender.method, amount: Money.fromDecimal(tender.amount, currency) }));
+      const payment = checkTenders(priced.total, tenders);
+      const problems: string[] = [...payment.problems];
+
+      if (body.billDiscount) {
+        const threshold = body.discountApprovalAbove ? Money.fromDecimal(body.discountApprovalAbove, currency) : undefined;
+        if (threshold && billDiscount.compare(threshold) > 0 && !body.billDiscount.approvalId) {
+          problems.push("DISCOUNT_NEEDS_APPROVAL");
+        }
+      }
+
+      // Stock that is not there, summed per item across the lines that take it.
+      const needed = new Map<string, bigint>();
+      for (const line of priced.lines) {
+        if (line.tracked) needed.set(line.itemCode, (needed.get(line.itemCode) ?? 0n) + line.qty);
+      }
+      const inventory = new Inventory({ store: new PgInventoryStore(tx, principal.tenantId, body.companyId), clock: deps.clock });
+      for (const [item, qty] of needed) {
+        const available = await inventory.available(body.companyId, body.warehouse, item, body.date);
+        if (available < qty) {
+          problems.push(`STOCK_SHORT: ${item} needs ${qty.toString()}, ${available.toString()} available`);
+        }
+      }
+
+      const ledger = new Ledger(new PgLedgerStore(tx, principal.tenantId), body.companyId, currency, deps.clock);
+      if (!(await ledger.isPeriodOpen(body.date))) {
+        problems.push(`PERIOD_CLOSED: no open fiscal period covers ${body.date}`);
+      }
+
+      return {
+        currency,
+        lines: priced.lines.map((line) => ({
+          itemCode: line.itemCode,
+          description: line.description,
+          qty: line.qty.toString(),
+          tracked: line.tracked,
+          unitPrice: line.unitPrice.toJSON(),
+          discount: line.discount.toJSON(),
+          billDiscount: line.billDiscount.toJSON(),
+          net: line.net.toJSON(),
+          tax: line.tax.toJSON(),
+          total: line.total.toJSON(),
+        })),
+        billDiscount: priced.billDiscount.toJSON(),
+        subtotal: priced.subtotal.toJSON(),
+        tax: priced.tax.toJSON(),
+        total: priced.total.toJSON(),
+        tendered: payment.tendered.toJSON(),
+        change: payment.change.toJSON(),
+        problems,
+      };
+    });
+  });
+
+  /**
    * Decides a sale that was kept for review. POST posts it now, with the payments as reconciled and on an open
    * date. If it still cannot be posted, nothing is written and the response is 409 with the reasons. VOID records
    * that it will never be posted. A sale can be decided once.
@@ -348,6 +438,21 @@ function rejected(id: string, message: string): SyncResult {
   return { id, status: "REJECTED", number: null, duplicate: false, reasons: [message] };
 }
 
+/** One sale line from its wire form. Money is parsed from its decimal string in the company currency. */
+function saleLine(line: z.infer<typeof LineBody>, currency: string): SaleLineInput {
+  return {
+    itemCode: line.itemCode,
+    description: line.description,
+    qty: BigInt(line.qty),
+    unitPrice: Money.fromDecimal(line.unitPrice, currency),
+    discount: line.discount === undefined ? undefined : Money.fromDecimal(line.discount, currency),
+    taxRateBps: BigInt(line.taxRateBps),
+    taxMode: line.taxMode,
+    revenueAccount: line.revenueAccount,
+    tracked: line.tracked,
+  };
+}
+
 function toSaleInput(sale: z.infer<typeof SaleBody>, companyId: string, currency: string, approvedBy: string | null): SaleInput {
   return {
     id: sale.id,
@@ -355,17 +460,7 @@ function toSaleInput(sale: z.infer<typeof SaleBody>, companyId: string, currency
     warehouse: sale.warehouse,
     date: sale.date,
     currency,
-    lines: sale.lines.map((line) => ({
-      itemCode: line.itemCode,
-      description: line.description,
-      qty: BigInt(line.qty),
-      unitPrice: Money.fromDecimal(line.unitPrice, currency),
-      discount: line.discount === undefined ? undefined : Money.fromDecimal(line.discount, currency),
-      taxRateBps: BigInt(line.taxRateBps),
-      taxMode: line.taxMode,
-      revenueAccount: line.revenueAccount,
-      tracked: line.tracked,
-    })),
+    lines: sale.lines.map((line) => saleLine(line, currency)),
     tenders: sale.tenders.map((tender) => ({ method: tender.method, amount: Money.fromDecimal(tender.amount, currency) })),
     ...(sale.billDiscount
       ? {

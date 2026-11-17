@@ -185,6 +185,21 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   app.get("/v1/me", async (request) => ({ principal: await authenticate(request) }));
 
+  /** The companies of the signed-in tenant, so a client can choose which company its screens work on. */
+  app.get("/v1/companies", async (request) => {
+    const principal = await authenticate(request);
+    const companies = await withTenantTransaction(pool, principal.tenantId, (tx) => new PgTenantRepository(tx).listCompanies());
+    return {
+      companies: companies.map((company) => ({
+        id: company.id,
+        legalName: company.legalName,
+        countryCode: company.countryCode,
+        baseCurrency: company.baseCurrency,
+        fiscalYearStartMonth: company.fiscalYearStartMonth,
+      })),
+    };
+  });
+
   app.post("/v1/auth/logout", async (request, reply) => {
     allowBrowserOrigin(request, reply);
     const token = bearerToken(request);

@@ -394,6 +394,15 @@ export class PgTenantRepository implements TenantRepository {
     return rows[0] ? companyFromRow(rows[0]) : null;
   }
 
+  /** The companies of the tenant this transaction is bound to. Row-level security keeps other tenants out. */
+  async listCompanies(): Promise<Company[]> {
+    const { rows } = await this.db.query<CompanyRow>(
+      `SELECT id, tenant_id, legal_name, country_code, base_currency, fiscal_year_start_month, created_at
+         FROM companies ORDER BY created_at, id`,
+    );
+    return rows.map(companyFromRow);
+  }
+
   async insertBranch(branch: Branch): Promise<void> {
     await this.db.query(
       "INSERT INTO branches (id, tenant_id, company_id, code, name, timezone) VALUES ($1, $2, $3, $4, $5, $6)",
