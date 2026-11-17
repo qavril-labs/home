@@ -49,7 +49,17 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 | Contract changes | Any change to a contract file in `contracts/`, or to a screen-facing API, needs Antigravity's approval |
 | Contracts | Draft contracts for `platform` and `procurement` are in `contracts/` (`platform.openapi.yaml`, `procurement.openapi.yaml`). Not yet reviewed |
 
-## 5. Still open
+## 5. AWS status
+
+| Item | Status |
+|---|---|
+| Account | Verified by sign-in on the owner's machine. The account ID is kept out of this repository |
+| Sign-in identity | The active identity is the account's **root user**. Create an IAM user or SSO role for daily work and keep root for billing only |
+| Default region | `ap-south-1` |
+| Bucket suffix | `qv7k2`. `qavril-web-prod-qv7k2` and `qavril-web-staging-qv7k2` are free (checked) |
+| ECR, ECS, ElastiCache, load balancers | None exist yet in Mumbai |
+
+## 6. Still open
 
 1. Scheduled production backups (`pg_dump` to S3), needed because the restore window is 6 hours (see section 2).
 2. The first tenant and seed data: use neutral sample companies only.
