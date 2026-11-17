@@ -9,7 +9,7 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 | Decision | Answer |
 |---|---|
 | Deployment | Separate repositories: `platform`, `procurement`, `stores`, `sales`, `production`, `finance`, plus a web app repository owned by Antigravity |
-| Repository owner | GitHub organisation `qavril-labs`. All six product repositories are private |
+| Repository owner | GitHub organisation `qavril-labs`. All seven repositories (the six product repositories and `web-app`) are **public**, chosen by the owner because the GitHub plan does not allow branch protection on private repos. Public repos get GitHub secret scanning and push protection; keep secrets out of the code |
 | Stack | Same as the current backend: TypeScript, Node 20 or later, Fastify, Postgres (node-postgres), BullMQ with Redis, Vitest |
 | Shared code | Versioned npm packages on GitHub Packages, published from `platform`: `@qavril/kernel`, `@qavril/money`, `@qavril/events-types`, `@qavril/api-client`. Products pin versions |
 | Day one | Each repository is scaffolded: README, CI, lint, tests, tsconfig, Dockerfile, and an empty health route |
