@@ -604,11 +604,13 @@ paths:
                 $ref: "#/components/schemas/ErrorBody"
   /v1/inventory/write-offs:
     post:
-      summary: Write off expired stock at its cost (INV-03)
+      summary: Request a write-off of expired stock (INV-03). Carried out only when a second person approves.
       description: |
-        Writes off only the batches that expired before the date. Posts the cost as debit write-off expense,
-        credit stock on hand. When nothing has expired, the result has no allocations and no entry. Needs
-        permission inv.stock.writeoff.
+        Asks for a write-off of the batches that expired before the date. Nothing moves when it is requested.
+        The approval queue holds it as an INVENTORY_WRITE_OFF request. When a second person approves it, the
+        expired batches are written off, the cost is posted as debit write-off expense and credit stock on hand,
+        and the approval response carries the outcome in its effect. The requester cannot approve it. Asking when
+        nothing has expired is refused with 409. Needs permission inv.stock.writeoff.
       security:
         - bearerAuth: []
       requestBody:
@@ -618,12 +620,12 @@ paths:
             schema:
               $ref: "#/components/schemas/WriteOffInput"
       responses:
-        "201":
-          description: The batches written off, their cost and the ledger entry
+        "202":
+          description: The pending approval request
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/StockResult"
+                $ref: "#/components/schemas/ApprovalRequest"
         "400":
           $ref: "#/components/responses/Error"
         "403":
@@ -724,7 +726,9 @@ paths:
   /v1/pos/sales:
     get:
       summary: List point-of-sale sales (POS-01)
-      description: Pass status=NEEDS_REVIEW to see the sales waiting for a decision. Needs permission pos.sale.read.
+      description: |
+        Pass status=NEEDS_REVIEW with pending=true to see the sales nobody has decided yet. Each sale carries its
+        resolution once it has been decided. Needs permission pos.sale.read.
       parameters:
         - $ref: "#/components/parameters/CompanyId"
         - name: status
@@ -733,6 +737,12 @@ paths:
           schema:
             type: string
             enum: [POSTED, NEEDS_REVIEW]
+        - name: pending
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
       security:
         - bearerAuth: []
       responses:
@@ -744,6 +754,284 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PosSale"
+  /v1/inventory/transfers:
+    post:
+      summary: Move stock between warehouses (INV-02)
+      description: |
+        Moves the quantity from the source warehouse, first to expire first, and creates matching batches in the
+        destination with the same batch number, expiry date and unit cost. A transfer posts no ledger entry, because
+        both warehouses sit under the same stock account. A repeat of the same reference returns what the first
+        attempt moved. Needs permission inv.stock.transfer.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferInput"
+      responses:
+        "201":
+          description: The batches the stock left, and the quantity moved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/counts:
+    get:
+      summary: List stock counts (INV-09)
+      description: |
+        Counts of the company. The expected quantities are shown only to people with inv.count.review, and only
+        once a count is no longer open, so the count is taken blind. Needs permission inv.count.manage.
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Counts, each with its lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockCount"
+    post:
+      summary: Start a stock count of a warehouse (INV-09)
+      description: |
+        Starts a count of every batch in the warehouse, with the expected quantities frozen at the start. Only one
+        count per warehouse can be open at a time. The expected quantities are withheld from the counter. Needs
+        permission inv.count.manage.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CountInput"
+      responses:
+        "201":
+          description: The open count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockCount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/counts/{id}/lines:
+    post:
+      summary: Record what was counted in one batch
+      description: Counting the same batch again replaces the figure. Only an open count can change. Needs permission inv.count.manage.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CountLineInput"
+      responses:
+        "200":
+          description: The count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockCount"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/counts/{id}/submit:
+    post:
+      summary: Submit a count for approval (INV-09)
+      description: |
+        Every batch must have a counted quantity. The count is then held for a second person. Its adjustments are
+        posted only when that person approves the STOCK_COUNT_APPLY request. A rejected or withdrawn request returns
+        the count to the counter. Needs permission inv.count.manage.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CountSubmitInput"
+      responses:
+        "202":
+          description: The submitted count and the pending approval request
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count, approval]
+                properties:
+                  count:
+                    $ref: "#/components/schemas/StockCount"
+                  approval:
+                    $ref: "#/components/schemas/ApprovalRequest"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/counts/{id}/cancel:
+    post:
+      summary: Cancel an open count
+      description: A count that is submitted or applied cannot be cancelled. Needs permission inv.count.manage.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyBody"
+      responses:
+        "200":
+          description: The cancelled count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockCount"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/imports/receipts:
+    post:
+      summary: Import goods received or opening stock from a CSV file (INV-01)
+      description: |
+        The CSV is the raw request body (text/csv). Its first row names the columns: warehouse, item, batch_no,
+        expires_on (may be empty), qty, unit_cost, date, reference. Other columns are ignored. The import is a dry
+        run unless dryRun=false. A file with any bad row is not imported. An import that writes must move the stock
+        account by exactly the value of the batches it created, or it is rolled back. A repeated import creates
+        nothing. Accounts are named in the query. Needs permission inv.stock.import.
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: dryRun
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+            default: "true"
+        - name: inventory
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: clearing
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: cogs
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: writeOff
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: countVariance
+          in: query
+          required: false
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          text/csv:
+            schema:
+              type: string
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The report, with the reconciliation of the stock account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportReport"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+  /v1/pos/sales/{id}/review:
+    post:
+      summary: Decide a sale that was kept for review (POS-01)
+      description: |
+        POST posts the sale now, against current stock, with the payments as reconciled (or as recorded) and on
+        a date in an open period. If it still cannot be posted, nothing is written and the response is 409 with the
+        reasons. VOID records that the sale will never be posted. A sale can be decided once. Needs permission
+        pos.sale.review.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PosReviewInput"
+      responses:
+        "200":
+          description: The sale and its decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosReviewResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          description: The sale was already decided or posted, or it still cannot be posted (reasons listed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosReviewResult"
 components:
   securitySchemes:
     bearerAuth:
@@ -1246,7 +1534,13 @@ components:
           $ref: "#/components/schemas/StockAccounts"
     WriteOffInput:
       type: object
-      required: [companyId, warehouse, item, date, reference, accounts]
+      required: [companyId, warehouse, item, date, reference, reason, accounts]
+      properties:
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+          description: Why the stock is written off. Shown to the approver.
       properties:
         companyId:
           type: string
@@ -1544,3 +1838,319 @@ components:
         recordedAt:
           type: string
           format: date-time
+        billDiscount:
+          $ref: "#/components/schemas/Amount"
+        billDiscountReason:
+          type: string
+          nullable: true
+        billDiscountApprovedBy:
+          type: string
+          nullable: true
+        effectiveStatus:
+          type: string
+          enum: [POSTED, NEEDS_REVIEW, VOIDED]
+          description: The status after any decision. The stored status does not change.
+        resolution:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PosDecision"
+    PosDecision:
+      type: object
+      required: [decision, decidedBy, decidedAt, reason, change, tenders]
+      properties:
+        decision:
+          type: string
+          enum: [POSTED, VOIDED]
+        decidedBy:
+          type: string
+        decidedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        postedOn:
+          type: string
+          nullable: true
+        number:
+          type: string
+          nullable: true
+        entryId:
+          type: string
+          format: uuid
+          nullable: true
+        cost:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+        change:
+          $ref: "#/components/schemas/Amount"
+        tenders:
+          type: array
+          items:
+            type: object
+            properties:
+              method:
+                type: string
+                enum: [CASH, CARD, MOBILE]
+              amount:
+                $ref: "#/components/schemas/Amount"
+    PosReviewInput:
+      type: object
+      required: [companyId, decision, reason, accounts]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        decision:
+          type: string
+          enum: [POST, VOID]
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 500
+        date:
+          type: string
+          description: POST only. The business date to post on, YYYY-MM-DD. Defaults to the sale's date, and must be in an open period.
+        tenders:
+          type: array
+          description: POST only. The payments as reconciled. Defaults to the payments recorded with the sale.
+          items:
+            type: object
+            required: [method, amount]
+            properties:
+              method:
+                type: string
+                enum: [CASH, CARD, MOBILE]
+              amount:
+                type: string
+        billDiscountApprovalId:
+          type: string
+          format: uuid
+          description: POST only. An approved POS_BILL_DISCOUNT request for this sale and this discount amount.
+        discountApprovalAbove:
+          type: string
+          description: The bill discount threshold above which an approval is needed.
+        accounts:
+          type: object
+          required: [cash, card, mobile, taxPayable, inventory, clearing, cogs, writeOff]
+          properties:
+            cash:
+              type: string
+            card:
+              type: string
+            mobile:
+              type: string
+            taxPayable:
+              type: string
+            inventory:
+              type: string
+            clearing:
+              type: string
+            cogs:
+              type: string
+            writeOff:
+              type: string
+            countVariance:
+              type: string
+    PosReviewResult:
+      type: object
+      required: [reasons]
+      properties:
+        sale:
+          $ref: "#/components/schemas/PosSale"
+        decision:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/PosDecision"
+        reasons:
+          type: array
+          items:
+            type: string
+    TransferInput:
+      type: object
+      required: [companyId, fromWarehouse, toWarehouse, item, qty, date, reference]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        fromWarehouse:
+          type: string
+        toWarehouse:
+          type: string
+        item:
+          type: string
+        qty:
+          type: string
+          pattern: "^[1-9]\\d{0,17}$"
+        date:
+          type: string
+        reference:
+          type: string
+          maxLength: 100
+    TransferResult:
+      type: object
+      required: [transferred, allocations]
+      properties:
+        transferred:
+          type: string
+        allocations:
+          type: array
+          items:
+            type: object
+            required: [batchId, batchNo, qty, unitCost]
+            properties:
+              batchId:
+                type: string
+                format: uuid
+              batchNo:
+                type: string
+              expiresOn:
+                type: string
+                nullable: true
+              qty:
+                type: string
+              unitCost:
+                $ref: "#/components/schemas/Amount"
+    CountInput:
+      type: object
+      required: [companyId, warehouse, date]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+        date:
+          type: string
+          description: The date the count is taken. Adjustments are posted on this date.
+    CountLineInput:
+      type: object
+      required: [companyId, batchId, counted]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        counted:
+          type: string
+          pattern: "^\\d{1,18}$"
+          description: Whole units counted, zero or more.
+    CountSubmitInput:
+      type: object
+      required: [companyId, reason, accounts]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+        accounts:
+          $ref: "#/components/schemas/StockAccounts"
+    CompanyBody:
+      type: object
+      required: [companyId]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+    StockCount:
+      type: object
+      required: [id, companyId, warehouse, date, status, lines]
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+        date:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, SUBMITTED, APPLIED, CANCELLED]
+        lines:
+          type: array
+          items:
+            type: object
+            required: [batchId, batchNo, item, unitCost, counted]
+            description: expected and variance are present only for reviewers, or once the count is no longer open.
+            properties:
+              batchId:
+                type: string
+                format: uuid
+              batchNo:
+                type: string
+              item:
+                type: string
+              expiresOn:
+                type: string
+                nullable: true
+              unitCost:
+                $ref: "#/components/schemas/Amount"
+              counted:
+                type: string
+                nullable: true
+              expected:
+                type: string
+              variance:
+                type: string
+                nullable: true
+    ImportReport:
+      type: object
+      required: [rows, applied, created, repeated, errors, totalQty, reconciliation]
+      properties:
+        rows:
+          type: integer
+        applied:
+          type: boolean
+          description: True when the rows were written. False for a dry run, or when any row failed.
+        created:
+          type: integer
+          description: Rows that created new batches.
+        repeated:
+          type: integer
+          description: Rows whose reference was already imported, so they were left as they were.
+        errors:
+          type: array
+          items:
+            type: object
+            required: [row, message]
+            properties:
+              row:
+                type: integer
+                description: Number of the row in the file, not counting the header.
+              message:
+                type: string
+        totalQty:
+          type: string
+        totalValue:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+        createdValue:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+        reconciliation:
+          type: object
+          required: [stockAccount, before, after, change, expected, reconciled]
+          properties:
+            stockAccount:
+              type: string
+            before:
+              $ref: "#/components/schemas/Amount"
+            after:
+              $ref: "#/components/schemas/Amount"
+            change:
+              $ref: "#/components/schemas/Amount"
+            expected:
+              $ref: "#/components/schemas/Amount"
+            reconciled:
+              type: boolean
+              description: True when the stock account moved by exactly the value of the batches created.

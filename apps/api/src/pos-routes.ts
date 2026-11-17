@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { AuditLog } from "@erp/audit";
+import { ApprovalQueue } from "@erp/approvals";
 import { hasPermission, type Principal } from "@erp/identity";
 import { Inventory, type InventoryAccounts } from "@erp/inventory";
 import { Ledger } from "@erp/ledger";
@@ -10,6 +11,7 @@ import {
   POS_SALE_SEQUENCE,
   PosRegister,
   TENDER_METHODS,
+  type PosDecision,
   type PosSale,
   type SaleInput,
   type SaleStatus,
@@ -17,6 +19,7 @@ import {
 import { DomainError, type Clock } from "@erp/kernel";
 import { assertEntitled, type Company } from "@erp/tenancy";
 import {
+  PgApprovalStore,
   PgAuditStore,
   PgCounterStore,
   PgInventoryStore,
@@ -27,6 +30,7 @@ import {
   withTenantTransaction,
   type Pool,
 } from "@erp/db";
+import { POS_BILL_DISCOUNT } from "./approval-executors";
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use a YYYY-MM-DD date");
 const WHOLE = z.string().regex(/^[1-9]\d{0,17}$/, "Quantity must be a whole number above zero");
@@ -50,6 +54,13 @@ const TenderBody = z.object({
   amount: AMOUNT,
 });
 
+/** A bill discount (DISC-001 to DISC-004). The reason is required. Above the threshold it needs an approval. */
+const BillDiscountBody = z.object({
+  amount: AMOUNT,
+  reason: z.string().min(1).max(500),
+  approvalId: z.uuid().optional(),
+});
+
 const SaleBody = z.object({
   id: z.uuid(),
   warehouse: z.string().min(1).max(60),
@@ -57,6 +68,7 @@ const SaleBody = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/, "Currency as a three-letter code"),
   lines: z.array(LineBody).min(1).max(200),
   tenders: z.array(TenderBody).min(1).max(10),
+  billDiscount: BillDiscountBody.optional(),
 });
 
 /** The accounts a batch of sales posts to: where each payment lands, tax payable, and the stock accounts. */
@@ -69,18 +81,36 @@ const AccountsBody = z.object({
   clearing: ACCOUNT,
   cogs: ACCOUNT,
   writeOff: ACCOUNT,
+  countVariance: ACCOUNT.optional(),
 });
 
 const SyncBody = z.object({
   companyId: z.uuid(),
   accounts: AccountsBody,
+  /** Bill discounts above this amount need an approval (DISC-003). Omit for no threshold. */
+  discountApprovalAbove: AMOUNT.optional(),
   /** Each sale is checked on its own, so one malformed sale is reported without failing the rest. */
   sales: z.array(z.unknown()).min(1).max(200),
 });
 
+const ReviewBody = z.object({
+  companyId: z.uuid(),
+  decision: z.enum(["POST", "VOID"]),
+  reason: z.string().min(5).max(500),
+  date: DATE.optional(),
+  tenders: z.array(TenderBody).min(1).max(10).optional(),
+  billDiscountApprovalId: z.uuid().optional(),
+  discountApprovalAbove: AMOUNT.optional(),
+  accounts: AccountsBody,
+});
+
+const SaleParams = z.object({ id: z.uuid() });
+
 const SalesQuery = z.object({
   companyId: z.uuid(),
   status: z.enum(["POSTED", "NEEDS_REVIEW"]).optional(),
+  /** With status NEEDS_REVIEW, true returns only the sales that no one has decided yet. */
+  pending: z.enum(["true", "false"]).optional(),
 });
 
 export interface PosRouteDeps {
@@ -98,11 +128,15 @@ export interface SyncResult {
   readonly reasons: readonly string[];
 }
 
+type Transaction = Parameters<Parameters<typeof withTenantTransaction>[2]>[0];
+type AccountsInput = z.infer<typeof AccountsBody>;
+
 /**
- * Point-of-sale routes (POS-01). Devices that were offline sync their sales in a batch. Each sale is posted
- * in full or kept for review, and a sale that was already synced is returned as it was stored, so a retried
- * batch never posts twice. Each sale is its own transaction, so one refused sale does not hold up the others.
- * Needs a signed-in user, the permission for the action, and the POS-01, INV-01, INV-03 and FIN-01 products.
+ * Point-of-sale routes (POS-01). Devices that were offline sync their sales in a batch. Each sale is posted in
+ * full or kept for review, and a sale that was already synced is returned as it was stored, so a retried batch
+ * never posts twice. Each sale is its own transaction, so one refused sale does not hold up the others. A sale
+ * kept for review is decided later, by a person, through the review route. Needs a signed-in user, the permission
+ * for the action, and the POS-01, INV-01, INV-03 and FIN-01 products.
  */
 export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): void {
   function requirePermission(principal: Principal, permission: string): void {
@@ -126,6 +160,55 @@ export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): voi
     });
   }
 
+  /** The register for one request, with the company's accounts and threshold. Used by sync and by review alike. */
+  function registerFor(tx: Transaction, principal: Principal, companyId: string, company: Company, accounts: AccountsInput, threshold?: string): PosRegister {
+    const inventoryAccounts: InventoryAccounts = {
+      inventory: accounts.inventory,
+      clearing: accounts.clearing,
+      cogs: accounts.cogs,
+      writeOff: accounts.writeOff,
+      ...(accounts.countVariance ? { countVariance: accounts.countVariance } : {}),
+    };
+    const ledger = new Ledger(new PgLedgerStore(tx, principal.tenantId), companyId, company.baseCurrency, deps.clock);
+    return new PosRegister({
+      tenantId: principal.tenantId,
+      store: new PgPosStore(tx, principal.tenantId),
+      inventory: new Inventory({
+        store: new PgInventoryStore(tx, principal.tenantId, companyId),
+        posting: { ledger, accounts: inventoryAccounts },
+        clock: deps.clock,
+      }),
+      ledger,
+      numbering: new NumberingService(new PgCounterStore(tx), [{ key: POS_SALE_SEQUENCE, prefix: "POS-", padding: 6, reset: "YEARLY" }]),
+      accounts: {
+        tenders: { CASH: accounts.cash, CARD: accounts.card, MOBILE: accounts.mobile },
+        taxPayable: accounts.taxPayable,
+      },
+      clock: deps.clock,
+      ...(threshold ? { billDiscountApprovalAbove: Money.fromDecimal(threshold, company.baseCurrency) } : {}),
+    });
+  }
+
+  /**
+   * Who approved a bill discount, from an approved request of kind POS_BILL_DISCOUNT for this sale and this amount.
+   * An approval for a different sale or amount does not count, so one approval cannot be reused.
+   */
+  async function approvedDiscountBy(tx: Transaction, tenantId: string, companyId: string, approvalId: string, saleId: string, amount: Money): Promise<string> {
+    const request = await new ApprovalQueue(new PgApprovalStore(tx, tenantId), deps.clock).get(companyId, approvalId);
+    if (!request) {
+      throw new DomainError("NOT_FOUND", "The discount approval was not found");
+    }
+    if (request.kind !== POS_BILL_DISCOUNT || request.status !== "APPROVED" || !request.decidedBy) {
+      throw new DomainError("VALIDATION", "The discount approval is not an approved bill discount");
+    }
+    const approvedAmount = typeof request.payload.amount === "string" ? request.payload.amount : "";
+    const sameAmount = approvedAmount !== "" && Money.fromDecimal(approvedAmount, amount.currency).equals(amount);
+    if (request.payload.saleId !== saleId || !sameAmount) {
+      throw new DomainError("VALIDATION", "The discount approval is for a different sale or amount");
+    }
+    return request.decidedBy;
+  }
+
   async function syncOne(principal: Principal, company: Company, body: z.infer<typeof SyncBody>, raw: unknown): Promise<SyncResult> {
     const parsed = SaleBody.safeParse(raw);
     if (!parsed.success) {
@@ -138,33 +221,19 @@ export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): voi
     }
     try {
       return await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
-        const accounts = body.accounts;
-        const inventoryAccounts: InventoryAccounts = {
-          inventory: accounts.inventory,
-          clearing: accounts.clearing,
-          cogs: accounts.cogs,
-          writeOff: accounts.writeOff,
-        };
-        const ledger = new Ledger(new PgLedgerStore(tx, principal.tenantId), body.companyId, company.baseCurrency, deps.clock);
-        const register = new PosRegister({
-          tenantId: principal.tenantId,
-          store: new PgPosStore(tx, principal.tenantId),
-          inventory: new Inventory({
-            store: new PgInventoryStore(tx, principal.tenantId, body.companyId),
-            posting: { ledger, accounts: inventoryAccounts },
-            clock: deps.clock,
-          }),
-          ledger,
-          numbering: new NumberingService(new PgCounterStore(tx), [
-            { key: POS_SALE_SEQUENCE, prefix: "POS-", padding: 6, reset: "YEARLY" },
-          ]),
-          accounts: {
-            tenders: { CASH: accounts.cash, CARD: accounts.card, MOBILE: accounts.mobile },
-            taxPayable: accounts.taxPayable,
-          },
-          clock: deps.clock,
-        });
-        const { sale: stored, duplicate } = await register.record(toSaleInput(sale, body.companyId));
+        const approvedBy =
+          sale.billDiscount?.approvalId === undefined
+            ? null
+            : await approvedDiscountBy(
+                tx,
+                principal.tenantId,
+                body.companyId,
+                sale.billDiscount.approvalId,
+                sale.id,
+                Money.fromDecimal(sale.billDiscount.amount, company.baseCurrency),
+              );
+        const register = registerFor(tx, principal, body.companyId, company, body.accounts, body.discountApprovalAbove);
+        const { sale: stored, duplicate } = await register.record(toSaleInput(sale, body.companyId, company.baseCurrency, approvedBy));
         if (!duplicate) {
           await new AuditLog(new PgAuditStore(tx), deps.clock).record({
             tenantId: principal.tenantId,
@@ -197,7 +266,63 @@ export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): voi
     return { companyId: body.companyId, results };
   });
 
-  /** Sales for review or reconciliation. Pass status=NEEDS_REVIEW to see only the sales waiting for a decision. */
+  /**
+   * Decides a sale that was kept for review. POST posts it now, with the payments as reconciled and on an open
+   * date. If it still cannot be posted, nothing is written and the response is 409 with the reasons. VOID records
+   * that it will never be posted. A sale can be decided once.
+   */
+  app.post("/v1/pos/sales/:id/review", async (request, reply) => {
+    const { id } = SaleParams.parse(request.params);
+    const body = ReviewBody.parse(request.body);
+    const principal = await deps.authenticate(request);
+    requirePermission(principal, "pos.sale.review");
+    const company = await companyFor(principal, body.companyId);
+    const outcome = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const approvedBy =
+        body.billDiscountApprovalId === undefined
+          ? undefined
+          : await approvedDiscountBy(
+              tx,
+              principal.tenantId,
+              body.companyId,
+              body.billDiscountApprovalId,
+              id,
+              await storedDiscountOf(tx, principal.tenantId, body.companyId, id, company.baseCurrency),
+            );
+      const register = registerFor(tx, principal, body.companyId, company, body.accounts, body.discountApprovalAbove);
+      const result = await register.review({
+        companyId: body.companyId,
+        saleId: id,
+        decidedBy: principal.userId,
+        decision: body.decision,
+        reason: body.reason,
+        ...(body.date ? { date: body.date } : {}),
+        ...(body.tenders ? { tenders: body.tenders.map((tender) => ({ method: tender.method, amount: Money.fromDecimal(tender.amount, company.baseCurrency) })) } : {}),
+        ...(approvedBy ? { billDiscountApprovedBy: approvedBy } : {}),
+      });
+      if (result.decision) {
+        await new AuditLog(new PgAuditStore(tx), deps.clock).record({
+          tenantId: principal.tenantId,
+          actorId: principal.userId,
+          action: "REVIEW",
+          entityType: "pos_sale",
+          entityId: id,
+          after: { decision: result.decision.decision, number: result.decision.number, postedOn: result.decision.postedOn, reason: result.decision.reason },
+        });
+      }
+      return result;
+    });
+    if (outcome.decision === null) {
+      return reply.status(409).send({
+        error: { code: "CONFLICT", message: "The sale still cannot be posted", details: { reasons: outcome.reasons } },
+        sale: saleJson(outcome.sale),
+        reasons: outcome.reasons,
+      });
+    }
+    return reply.status(200).send({ sale: saleJson(outcome.sale), decision: decisionJson(outcome.decision), reasons: [] });
+  });
+
+  /** Sales for review or reconciliation. status=NEEDS_REVIEW with pending=true lists only the sales nobody has decided. */
   app.get("/v1/pos/sales", async (request) => {
     const query = SalesQuery.parse(request.query);
     const principal = await deps.authenticate(request);
@@ -205,17 +330,25 @@ export function registerPosRoutes(app: FastifyInstance, deps: PosRouteDeps): voi
     await companyFor(principal, query.companyId);
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const sales = await new PgPosStore(tx, principal.tenantId).list(query.companyId, query.status);
-      return sales.map(saleJson);
+      return sales.filter((sale) => query.pending !== "true" || sale.resolution === null).map(saleJson);
     });
   });
+
+  /** The bill discount stored on a sale, so an approval can be matched to it. */
+  async function storedDiscountOf(tx: Transaction, tenantId: string, companyId: string, saleId: string, currency: string): Promise<Money> {
+    const sale = await new PgPosStore(tx, tenantId).find(companyId, saleId);
+    if (!sale) {
+      throw new DomainError("NOT_FOUND", "Sale not found");
+    }
+    return Money.fromDecimal(sale.billDiscount.toDecimal(), currency);
+  }
 }
 
 function rejected(id: string, message: string): SyncResult {
   return { id, status: "REJECTED", number: null, duplicate: false, reasons: [message] };
 }
 
-function toSaleInput(sale: z.infer<typeof SaleBody>, companyId: string): SaleInput {
-  const currency = sale.currency;
+function toSaleInput(sale: z.infer<typeof SaleBody>, companyId: string, currency: string, approvedBy: string | null): SaleInput {
   return {
     id: sale.id,
     companyId,
@@ -234,17 +367,46 @@ function toSaleInput(sale: z.infer<typeof SaleBody>, companyId: string): SaleInp
       tracked: line.tracked,
     })),
     tenders: sale.tenders.map((tender) => ({ method: tender.method, amount: Money.fromDecimal(tender.amount, currency) })),
+    ...(sale.billDiscount
+      ? {
+          billDiscount: {
+            amount: Money.fromDecimal(sale.billDiscount.amount, currency),
+            reason: sale.billDiscount.reason,
+            approvedBy,
+          },
+        }
+      : {}),
+  };
+}
+
+function decisionJson(decision: PosDecision) {
+  return {
+    decision: decision.decision,
+    decidedBy: decision.decidedBy,
+    decidedAt: decision.decidedAt,
+    reason: decision.reason,
+    postedOn: decision.postedOn,
+    number: decision.number,
+    entryId: decision.entryId,
+    cost: decision.cost?.toJSON() ?? null,
+    change: decision.change.toJSON(),
+    tenders: decision.tenders.map((tender) => ({ method: tender.method, amount: tender.amount.toJSON() })),
   };
 }
 
 function saleJson(sale: PosSale) {
+  const resolution = sale.resolution;
   return {
     id: sale.id,
     status: sale.status,
-    number: sale.number,
+    effectiveStatus: resolution ? (resolution.decision === "POSTED" ? "POSTED" : "VOIDED") : sale.status,
+    number: resolution?.number ?? sale.number,
     warehouse: sale.warehouse,
     date: sale.date,
     currency: sale.currency,
+    billDiscount: sale.billDiscount.toJSON(),
+    billDiscountReason: sale.billDiscountReason,
+    billDiscountApprovedBy: sale.billDiscountApprovedBy,
     subtotal: sale.subtotal.toJSON(),
     tax: sale.tax.toJSON(),
     total: sale.total.toJSON(),
@@ -253,5 +415,6 @@ function saleJson(sale: PosSale) {
     tenders: sale.tenders.map((tender) => ({ method: tender.method, amount: tender.amount.toJSON() })),
     reasons: sale.reasons,
     recordedAt: sale.recordedAt,
+    resolution: resolution ? decisionJson(resolution) : null,
   };
 }

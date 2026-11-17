@@ -1,4 +1,4 @@
-import type { Batch, BatchRecord, InventoryStore, InventoryTx, Movement, MovementType } from "@erp/inventory";
+import type { Batch, BatchRecord, CountLine, InventoryStore, InventoryTx, Movement, MovementType, StockCount } from "@erp/inventory";
 import { Money } from "@erp/money";
 import type { Queryable } from "./pool";
 
@@ -98,6 +98,11 @@ export class PgInventoryStore implements InventoryStore {
     return loadBatches(this.db, this.tenantId, this.companyId);
   }
 
+  async counts(companyId: string): Promise<StockCount[]> {
+    assertCompany(companyId, this.companyId);
+    return loadCounts(this.db, this.tenantId, this.companyId);
+  }
+
   /**
    * Takes a transaction-scoped lock for the company, so stock work for one company runs one call at a
    * time (INV-003). The lock is released when the surrounding transaction commits or rolls back.
@@ -118,6 +123,21 @@ class PgInventoryTx implements InventoryTx {
 
   async batches(): Promise<Batch[]> {
     return loadBatches(this.db, this.tenantId, this.companyId);
+  }
+
+  async counts(): Promise<StockCount[]> {
+    return loadCounts(this.db, this.tenantId, this.companyId);
+  }
+
+  /** Counts are working documents, so an open one is updated in place. The status check is in the domain. */
+  async saveCount(count: StockCount): Promise<void> {
+    await this.db.query(
+      `INSERT INTO inventory_counts (tenant_id, id, company_id, warehouse, count_date, status, lines, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, now())
+       ON CONFLICT (tenant_id, id) DO UPDATE
+         SET status = EXCLUDED.status, lines = EXCLUDED.lines, updated_at = now()`,
+      [this.tenantId, count.id, this.companyId, count.warehouse, count.date, count.status, JSON.stringify(count.lines.map(toCountLineJson))],
+    );
   }
 
   async movementsFor(reference: string, type: MovementType): Promise<Movement[]> {
@@ -172,6 +192,64 @@ class PgInventoryTx implements InventoryTx {
       );
     }
   }
+}
+
+interface CountLineJson {
+  batchId: string;
+  batchNo: string;
+  item: string;
+  expiresOn: string | null;
+  unitCost: { amount: string; currency: string };
+  expected: string;
+  counted: string | null;
+}
+
+interface CountRow {
+  id: string;
+  warehouse: string;
+  count_date: string;
+  status: StockCount["status"];
+  lines: CountLineJson[];
+}
+
+async function loadCounts(db: Queryable, tenantId: string, companyId: string): Promise<StockCount[]> {
+  const { rows } = await db.query<CountRow>(
+    `SELECT id, warehouse, count_date::text AS count_date, status, lines
+       FROM inventory_counts
+      WHERE tenant_id = $1 AND company_id = $2
+      ORDER BY id`,
+    [tenantId, companyId],
+  );
+  return rows.map((row) => ({
+    id: row.id,
+    companyId,
+    warehouse: row.warehouse,
+    date: row.count_date,
+    status: row.status,
+    lines: row.lines.map(
+      (line): CountLine => ({
+        batchId: line.batchId,
+        batchNo: line.batchNo,
+        item: line.item,
+        expiresOn: line.expiresOn,
+        unitCost: Money.fromDecimal(line.unitCost.amount, line.unitCost.currency),
+        expected: BigInt(line.expected),
+        counted: line.counted === null ? null : BigInt(line.counted),
+      }),
+    ),
+  }));
+}
+
+function toCountLineJson(line: CountLine): CountLineJson {
+  return {
+    batchId: line.batchId,
+    batchNo: line.batchNo,
+    item: line.item,
+    expiresOn: line.expiresOn,
+    unitCost: line.unitCost.toJSON(),
+    expected: line.expected.toString(),
+    counted: line.counted === null ? null : line.counted.toString(),
+  };
 }
 
 function assertCompany(requested: string, bound: string): void {

@@ -1,13 +1,19 @@
 import type { Batch, BatchRecord, InventoryStore, InventoryTx, Movement, MovementType } from "./inventory";
+import type { StockCount } from "./counts";
 
 /** Store for unit tests and local runs. Production uses the Postgres store in @erp/db. */
 export class InMemoryInventoryStore implements InventoryStore {
   private batchRows: BatchRecord[] = [];
   private movementRows: Movement[] = [];
+  private countRows = new Map<string, StockCount>();
   private queues = new Map<string, Promise<unknown>>();
 
   async batches(companyId: string): Promise<Batch[]> {
     return derive(companyId, this.batchRows, this.movementRows);
+  }
+
+  async counts(companyId: string): Promise<StockCount[]> {
+    return [...this.countRows.values()].filter((count) => count.companyId === companyId);
   }
 
   /** Every movement of the company, in the order it was posted. */
@@ -22,8 +28,13 @@ export class InMemoryInventoryStore implements InventoryStore {
   async transaction<T>(companyId: string, work: (tx: InventoryTx) => Promise<T>): Promise<T> {
     const previous = this.queues.get(companyId) ?? Promise.resolve();
     const run = previous.then(async () => {
-      const staged = { batches: [] as BatchRecord[], movements: [] as Movement[] };
+      const staged = { batches: [] as BatchRecord[], movements: [] as Movement[], counts: new Map<string, StockCount>() };
       const visibleMovements = () => [...this.movementRows, ...staged.movements];
+      const visibleCounts = () => {
+        const merged = new Map(this.countRows);
+        for (const [id, count] of staged.counts) merged.set(id, count);
+        return [...merged.values()].filter((count) => count.companyId === companyId);
+      };
       const tx: InventoryTx = {
         batches: async () => derive(companyId, [...this.batchRows, ...staged.batches], visibleMovements()),
         movementsFor: async (reference: string, type: MovementType) =>
@@ -37,10 +48,15 @@ export class InMemoryInventoryStore implements InventoryStore {
         appendMovements: async (movements) => {
           staged.movements.push(...movements);
         },
+        counts: async () => visibleCounts(),
+        saveCount: async (count) => {
+          staged.counts.set(count.id, count);
+        },
       };
       const result = await work(tx);
       this.batchRows.push(...staged.batches);
       this.movementRows.push(...staged.movements);
+      for (const [id, count] of staged.counts) this.countRows.set(id, count);
       return result;
     });
     this.queues.set(

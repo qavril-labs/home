@@ -163,33 +163,32 @@ describe("inventory API (INV-01, INV-03, pharmacy expiry)", () => {
     expect(response.statusCode).toBe(422);
   });
 
-  it("writes off expired stock at its cost, and lists the batches afterwards", async () => {
+  it("a write-off is requested and waits for approval: nothing moves until a second person approves it", async () => {
     const item = "VIT-C";
     await call("POST", "/v1/inventory/receipts", token, receiptBody({ item, batchNo: "OLD", expiresOn: "2026-03-10", qty: "20", unitCost: "2.00", reference: "VIT-OLD" }));
     await call("POST", "/v1/inventory/receipts", token, receiptBody({ item, batchNo: "NEW", expiresOn: "2026-12-31", qty: "10", unitCost: "2.00", reference: "VIT-NEW" }));
 
-    const written = await call("POST", "/v1/inventory/write-offs", token, {
+    const requested = await call("POST", "/v1/inventory/write-offs", token, {
       companyId,
       warehouse: "MAIN",
       item,
       date: "2026-03-11",
       reference: "VIT-WO",
+      reason: "Expired on the shelf and destroyed as policy requires.",
       accounts: ACCOUNTS,
     });
-    expect(written.statusCode).toBe(201);
-    expect(written.json().allocations.map((a: { batchNo: string; qty: string }) => [a.batchNo, a.qty])).toEqual([["OLD", "20"]]);
-    expect(written.json().cost).toEqual({ amount: "40.00", currency: "KES" });
+    expect(requested.statusCode).toBe(202);
+    expect(requested.json()).toMatchObject({ status: "PENDING", kind: "INVENTORY_WRITE_OFF" });
 
+    // Until the approval, the expired batch still holds its stock and no write-off has been posted.
     const batches = await call("GET", `/v1/inventory/batches?companyId=${companyId}&item=${item}`, token);
     expect(batches.statusCode).toBe(200);
     expect(Object.fromEntries(batches.json().map((b: { batchNo: string; balance: string }) => [b.batchNo, b.balance]))).toEqual({
-      OLD: "0",
+      OLD: "20",
       NEW: "10",
     });
-
     const trial = await call("GET", `/v1/ledger/trial-balance?companyId=${companyId}&asOf=2026-12-31`, token);
-    const writeOff = trial.json().rows.find((row: { account: string }) => row.account === "5100");
-    expect(writeOff.debit).toEqual({ amount: "40.00", currency: "KES" });
+    expect(trial.json().rows.find((row: { account: string }) => row.account === "5100")).toBeUndefined();
   });
 
   it("the pharmacy expiry report lists stock already expired and stock expiring within the window", async () => {

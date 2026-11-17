@@ -4,7 +4,8 @@ import { AuditLog } from "@erp/audit";
 import { ApprovalQueue, APPROVAL_STATUSES, type ApprovalRequest } from "@erp/approvals";
 import { hasPermission, type Principal } from "@erp/identity";
 import { DomainError, type Clock } from "@erp/kernel";
-import { PgApprovalStore, PgAuditStore, PgTenantRepository, withTenantTransaction, type Pool } from "@erp/db";
+import { PgApprovalStore, PgAuditStore, PgTenantRepository, withTenantTransaction, type Pool, type Queryable } from "@erp/db";
+import { executeApproval, releaseApproval } from "./approval-executors";
 
 const RequestBody = z.object({
   companyId: z.uuid(),
@@ -40,7 +41,7 @@ export function registerApprovalRoutes(app: FastifyInstance, deps: ApprovalRoute
     request: FastifyRequest,
     permission: string,
     companyId: string,
-    work: (queue: ApprovalQueue, audit: AuditLog, principal: Principal) => Promise<T>,
+    work: (queue: ApprovalQueue, audit: AuditLog, principal: Principal, tx: Queryable) => Promise<T>,
   ): Promise<T> {
     const principal = await deps.authenticate(request);
     if (!hasPermission(principal.permissions, permission)) {
@@ -53,7 +54,7 @@ export function registerApprovalRoutes(app: FastifyInstance, deps: ApprovalRoute
       }
       const queue = new ApprovalQueue(new PgApprovalStore(tx, principal.tenantId), deps.clock);
       const audit = new AuditLog(new PgAuditStore(tx), deps.clock);
-      return work(queue, audit, principal);
+      return work(queue, audit, principal, tx);
     });
   }
 
@@ -101,23 +102,26 @@ export function registerApprovalRoutes(app: FastifyInstance, deps: ApprovalRoute
   app.post("/v1/approvals/:id/approve", async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = DecisionBody.parse(request.body);
-    return withQueue(request, "approvals.decide", body.companyId, async (queue, audit, principal) => {
+    return withQueue(request, "approvals.decide", body.companyId, async (queue, audit, principal, tx) => {
       const before = await queue.get(body.companyId, id);
       if (!before) throw new DomainError("NOT_FOUND", "Approval request not found");
       const after = await queue.approve(body.companyId, id, principal.userId, body.note);
       await auditDecision(audit, principal.tenantId, principal.userId, "APPROVE", before, after);
-      return after;
+      // The approved action runs in this same transaction, so if it is refused the approval stays pending.
+      const effect = await executeApproval({ tx, tenantId: principal.tenantId, clock: deps.clock, actorId: principal.userId }, after);
+      return effect === undefined ? after : { ...after, effect };
     });
   });
 
   app.post("/v1/approvals/:id/reject", async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = DecisionBody.parse(request.body);
-    return withQueue(request, "approvals.decide", body.companyId, async (queue, audit, principal) => {
+    return withQueue(request, "approvals.decide", body.companyId, async (queue, audit, principal, tx) => {
       const before = await queue.get(body.companyId, id);
       if (!before) throw new DomainError("NOT_FOUND", "Approval request not found");
       const after = await queue.reject(body.companyId, id, principal.userId, body.note ?? "");
       await auditDecision(audit, principal.tenantId, principal.userId, "REJECT", before, after);
+      await releaseApproval({ tx, tenantId: principal.tenantId, clock: deps.clock, actorId: principal.userId }, after);
       return after;
     });
   });
@@ -125,11 +129,12 @@ export function registerApprovalRoutes(app: FastifyInstance, deps: ApprovalRoute
   app.post("/v1/approvals/:id/withdraw", async (request) => {
     const { id } = IdParams.parse(request.params);
     const body = DecisionBody.parse(request.body);
-    return withQueue(request, "approvals.request", body.companyId, async (queue, audit, principal) => {
+    return withQueue(request, "approvals.request", body.companyId, async (queue, audit, principal, tx) => {
       const before = await queue.get(body.companyId, id);
       if (!before) throw new DomainError("NOT_FOUND", "Approval request not found");
       const after = await queue.withdraw(body.companyId, id, principal.userId);
       await auditDecision(audit, principal.tenantId, principal.userId, "WITHDRAW", before, after);
+      await releaseApproval({ tx, tenantId: principal.tenantId, clock: deps.clock, actorId: principal.userId }, after);
       return after;
     });
   });

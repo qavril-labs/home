@@ -101,6 +101,16 @@ export class Ledger {
     await this.store.setPeriodStatus(this.companyId, periodId, "CLOSED");
   }
 
+  /**
+   * True when a fiscal period covers the date and that period is open. A closed period, or a date no period
+   * covers, is not open. Callers check this before they write anything else, so a closed period leaves nothing behind.
+   */
+  async isPeriodOpen(date: string): Promise<boolean> {
+    assertIsoDate(date);
+    const period = (await this.store.listFiscalPeriods(this.companyId)).find((item) => item.startDate <= date && date <= item.endDate);
+    return period !== undefined && period.status !== "CLOSED";
+  }
+
   /** Records an exchange rate. Rates are tenant-wide and effective from a date. */
   async setRate(input: RateInput): Promise<void> {
     assertIsoDate(input.effectiveDate);

@@ -17,8 +17,8 @@
 <body>
   <main>
     <h1>What works today</h1>
-    <p class="lead">Latest automated run: 341 tests passed, 0 failing.</p>
-    <p class="fine">Generated 2026-11-17T09:56:00.757Z from commit 97a855d. Statuses follow the definitions below and change only when the evidence changes.</p>
+    <p class="lead">Latest automated run: 376 tests passed, 0 failing.</p>
+    <p class="fine">Generated 2026-11-17T10:31:34.882Z from commit bb8fc18. Statuses follow the definitions below and change only when the evidence changes.</p>
     <table>
       <thead><tr><th scope="col">Module</th><th scope="col">Status</th><th scope="col">Tests</th><th scope="col">What it does</th></tr></thead>
       <tbody>
@@ -91,8 +91,8 @@
         <tr>
           <th scope="row">INV-01 Inventory with batch expiry</th>
           <td><span class="tag">In development</span></td>
-          <td>40 passed</td>
-          <td>Stock by batch with expiry dates: receipts, issues that take the batch expiring first, write-off of expired stock, a pharmacy expiry report with the value at risk, all posted to the ledger. Stock counts, transfers, import and the screens are not built yet.</td>
+          <td>66 passed</td>
+          <td>Stock by batch with expiry dates: receipts, issues that take the batch expiring first, transfers between warehouses, blind stock counts applied on approval, CSV import that reconciles to the ledger, and a pharmacy expiry report with the value at risk. Write-offs and count adjustments need a second person's approval. In-transit transfers and the screens are not built yet.</td>
         </tr>
         <tr>
           <th scope="row">HRM-01 Payroll and HR</th>
@@ -103,8 +103,8 @@
         <tr>
           <th scope="row">POS-01 Point of sale with offline sync</th>
           <td><span class="tag">In development</span></td>
-          <td>35 passed</td>
-          <td>Sales with split payments and change, stock taken first to expire first, posted to the ledger. Sales synced from a device once are never posted twice, and sales that cannot be posted are kept for review. Card and mobile connectors, returns, shifts and the till screen are not built yet.</td>
+          <td>53 passed</td>
+          <td>Sales with bill discounts shared across lines before tax, split payments and change, stock taken first to expire first, posted to the ledger. A sale synced twice is never posted twice. A sale that cannot be posted, including one dated in a closed period, is kept for review, and a manager can post it or void it with a recorded reason. Card and mobile connectors, returns, shifts and the till screen are not built yet.</td>
         </tr>
         <tr>
           <th scope="row">BOTS AI bots</th>
