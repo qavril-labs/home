@@ -1,4 +1,4 @@
-import type { AuditEntry, AuditStore, FieldChange } from "@erp/audit";
+import { GENESIS_HASH, chainHash, type AuditEntry, type AuditStore, type FieldChange } from "@erp/audit";
 import type { DomainEvent, OutboxEntry, OutboxStore, ProcessedStore } from "@erp/events";
 import type { IdentityRepository, SessionRecord, UserRecord, UserStatus } from "@erp/identity";
 import type { CounterStore } from "@erp/numbering";
@@ -121,50 +121,87 @@ interface AuditRow {
   changes: FieldChange[];
   request_id: string | null;
   occurred_at: Date;
+  sequence: string | null;
+  prev_hash: string | null;
+  hash: string | null;
 }
 
 export class PgAuditStore implements AuditStore {
   constructor(private readonly db: Queryable) {}
 
-  async append(entry: AuditEntry): Promise<void> {
+  /**
+   * Appends an entry to the tenant chain. Must run inside withTenantTransaction: the advisory lock is held
+   * until that transaction ends, so two writers for one tenant take turns and cannot claim the same position.
+   */
+  async append(entry: AuditEntry): Promise<AuditEntry> {
+    await this.db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`audit:${entry.tenantId}`]);
+    const { rows } = await this.db.query<{ sequence: string | null; hash: string | null }>(
+      "SELECT sequence::text, hash FROM audit_log WHERE tenant_id = $1 AND sequence IS NOT NULL ORDER BY sequence DESC LIMIT 1",
+      [entry.tenantId],
+    );
+    const last = rows[0];
+    const sequence = last?.sequence ? Number(last.sequence) + 1 : 1;
+    const prevHash = last?.hash ?? GENESIS_HASH;
+    const chained: AuditEntry = { ...entry, sequence, prevHash, hash: chainHash(entry, sequence, prevHash) };
     await this.db.query(
       `INSERT INTO audit_log
-         (id, tenant_id, actor_id, action, entity_type, entity_id, changes, request_id, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+         (id, tenant_id, actor_id, action, entity_type, entity_id, changes, request_id, occurred_at, sequence, prev_hash, hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [
-        entry.id,
-        entry.tenantId,
-        entry.actorId,
-        entry.action,
-        entry.entityType,
-        entry.entityId,
-        JSON.stringify(entry.changes),
-        entry.requestId,
-        entry.occurredAt,
+        chained.id,
+        chained.tenantId,
+        chained.actorId,
+        chained.action,
+        chained.entityType,
+        chained.entityId,
+        JSON.stringify(chained.changes),
+        chained.requestId,
+        chained.occurredAt,
+        sequence,
+        prevHash,
+        chained.hash,
       ],
     );
+    return chained;
   }
 
   async listForEntity(tenantId: string, entityType: string, entityId: string): Promise<AuditEntry[]> {
     const { rows } = await this.db.query<AuditRow>(
-      `SELECT id, tenant_id, actor_id, action, entity_type, entity_id, changes, request_id, occurred_at
+      `SELECT id, tenant_id, actor_id, action, entity_type, entity_id, changes, request_id, occurred_at,
+              sequence, prev_hash, hash
          FROM audit_log
         WHERE tenant_id = $1 AND entity_type = $2 AND entity_id = $3
-        ORDER BY occurred_at, id`,
+        ORDER BY sequence NULLS FIRST, occurred_at, id`,
       [tenantId, entityType, entityId],
     );
-    return rows.map((row) => ({
-      id: row.id,
-      tenantId: row.tenant_id,
-      actorId: row.actor_id,
-      action: row.action,
-      entityType: row.entity_type,
-      entityId: row.entity_id,
-      changes: row.changes,
-      occurredAt: iso(row.occurred_at),
-      requestId: row.request_id,
-    }));
+    return rows.map(toAuditEntry);
   }
+
+  /** Every entry of the tenant in chain order, for verification. */
+  async listForTenant(tenantId: string): Promise<AuditEntry[]> {
+    const { rows } = await this.db.query<AuditRow>(
+      `SELECT id, tenant_id, actor_id, action, entity_type, entity_id, changes, request_id, occurred_at,
+              sequence, prev_hash, hash
+         FROM audit_log WHERE tenant_id = $1 ORDER BY sequence NULLS FIRST, occurred_at, id`,
+      [tenantId],
+    );
+    return rows.map(toAuditEntry);
+  }
+}
+
+function toAuditEntry(row: AuditRow): AuditEntry {
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    actorId: row.actor_id,
+    action: row.action,
+    entityType: row.entity_type,
+    entityId: row.entity_id,
+    changes: row.changes,
+    occurredAt: iso(row.occurred_at),
+    requestId: row.request_id,
+    ...(row.sequence !== null ? { sequence: Number(row.sequence), prevHash: row.prev_hash ?? undefined, hash: row.hash ?? undefined } : {}),
+  };
 }
 
 interface UserRow {

@@ -17,6 +17,7 @@ import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
 import { registerSalesRoutes } from "./sales-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
+import { registerApprovalRoutes } from "./approval-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -332,6 +333,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerSalesRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
+  registerApprovalRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
 
   return app;

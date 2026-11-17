@@ -382,6 +382,163 @@ paths:
                 $ref: "#/components/schemas/Quote"
         "409":
           $ref: "#/components/responses/Error"
+  /v1/sales/invoices/{number}/trace:
+    get:
+      summary: Trace an invoice to the ledger entries behind every figure
+      description: |
+        Lists the issue entry, each payment, each credit note and the void, with the lines of each entry
+        and the account name for each line. Needs permission fin.report.read.
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/CompanyId"
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The invoice and the entries behind it
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InvoiceTrace"
+        "404":
+          $ref: "#/components/responses/Error"
+  /v1/approvals:
+    get:
+      summary: List approval requests
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [PENDING, APPROVED, REJECTED, WITHDRAWN]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Requests, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApprovalRequest"
+    post:
+      summary: Ask for an approval (PLT-07)
+      description: |
+        Holds a sensitive action until a second person decides. The reason is required and is shown to the
+        approver. Needs permission approvals.request.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalInput"
+      responses:
+        "201":
+          description: The pending request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /v1/approvals/{id}/approve:
+    post:
+      summary: Approve a request
+      description: The requester cannot approve their own request. Needs permission approvals.decide.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecision"
+      responses:
+        "200":
+          description: The approved request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/approvals/{id}/reject:
+    post:
+      summary: Reject a request
+      description: A rejection needs a note of at least five characters, so the requester knows what to change.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecision"
+      responses:
+        "200":
+          description: The rejected request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /v1/approvals/{id}/withdraw:
+    post:
+      summary: Withdraw your own pending request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApprovalDecision"
+      responses:
+        "200":
+          description: The withdrawn request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalRequest"
+        "403":
+          $ref: "#/components/responses/Error"
 components:
   securitySchemes:
     bearerAuth:
@@ -721,5 +878,95 @@ components:
           type: string
           enum: [OPEN, ACCEPTED, CANCELLED]
         invoice:
+          type: string
+          nullable: true
+    InvoiceTrace:
+      type: object
+      required: [invoice, creditNotes, steps]
+      properties:
+        invoice:
+          $ref: "#/components/schemas/Invoice"
+        creditNotes:
+          type: array
+          items:
+            type: object
+        steps:
+          type: array
+          items:
+            type: object
+            required: [kind, reference, entry]
+            properties:
+              kind:
+                type: string
+                enum: [ISSUE, PAYMENT, CREDIT_NOTE, VOID]
+              reference:
+                type: string
+              entry:
+                nullable: true
+                type: object
+                description: The ledger entry, with each line's account, side, amount and account name.
+    ApprovalInput:
+      type: object
+      required: [companyId, kind, reason, payload]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          pattern: "^[A-Z][A-Z_]{1,39}$"
+          example: BOT_ACTION
+        reason:
+          type: string
+          minLength: 10
+          maxLength: 500
+        payload:
+          type: object
+          additionalProperties: true
+    ApprovalDecision:
+      type: object
+      required: [companyId]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        note:
+          type: string
+          maxLength: 500
+    ApprovalRequest:
+      type: object
+      required: [id, companyId, kind, reason, payload, requestedBy, status, requestedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        reason:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+        requestedBy:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED, WITHDRAWN]
+        requestedAt:
+          type: string
+          format: date-time
+        decidedBy:
+          type: string
+          format: uuid
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        decisionNote:
           type: string
           nullable: true

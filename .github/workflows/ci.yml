@@ -1,0 +1,76 @@
+name: CI
+
+# Runs on every pull request and on pushes to the working branches. A pull request cannot be merged
+# until these checks pass, so the "tested" claim on the website is backed by a record that anyone can view.
+on:
+  pull_request:
+  push:
+    branches: [main, lane/backend, chore/split-backend-frontend]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Typecheck, tests and site check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    env:
+      # The test helper creates and drops its own database per run, so the role must be able to create databases.
+      TEST_DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install workspaces
+        run: npm ci
+
+      - name: Typecheck every package
+        run: npm run typecheck
+
+      - name: Run unit and Postgres integration tests, and save the results
+        run: npx vitest run --reporter=default --reporter=json --outputFile.json=test-results/tests.json
+
+      - name: Build the "what works today" status from the results
+        run: |
+          mkdir -p reports
+          cp test-results/tests.json reports/tests.json
+          node scripts/status-report.mjs
+
+      - name: Check the marketing site
+        run: npm run site:check
+
+      - name: Keep the test results with the run
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            test-results/tests.json
+            docs/status/WHAT_WORKS_TODAY.md
+          if-no-files-found: warn

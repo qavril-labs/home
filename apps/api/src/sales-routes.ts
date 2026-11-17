@@ -153,6 +153,11 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
     );
   }
 
+  /** The ledger for one company, used to read entries and account names. */
+  function ledgerFor(context: SalesContext, companyId: string): Ledger {
+    return new Ledger(new PgLedgerStore(context.tx, context.tenantId), companyId, context.company.baseCurrency, context.clock);
+  }
+
   /** Quotes are built on the same invoicing service, so accepting one reuses its numbering and ledger. */
   function quotesFor(context: SalesContext, companyId: string, receivableAccount: string): SalesQuotes {
     return new SalesQuotes(
@@ -303,6 +308,42 @@ export function registerSalesRoutes(app: FastifyInstance, deps: SalesRouteDeps):
     return withSales(request, "sal.quotes.write", body.companyId, (context) =>
       quotesFor(context, body.companyId, "").cancel(number),
     );
+  });
+
+  app.get("/v1/sales/invoices/:number/trace", async (request) => {
+    const { number } = NumberParams.parse(request.params);
+    const query = CompanyQuery.parse(request.query);
+    return withSales(request, "fin.report.read", query.companyId, async (context) => {
+      const sales = invoicingFor(context, query.companyId, "");
+      const trace = await sales.trace(number);
+      const names = new Map(
+        (await ledgerFor(context, query.companyId).accounts()).map((account) => [account.code, account.name]),
+      );
+      return {
+        invoice: trace.invoice,
+        creditNotes: trace.creditNotes,
+        steps: trace.steps.map((step) => ({
+          kind: step.kind,
+          reference: step.reference,
+          entry: step.entry
+            ? {
+                id: step.entry.id,
+                date: step.entry.date,
+                currency: step.entry.currency,
+                memo: step.entry.memo,
+                lines: step.entry.lines.map((line) => ({
+                  account: line.account,
+                  accountName: names.get(line.account) ?? null,
+                  side: line.side,
+                  amount: line.amount,
+                  baseAmount: line.baseAmount,
+                  memo: line.memo,
+                })),
+              }
+            : null,
+        })),
+      };
+    });
   });
 
   app.get("/v1/sales/invoices", async (request) => {

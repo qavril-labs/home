@@ -116,6 +116,21 @@ export class Ledger {
     await this.store.saveRate(rate);
   }
 
+  /** A posted entry by its ID, or undefined. Used to trace a figure back to its source. */
+  async entry(entryId: string): Promise<PostedEntry | undefined> {
+    return (await this.store.findEntry(this.companyId, entryId)) ?? undefined;
+  }
+
+  /** A posted entry by the reference its document was posted under. */
+  async entryByReference(reference: string): Promise<PostedEntry | undefined> {
+    return (await this.store.findEntryByReference(this.companyId, reference)) ?? undefined;
+  }
+
+  /** Chart of accounts, for showing account names next to codes. */
+  async accounts(): Promise<Account[]> {
+    return this.store.listAccounts(this.companyId);
+  }
+
   async post(input: PostEntryInput): Promise<PostedEntry> {
     return this.postEntry(input, null, null);
   }

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>What works today | QAVRIL LABS</title>
+  <meta name="description" content="Each QAVRIL LABS module, its honest status, and the test results from the latest automated run.">
+  <link rel="canonical" href="https://your-domain.example/status.html">
+  <meta name="robots" content="index, follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="What works today | QAVRIL LABS">
+  <meta property="og:description" content="Each QAVRIL LABS module, its honest status, and the test results from the latest automated run.">
+  <meta property="og:url" content="https://your-domain.example/status.html">
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>What works today</h1>
+    <p class="lead">Latest automated run: 268 tests passed, 0 failing.</p>
+    <p class="fine">Generated 2026-11-17T09:06:50.229Z from commit 74622d4. Statuses follow the definitions below and change only when the evidence changes.</p>
+    <table>
+      <thead><tr><th scope="col">Module</th><th scope="col">Status</th><th scope="col">Tests</th><th scope="col">What it does</th></tr></thead>
+      <tbody>
+        <tr>
+          <th scope="row">FIN-01 General ledger</th>
+          <td><span class="tag">Early access</span></td>
+          <td>29 passed</td>
+          <td>Accounts, monthly periods, balanced multi-currency entries, reversals and the trial balance.</td>
+        </tr>
+        <tr>
+          <th scope="row">SAL-04 Sales and invoicing</th>
+          <td><span class="tag">In development</span></td>
+          <td>36 passed</td>
+          <td>Invoices, payments, credit notes, quotes and voiding, posted to the ledger. The screens are not built yet.</td>
+        </tr>
+        <tr>
+          <th scope="row">MDM-01 Party master (customers and suppliers)</th>
+          <td><span class="tag">In development</span></td>
+          <td>15 passed</td>
+          <td>Customers, suppliers and both, with tax ID checks. Merge and de-duplication are not built.</td>
+        </tr>
+        <tr>
+          <th scope="row">MDM-02 Item master</th>
+          <td><span class="tag">In development</span></td>
+          <td>15 passed</td>
+          <td>Item codes and units. Variants, barcodes and price lists are not built.</td>
+        </tr>
+        <tr>
+          <th scope="row">PLT-07 Approval queue</th>
+          <td><span class="tag">In development</span></td>
+          <td>16 passed</td>
+          <td>Requests with a reason, decisions by a second person, withdrawal. Chains and thresholds are not built.</td>
+        </tr>
+        <tr>
+          <th scope="row">PLT-16 Tamper-evident audit trail</th>
+          <td><span class="tag">Early access</span></td>
+          <td>14 passed</td>
+          <td>Every change is chained to the one before, so an edited or removed record is detected. The viewer screen is not built.</td>
+        </tr>
+        <tr>
+          <th scope="row">PLT-01 Identity and sessions</th>
+          <td><span class="tag">In development</span></td>
+          <td>23 passed</td>
+          <td>Password sign-in and sessions. Single sign-on and two-factor sign-in are not built.</td>
+        </tr>
+        <tr>
+          <th scope="row">PLT-02 Tenancy and row-level security</th>
+          <td><span class="tag">Early access</span></td>
+          <td>16 passed</td>
+          <td>Each business is kept separate by database rules, checked by tests on every table.</td>
+        </tr>
+        <tr>
+          <th scope="row">LEAD Website enquiries</th>
+          <td><span class="tag">Early access</span></td>
+          <td>18 passed</td>
+          <td>Demo and trial requests are stored with consent. Email alerts depend on the operator's webhook.</td>
+        </tr>
+        <tr>
+          <th scope="row">TRACE Trace a number</th>
+          <td><span class="tag">Early access</span></td>
+          <td>16 passed</td>
+          <td>From an invoice, the ledger entries behind every figure, with account names. The screen is not built yet.</td>
+        </tr>
+        <tr>
+          <th scope="row">PRC-01 Purchasing</th>
+          <td><span class="tag">Planned</span></td>
+          <td>No tests yet</td>
+          <td>Requests, purchase orders, goods receipts and supplier bills matched to both.</td>
+        </tr>
+        <tr>
+          <th scope="row">INV-01 Inventory</th>
+          <td><span class="tag">Planned</span></td>
+          <td>No tests yet</td>
+          <td>Stock by location, batch expiry and stock counts.</td>
+        </tr>
+        <tr>
+          <th scope="row">HRM-01 Payroll and HR</th>
+          <td><span class="tag">Planned</span></td>
+          <td>No tests yet</td>
+          <td>Attendance, leave and payslips, with rules set for each country.</td>
+        </tr>
+        <tr>
+          <th scope="row">POS-01 Point of sale with offline sync</th>
+          <td><span class="tag">Planned</span></td>
+          <td>No tests yet</td>
+          <td>Till sales that keep working without internet and sync later.</td>
+        </tr>
+        <tr>
+          <th scope="row">BOTS AI bots</th>
+          <td><span class="tag">Planned</span></td>
+          <td>No tests yet</td>
+          <td>Routine work drafted by bots. Each action waits for approval in the queue; no bot is built yet.</td>
+        </tr>
+      </tbody>
+    </table>
+    <h2>Status definitions</h2>
+    <ul>
+      <li><strong>Available:</strong> Production-ready, tested, supported and commercially deployable.</li>
+      <li><strong>Early access:</strong> Functional and suitable for controlled customer onboarding.</li>
+      <li><strong>In development:</strong> Active implementation; not commercially available.</li>
+      <li><strong>Prototype:</strong> Proof of concept or demonstration.</li>
+      <li><strong>Planned:</strong> Roadmap concept.</li>
+    </ul>
+  </main>
+</body>
+</html>

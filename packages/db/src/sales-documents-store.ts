@@ -38,6 +38,26 @@ interface SerialisedLine {
 export class PgCreditNoteStore implements CreditNoteStore {
   constructor(private readonly db: Queryable, private readonly tenantId: string, private readonly companyId: string) {}
 
+  async listForInvoice(invoice: string): Promise<CreditNote[]> {
+    const { rows } = await this.db.query<CreditNoteRow & { number: string }>(
+      `SELECT number, invoice, note_date::text, currency, total_minor, tax_minor, entry_id
+         FROM sales_credit_notes WHERE tenant_id = $1 AND company_id = $2 AND invoice = $3 ORDER BY number`,
+      [this.tenantId, this.companyId, invoice],
+    );
+    return rows.map((row) => {
+      const currency = row.currency.trim();
+      return {
+        number: row.number,
+        invoice: row.invoice,
+        date: row.note_date,
+        currency,
+        total: Money.of(BigInt(row.total_minor), currency),
+        tax: Money.of(BigInt(row.tax_minor), currency),
+        entryId: row.entry_id,
+      };
+    });
+  }
+
   async save(note: CreditNote): Promise<void> {
     await this.db.query(
       `INSERT INTO sales_credit_notes (tenant_id, company_id, number, invoice, note_date, currency, total_minor, tax_minor, entry_id)

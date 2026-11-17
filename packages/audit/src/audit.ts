@@ -16,10 +16,17 @@ export interface AuditEntry {
   readonly changes: readonly FieldChange[];
   readonly occurredAt: string;
   readonly requestId: string | null;
+  /** Position in the tenant chain, starting at 1. Set by the store when the entry is written. */
+  readonly sequence?: number;
+  /** Hash of the previous entry in the chain, or the genesis hash for the first one. */
+  readonly prevHash?: string;
+  /** Hash of this entry, covering its content, sequence and prevHash. */
+  readonly hash?: string;
 }
 
 export interface AuditStore {
-  append(entry: AuditEntry): Promise<void>;
+  /** Writes an entry and returns it with its chain fields. Must run inside the tenant transaction. */
+  append(entry: AuditEntry): Promise<AuditEntry>;
   listForEntity(tenantId: string, entityType: string, entityId: string): Promise<AuditEntry[]>;
 }
 
@@ -88,7 +95,6 @@ export class AuditLog {
       occurredAt: this.clock.now().toISOString(),
       requestId: input.requestId ?? null,
     };
-    await this.store.append(entry);
-    return entry;
+    return this.store.append(entry);
   }
 }

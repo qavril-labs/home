@@ -21,6 +21,7 @@
     "fastify": "^5.12.7",
     "zod": "^4.6.7",
     "@erp/sales": "*",
-    "@erp/master-data": "*"
+    "@erp/master-data": "*",
+    "@erp/approvals": "*"
   }
 }

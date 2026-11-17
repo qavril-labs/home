@@ -43,3 +43,7 @@ services/uaap/.dev-env
 .worktrees/
 *.tar.gz
 
+
+# Test results written by the CI run (and locally when checking the status page). Not source.
+test-results/
+reports/tests.json

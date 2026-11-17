@@ -301,4 +301,36 @@ describe("sales invoice API", () => {
     const theirs = await call("GET", `/v1/sales/quotes/${number}?companyId=${otherCompanyId}`, otherToken);
     expect(theirs.statusCode).toBe(404);
   });
+  it("traces an invoice to the ledger entries behind every figure", async () => {
+    const issued = await call("POST", "/v1/sales/invoices", token, invoiceBody(companyId, customerId));
+    const number = issued.json().number as string;
+    await call("POST", `/v1/sales/invoices/${number}/payments`, token, {
+      companyId,
+      date: "2026-03-01",
+      amount: "200.00",
+      bankAccount: "1000",
+      receivableAccount: "1200",
+    });
+    await call("POST", `/v1/sales/invoices/${number}/credit-notes`, token, {
+      companyId,
+      date: "2026-03-02",
+      receivableAccount: "1200",
+      currency: "KES",
+      lines: [{ description: "Part return", revenueAccount: "4000", amount: "50.00" }],
+    });
+
+    const response = await call("GET", `/v1/sales/invoices/${number}/trace?companyId=${companyId}`, token);
+    expect(response.statusCode).toBe(200);
+    const trace = response.json();
+    expect(trace.steps.map((step: { kind: string }) => step.kind)).toEqual(["ISSUE", "PAYMENT", "CREDIT_NOTE"]);
+    for (const step of trace.steps) {
+      expect(step.entry).not.toBeNull();
+    }
+
+    const issue = trace.steps[0].entry;
+    const receivable = issue.lines.find((line: { account: string }) => line.account === "1200");
+    expect(receivable).toMatchObject({ side: "DEBIT", accountName: "Receivables" });
+    expect(receivable.amount.amount).toBe("1160.00");
+    expect(trace.invoice.total.amount).toBe("1160.00");
+  });
 });

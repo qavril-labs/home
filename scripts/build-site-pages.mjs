@@ -853,7 +853,7 @@ for (const page of [...INFO_PAGES, ...LEGAL_PAGES]) {
 
 // Sitemap for every generated page plus the root pages.
 const paths = [
-  "", "products.html", "case-studies.html", "projects.html", "industries.html", "book.html", "signup.html", "signin.html", "pricing.html", "faq.html", "bots.html", ...BOTS.map((b) => `bots/${b.slug}.html`), "requirements.html", "availability.html", "blog.html", "privacy.html",
+  "", "status.html", "products.html", "case-studies.html", "projects.html", "industries.html", "book.html", "signup.html", "signin.html", "pricing.html", "faq.html", "bots.html", ...BOTS.map((b) => `bots/${b.slug}.html`), "requirements.html", "availability.html", "blog.html", "privacy.html",
   ...INFO_PAGES.map((p) => p.path),
   ...LEGAL_PAGES.map((p) => p.path),
   ...BLOG_POSTS.map((p) => `blog/${p.slug}.html`),

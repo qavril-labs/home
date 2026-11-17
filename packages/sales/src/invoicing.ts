@@ -1,5 +1,5 @@
 import { DomainError } from "@erp/kernel";
-import type { Ledger } from "@erp/ledger";
+import type { Ledger, PostedEntry } from "@erp/ledger";
 import { Money } from "@erp/money";
 import type { NumberingService } from "@erp/numbering";
 
@@ -44,6 +44,20 @@ export interface RecordPaymentInput {
 
 export type InvoiceStatus = "OPEN" | "PAID" | "VOID";
 
+/** One ledger entry behind an invoice, and the document reference it was posted under. */
+export interface TraceStep {
+  readonly kind: "ISSUE" | "PAYMENT" | "CREDIT_NOTE" | "VOID";
+  readonly reference: string;
+  /** Undefined only if the entry is missing from the ledger, which the trace reports rather than hides. */
+  readonly entry: PostedEntry | undefined;
+}
+
+export interface InvoiceTrace {
+  readonly invoice: Invoice;
+  readonly creditNotes: readonly CreditNote[];
+  readonly steps: readonly TraceStep[];
+}
+
 export interface CreditNoteInput {
   /** Invoice the credit applies to. */
   readonly invoice: string;
@@ -67,6 +81,7 @@ export interface CreditNote {
 export interface CreditNoteStore {
   save(note: CreditNote): Promise<void>;
   get(number: string): Promise<CreditNote | undefined>;
+  listForInvoice(invoice: string): Promise<CreditNote[]>;
 }
 
 export class MemoryCreditNoteStore implements CreditNoteStore {
@@ -78,6 +93,10 @@ export class MemoryCreditNoteStore implements CreditNoteStore {
 
   async get(number: string): Promise<CreditNote | undefined> {
     return this.notes.get(number);
+  }
+
+  async listForInvoice(invoice: string): Promise<CreditNote[]> {
+    return [...this.notes.values()].filter((note) => note.invoice === invoice);
   }
 }
 
@@ -279,6 +298,28 @@ export class SalesInvoicing {
 
   async getCreditNote(number: string): Promise<CreditNote | undefined> {
     return this.creditNotes.get(number);
+  }
+
+  /**
+   * Every ledger entry behind an invoice, in the order they happened: the issue, each payment, each
+   * credit note, and the void if there was one. A figure on the invoice can be traced to these entries.
+   */
+  async trace(number: string): Promise<InvoiceTrace> {
+    const record = await this.require(number);
+    const steps: TraceStep[] = [];
+    steps.push({ kind: "ISSUE", reference: number, entry: await this.ledger.entry(record.invoice.entryId) });
+    for (let index = 1; index <= record.payments; index += 1) {
+      const reference = `${number}/PAY/${index}`;
+      steps.push({ kind: "PAYMENT", reference, entry: await this.ledger.entryByReference(reference) });
+    }
+    const notes = await this.creditNotes.listForInvoice(number);
+    for (const note of notes) {
+      steps.push({ kind: "CREDIT_NOTE", reference: note.number, entry: await this.ledger.entry(note.entryId) });
+    }
+    if (record.invoice.status === "VOID") {
+      steps.push({ kind: "VOID", reference: `${number}/VOID`, entry: await this.ledger.entryByReference(`${number}/VOID`) });
+    }
+    return { invoice: record.invoice, creditNotes: notes, steps };
   }
 
   /** Cancels an invoice that has no payments, by posting the reversal of its entry. */
