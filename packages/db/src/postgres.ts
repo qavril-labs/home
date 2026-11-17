@@ -135,8 +135,10 @@ export class PgAuditStore implements AuditStore {
    */
   async append(entry: AuditEntry): Promise<AuditEntry> {
     await this.db.query("SELECT pg_advisory_xact_lock(hashtext($1))", [`audit:${entry.tenantId}`]);
+    // Select the bigint column under its own name. Aliasing it as text (sequence::text) makes ORDER BY sort
+    // as text, so "9" would sort after "10" and the chain would restart at a sequence that is already taken.
     const { rows } = await this.db.query<{ sequence: string | null; hash: string | null }>(
-      "SELECT sequence::text, hash FROM audit_log WHERE tenant_id = $1 AND sequence IS NOT NULL ORDER BY sequence DESC LIMIT 1",
+      "SELECT sequence, hash FROM audit_log WHERE tenant_id = $1 AND sequence IS NOT NULL ORDER BY sequence DESC LIMIT 1",
       [entry.tenantId],
     );
     const last = rows[0];

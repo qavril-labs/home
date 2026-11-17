@@ -50,6 +50,17 @@ describe("audit chain in Postgres", () => {
     expect(verifyChain(chain)).toEqual({ ok: true, checked: 10, unchained: 0 });
   });
 
+  it("keeps the chain going past nine entries, where a text sort would reuse a position", async () => {
+    // Sequence 10 is the first with two digits. Sorting it as text puts "9" after "10", so the next
+    // append would claim a position that is already taken.
+    for (let index = 11; index <= 14; index++) {
+      await withTenantTransaction(db.appPool, tenantId, (tx) => new PgAuditStore(tx).append(entry(tenantId, index)));
+    }
+    const chain = await withTenantTransaction(db.appPool, tenantId, (tx) => new PgAuditStore(tx).listForTenant(tenantId));
+    expect(chain.map((item) => item.sequence)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]);
+    expect(verifyChain(chain)).toEqual({ ok: true, checked: 14, unchained: 0 });
+  });
+
   it("refuses to change a stored entry, because the table rejects updates", async () => {
     await expect(
       db.adminPool.query("UPDATE audit_log SET action = 'FORGED' WHERE tenant_id = $1 AND sequence = 1", [tenantId]),

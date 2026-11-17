@@ -10,3 +10,5 @@ export * from "./sales-store";
 export * from "./master-data-store";
 export * from "./sales-documents-store";
 export * from "./approval-store";
+export * from "./inventory-store";
+export * from "./pos-store";

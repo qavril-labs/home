@@ -539,6 +539,211 @@ paths:
                 $ref: "#/components/schemas/ApprovalRequest"
         "403":
           $ref: "#/components/responses/Error"
+  /v1/inventory/receipts:
+    post:
+      summary: Receive stock into a new batch (INV-01, INV-03)
+      description: |
+        Records a receipt as a batch with its expiry date and unit cost, and posts its value to the ledger as
+        debit stock on hand, credit goods received not invoiced. A repeat of the same reference returns the
+        batch it made. Quantities are whole units sent as decimal strings. Needs permission inv.stock.receive
+        and the FIN-01, INV-01 and INV-03 products.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockReceiptInput"
+      responses:
+        "201":
+          description: The batch, with its balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockBatch"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/issues:
+    post:
+      summary: Issue stock, first to expire first (INV-03 FEFO)
+      description: |
+        Takes the quantity from the batches that expire first, never from expired batches, and never below
+        zero. Posts the cost as debit cost of goods sold, credit stock on hand. A repeat of the same reference
+        returns what the first attempt took. Needs permission inv.stock.issue.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StockIssueInput"
+      responses:
+        "201":
+          description: The batches taken, their cost and the ledger entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          description: Not enough unexpired stock. Nothing is taken.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorBody"
+  /v1/inventory/write-offs:
+    post:
+      summary: Write off expired stock at its cost (INV-03)
+      description: |
+        Writes off only the batches that expired before the date. Posts the cost as debit write-off expense,
+        credit stock on hand. When nothing has expired, the result has no allocations and no entry. Needs
+        permission inv.stock.writeoff.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WriteOffInput"
+      responses:
+        "201":
+          description: The batches written off, their cost and the ledger entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StockResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+  /v1/inventory/batches:
+    get:
+      summary: List batches with their balances (INV-03)
+      description: Each batch with its balance, derived from its movements. Needs permission inv.report.read.
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: item
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: warehouse
+          in: query
+          required: false
+          schema:
+            type: string
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Batches in receipt order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockBatch"
+  /v1/inventory/expiry:
+    get:
+      summary: Pharmacy expiry report (INV-03)
+      description: |
+        Batches still on hand that have already expired, and those expiring within the window, with days left
+        and the cost of the stock at risk. Needs permission inv.report.read.
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: asOf
+          in: query
+          required: true
+          schema:
+            type: string
+            pattern: "^\\d{4}-\\d{2}-\\d{2}$"
+            example: "2026-03-15"
+        - name: withinDays
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 3650
+            default: 30
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: The expiry report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExpiryReport"
+        "400":
+          $ref: "#/components/responses/Error"
+  /v1/pos/sales/sync:
+    post:
+      summary: Sync point-of-sale sales from a device (POS-01)
+      description: |
+        Takes a batch of sales, which a device may have made offline. Each sale is priced, its payment checked,
+        its stock taken first to expire first, and then posted with a receipt number and a ledger entry. A sale
+        that cannot be posted as it stands (a short payment, or not enough unexpired stock) is kept as
+        NEEDS_REVIEW with its reasons and moves no stock. A sale already synced is returned as stored, so a
+        retried batch never posts twice. A malformed or refused sale is returned as REJECTED and not stored, so
+        the device keeps it. Each sale is handled on its own. Needs permission pos.sale.record and the POS-01,
+        INV-01, INV-03 and FIN-01 products.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PosSyncInput"
+      responses:
+        "200":
+          description: One result per sale, in the order sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PosSyncResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+  /v1/pos/sales:
+    get:
+      summary: List point-of-sale sales (POS-01)
+      description: Pass status=NEEDS_REVIEW to see the sales waiting for a decision. Needs permission pos.sale.read.
+      parameters:
+        - $ref: "#/components/parameters/CompanyId"
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [POSTED, NEEDS_REVIEW]
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sales, oldest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PosSale"
 components:
   securitySchemes:
     bearerAuth:
@@ -970,3 +1175,372 @@ components:
         decisionNote:
           type: string
           nullable: true
+    Amount:
+      type: object
+      description: A money amount as a decimal string in its currency, such as "1234.50".
+      required: [amount, currency]
+      properties:
+        amount:
+          type: string
+          pattern: "^-?\\d+(\\.\\d+)?$"
+        currency:
+          type: string
+          pattern: "^[A-Z]{3}$"
+    StockReceiptInput:
+      type: object
+      required: [companyId, warehouse, item, batchNo, qty, unitCost, date, reference, accounts]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+          maxLength: 60
+        item:
+          type: string
+          maxLength: 60
+        batchNo:
+          type: string
+          maxLength: 60
+        expiresOn:
+          type: string
+          nullable: true
+          description: Expiry date, YYYY-MM-DD. Required where the item policy asks for it.
+        qty:
+          type: string
+          pattern: "^[1-9]\\d{0,17}$"
+          description: Whole units as a decimal string.
+        unitCost:
+          type: string
+          description: Cost per unit in the company currency, as a decimal string.
+        date:
+          type: string
+          description: Receipt date, YYYY-MM-DD.
+        reference:
+          type: string
+          maxLength: 100
+        accounts:
+          $ref: "#/components/schemas/StockAccounts"
+    StockIssueInput:
+      type: object
+      required: [companyId, warehouse, item, qty, date, reference, accounts]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+          maxLength: 60
+        item:
+          type: string
+          maxLength: 60
+        qty:
+          type: string
+          pattern: "^[1-9]\\d{0,17}$"
+        date:
+          type: string
+        reference:
+          type: string
+          maxLength: 100
+        accounts:
+          $ref: "#/components/schemas/StockAccounts"
+    WriteOffInput:
+      type: object
+      required: [companyId, warehouse, item, date, reference, accounts]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+          maxLength: 60
+        item:
+          type: string
+          maxLength: 60
+        date:
+          type: string
+        reference:
+          type: string
+          maxLength: 100
+        accounts:
+          $ref: "#/components/schemas/StockAccounts"
+    StockAccounts:
+      type: object
+      description: The ledger accounts the movement posts to. Named by the caller, as receivables are for sales.
+      required: [inventory, clearing, cogs, writeOff]
+      properties:
+        inventory:
+          type: string
+        clearing:
+          type: string
+        cogs:
+          type: string
+        writeOff:
+          type: string
+    StockBatch:
+      type: object
+      required: [id, companyId, warehouse, item, batchNo, receivedOn, receivedQty, balance, unitCost, receiptReference]
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        warehouse:
+          type: string
+        item:
+          type: string
+        batchNo:
+          type: string
+        expiresOn:
+          type: string
+          nullable: true
+        receivedOn:
+          type: string
+        receivedQty:
+          type: string
+        balance:
+          type: string
+          description: Units on hand, derived from the batch's movements.
+        unitCost:
+          $ref: "#/components/schemas/Amount"
+        receiptReference:
+          type: string
+    StockResult:
+      type: object
+      required: [allocations, cost, entry]
+      properties:
+        allocations:
+          type: array
+          items:
+            type: object
+            required: [batchId, batchNo, qty, unitCost, cost]
+            properties:
+              batchId:
+                type: string
+                format: uuid
+              batchNo:
+                type: string
+              expiresOn:
+                type: string
+                nullable: true
+              qty:
+                type: string
+              unitCost:
+                $ref: "#/components/schemas/Amount"
+              cost:
+                $ref: "#/components/schemas/Amount"
+        cost:
+          $ref: "#/components/schemas/Amount"
+        entry:
+          nullable: true
+          type: object
+          description: The ledger entry for the movement. Null when the stock had no value.
+          properties:
+            id:
+              type: string
+              format: uuid
+            reference:
+              type: string
+            date:
+              type: string
+    ExpiryReport:
+      type: object
+      required: [asOf, expired, expiringSoon, expiredValue, expiringValue]
+      properties:
+        asOf:
+          type: string
+        expired:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchStatus"
+        expiringSoon:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchStatus"
+        expiredValue:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+          description: Cost of the balance still on hand in expired batches. Null when there are none.
+        expiringValue:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+          description: Cost of the balance still on hand in batches expiring within the window. Null when there are none.
+    BatchStatus:
+      type: object
+      required: [batch, daysLeft]
+      properties:
+        batch:
+          $ref: "#/components/schemas/StockBatch"
+        daysLeft:
+          type: integer
+          description: Days to expiry. Negative when the batch has already expired.
+    PosSyncInput:
+      type: object
+      required: [companyId, accounts, sales]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        accounts:
+          type: object
+          description: Cash, card and mobile money accounts, tax payable, and the stock accounts.
+          required: [cash, card, mobile, taxPayable, inventory, clearing, cogs, writeOff]
+          properties:
+            cash:
+              type: string
+            card:
+              type: string
+            mobile:
+              type: string
+            taxPayable:
+              type: string
+            inventory:
+              type: string
+            clearing:
+              type: string
+            cogs:
+              type: string
+            writeOff:
+              type: string
+        sales:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/PosSaleInput"
+    PosSaleInput:
+      type: object
+      required: [id, warehouse, date, currency, lines, tenders]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: The UUID the device gave the sale. Syncing the same id twice stores it once.
+        warehouse:
+          type: string
+        date:
+          type: string
+        currency:
+          type: string
+          description: Must be the company currency.
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [itemCode, qty, unitPrice, taxRateBps, taxMode, revenueAccount, tracked]
+            properties:
+              itemCode:
+                type: string
+              description:
+                type: string
+              qty:
+                type: string
+              unitPrice:
+                type: string
+                description: Price per unit before discount. Includes tax when taxMode is INCLUSIVE.
+              discount:
+                type: string
+                description: Discount on the whole line. Applied before tax.
+              taxRateBps:
+                type: string
+                description: Tax rate in basis points, such as 1900 for 19%.
+              taxMode:
+                type: string
+                enum: [EXCLUSIVE, INCLUSIVE]
+              revenueAccount:
+                type: string
+              tracked:
+                type: boolean
+                description: True for stock items, which are issued first to expire first.
+        tenders:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [method, amount]
+            properties:
+              method:
+                type: string
+                enum: [CASH, CARD, MOBILE]
+              amount:
+                type: string
+    PosSyncResult:
+      type: object
+      required: [companyId, results]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        results:
+          type: array
+          items:
+            type: object
+            required: [id, status, number, duplicate, reasons]
+            properties:
+              id:
+                type: string
+              status:
+                type: string
+                enum: [POSTED, NEEDS_REVIEW, REJECTED]
+              number:
+                type: string
+                nullable: true
+              duplicate:
+                type: boolean
+              reasons:
+                type: array
+                items:
+                  type: string
+    PosSale:
+      type: object
+      required: [id, status, number, warehouse, date, currency, total, tax, change, reasons, recordedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [POSTED, NEEDS_REVIEW]
+        number:
+          type: string
+          nullable: true
+        warehouse:
+          type: string
+        date:
+          type: string
+        currency:
+          type: string
+        subtotal:
+          $ref: "#/components/schemas/Amount"
+        tax:
+          $ref: "#/components/schemas/Amount"
+        total:
+          $ref: "#/components/schemas/Amount"
+        change:
+          $ref: "#/components/schemas/Amount"
+        cost:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Amount"
+        tenders:
+          type: array
+          items:
+            type: object
+            properties:
+              method:
+                type: string
+                enum: [CASH, CARD, MOBILE]
+              amount:
+                $ref: "#/components/schemas/Amount"
+        reasons:
+          type: array
+          items:
+            type: string
+        recordedAt:
+          type: string
+          format: date-time

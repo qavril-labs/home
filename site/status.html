@@ -17,8 +17,8 @@
 <body>
   <main>
     <h1>What works today</h1>
-    <p class="lead">Latest automated run: 268 tests passed, 0 failing.</p>
-    <p class="fine">Generated 2026-11-17T09:06:50.229Z from commit 74622d4. Statuses follow the definitions below and change only when the evidence changes.</p>
+    <p class="lead">Latest automated run: 341 tests passed, 0 failing.</p>
+    <p class="fine">Generated 2026-11-17T09:56:00.757Z from commit 97a855d. Statuses follow the definitions below and change only when the evidence changes.</p>
     <table>
       <thead><tr><th scope="col">Module</th><th scope="col">Status</th><th scope="col">Tests</th><th scope="col">What it does</th></tr></thead>
       <tbody>
@@ -55,7 +55,7 @@
         <tr>
           <th scope="row">PLT-16 Tamper-evident audit trail</th>
           <td><span class="tag">Early access</span></td>
-          <td>14 passed</td>
+          <td>15 passed</td>
           <td>Every change is chained to the one before, so an edited or removed record is detected. The viewer screen is not built.</td>
         </tr>
         <tr>
@@ -89,10 +89,10 @@
           <td>Requests, purchase orders, goods receipts and supplier bills matched to both.</td>
         </tr>
         <tr>
-          <th scope="row">INV-01 Inventory</th>
-          <td><span class="tag">Planned</span></td>
-          <td>No tests yet</td>
-          <td>Stock by location, batch expiry and stock counts.</td>
+          <th scope="row">INV-01 Inventory with batch expiry</th>
+          <td><span class="tag">In development</span></td>
+          <td>40 passed</td>
+          <td>Stock by batch with expiry dates: receipts, issues that take the batch expiring first, write-off of expired stock, a pharmacy expiry report with the value at risk, all posted to the ledger. Stock counts, transfers, import and the screens are not built yet.</td>
         </tr>
         <tr>
           <th scope="row">HRM-01 Payroll and HR</th>
@@ -102,9 +102,9 @@
         </tr>
         <tr>
           <th scope="row">POS-01 Point of sale with offline sync</th>
-          <td><span class="tag">Planned</span></td>
-          <td>No tests yet</td>
-          <td>Till sales that keep working without internet and sync later.</td>
+          <td><span class="tag">In development</span></td>
+          <td>35 passed</td>
+          <td>Sales with split payments and change, stock taken first to expire first, posted to the ledger. Sales synced from a device once are never posted twice, and sales that cannot be posted are kept for review. Card and mobile connectors, returns, shifts and the till screen are not built yet.</td>
         </tr>
         <tr>
           <th scope="row">BOTS AI bots</th>

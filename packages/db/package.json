@@ -23,6 +23,8 @@
     "pg": "^8.23.1",
     "@erp/sales": "*",
     "@erp/master-data": "*",
-    "@erp/approvals": "*"
+    "@erp/approvals": "*",
+    "@erp/inventory": "*",
+    "@erp/pos": "*"
   }
 }
