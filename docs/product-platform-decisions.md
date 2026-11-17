@@ -54,10 +54,13 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 | Item | Status |
 |---|---|
 | Account | Verified by sign-in on the owner's machine. The account ID is kept out of this repository |
-| Sign-in identity | The active identity is the account's **root user**. Create an IAM user or SSO role for daily work and keep root for billing only |
+| Sign-in identity | IAM user `qavril-admin` (AdministratorAccess, MFA on, CLI profile `qavril-admin`). Root kept for billing only; root MFA to be enabled |
 | Default region | `ap-south-1` |
 | Bucket suffix | `qv7k2`. `qavril-web-prod-qv7k2` and `qavril-web-staging-qv7k2` are free (checked) |
-| ECR, ECS, ElastiCache, load balancers | None exist yet in Mumbai |
+| S3 | `qavril-web-prod-qv7k2` and `qavril-web-staging-qv7k2` created in `ap-south-1`. Public access fully blocked; versioning on. Served through CloudFront later |
+| ECR | 12 repositories: `<product>-api` and `<product>-worker` for platform, procurement, stores, sales, production, finance. Scan on push; tags immutable |
+| ECS | Clusters `qavril-prod` and `qavril-staging` (no services yet) |
+| ElastiCache, load balancers | Not created yet; billed hourly, waiting for the first service |
 
 ## 6. Still open
 
