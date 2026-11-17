@@ -20,14 +20,14 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 
 | Decision | Answer |
 |---|---|
-| Neon projects | One per repository, in AWS Singapore (`aws-ap-southeast-1`): `qavril-saas` (platform, the core project in [infrastructure.md](infrastructure.md)), `qavril-procurement`, `qavril-stores`, `qavril-sales`, `qavril-production`, `qavril-finance` |
+| Neon projects | One per repository, in AWS Singapore (`aws-ap-southeast-1`): `qavril-saas` (platform, the core project in [infrastructure.md](infrastructure.md)), `qavril-procurement`, `qavril-stores`, `qavril-sales`, `qavril-production`, `qavril-finance`, and `qavril-agents` (renamed from `uaap`, the agent service) |
 | Roles | One owner role runs migrations. Each product's API runs as its own app role, with no rights to other products' databases |
 | Tenant isolation | Every tenant table has `tenant_id` and row-level security. Tenant data is queried only through `withTenantTransaction` |
 | Branches | `main` (production), `dev` (shared development), and one short-lived branch per pull request for migration tests |
 | Local development | Postgres in Docker. Tests use `TEST_DATABASE_URL`, set to a local role that can create databases |
 | Money | `bigint` minor units with a currency code, through `@qavril/money`. Amounts cross the API as decimal strings |
 | Cross-product data | No product queries another product's database. Reads go through the platform API, or a local copy filled by events |
-| Point-in-time history | Target 7 days on production projects. **The current Neon plan caps this at 6 hours (21,600 s); the 7-day setting was refused.** Options: upgrade the Neon plan, or add scheduled `pg_dump` backups to S3 with a tested restore. Owner to choose |
+| Point-in-time history | **Decided: 6 hours**, the maximum on the current Neon plan. A 7-day window was refused by the plan. The owner chose to keep 6 hours. Because the restore window is short, production needs scheduled logical backups (`pg_dump` to S3 with a tested restore) before real data is loaded. Not yet built |
 | Backups | Until the window is extended, scheduled logical backups are required before production data is loaded |
 
 ## 3. Hosting, events and secrets
@@ -50,6 +50,6 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 
 ## 5. Still open
 
-1. Point-in-time window on production (see section 2).
+1. Scheduled production backups (`pg_dump` to S3), needed because the restore window is 6 hours (see section 2).
 2. The first tenant and seed data: use neutral sample companies only.
 3. Repository-level branch protection settings, to be applied in GitHub once the repositories hold code.
