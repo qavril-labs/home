@@ -70,6 +70,8 @@ Each tool works in its own subfolder, a **git worktree**: the same repository, i
 | `E:\SaaS\.worktrees\backend` | Claude Code | `lane/backend` | `backend/`, `contracts/` |
 | `E:\SaaS\.worktrees\frontend` | Antigravity | `lane/frontend` | `frontend/` |
 
+**Product repositories (decided, see [product-platform-decisions.md](product-platform-decisions.md)).** The platform is split into separate GitHub repositories under `qavril-labs`, each private, each with its own database: `platform` (identity, tenancy, approvals, numbering, audit, events, parties, items, ledger), `procurement`, `stores`, `sales`, `production`, `finance`, and a web app repository owned by Antigravity. Each repository follows the same rules: CI must pass, one approval, and contract changes need Antigravity's approval. Until a product's repository is set up, its work stays in this repository's `backend/` lane.
+
 Because each lane edits only its own top-level folder, the two branches never change the same file, so merges into `main` do not conflict. The `.worktrees/` folder is ignored by git. Each lane pulls `main` before every task and merges back through pull requests at least once a day.
 
 [infrastructure.md](infrastructure.md) covers the databases, Redis and BullMQ, and hosting. Run everything locally with `npm run dev:all` (site on 8080, API on 3002, Redis on 6379, plus the worker).
