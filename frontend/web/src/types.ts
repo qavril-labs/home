@@ -400,7 +400,7 @@ export interface JournalEntry {
 // ==========================================
 
 export type CanonicalTier = 1 | 2 | 3 | 4 | 5;
-export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "FAILED" | "EXPIRED";
 
 export interface ApprovalItem {
   id: string;
@@ -424,6 +424,7 @@ export interface ApprovalItem {
   approvedBy?: string;
   approvedAt?: string;
   rejectionReason?: string;
+  canDecide?: boolean; // From the API: false for the person who proposed the action.
 }
 
 export interface AgentRegistryItem {

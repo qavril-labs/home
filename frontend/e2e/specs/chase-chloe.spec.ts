@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Chase Chloe dedicated screen via top navigation
-    await page.getByRole("button", { name: "Chase Chloe (FIN-14)" }).first().click();
+    await page.goto("#chase-chloe");
+    await expect(page.getByRole("heading", { name: "Chase Chloe" })).toBeVisible();
   });
 
   test("Renders Chase Chloe bot header, avatar, and Live indicator", async ({ page }) => {

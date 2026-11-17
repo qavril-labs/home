@@ -1,0 +1,1044 @@
+openapi: 3.1.0
+info:
+  title: QAVRIL LABS ERP - Procurement service
+  version: 0.1.0
+  description: >
+    Contract for the procurement product: supplier qualification, purchase requests, RFQs with
+    comparison and award, and purchase orders. Parties (the supplier record itself) and items are
+    read from the platform service. Quantities and amounts are decimal strings; prices are never
+    floats. Business dates are YYYY-MM-DD; timestamps are UTC ISO 8601. Write requests accept an
+    Idempotency-Key header.
+    Status: draft for review by the frontend lane (Antigravity). Not yet implemented.
+
+servers:
+  - url: http://localhost:3002
+    description: Local development gateway
+  - url: https://api.qavrillabs.com
+    description: Production gateway
+
+tags:
+  - name: Suppliers
+  - name: PurchaseRequests
+  - name: RFQs
+  - name: PurchaseOrders
+
+security:
+  - BearerAuth: []
+
+paths:
+  /v1/procurement/suppliers:
+    get:
+      tags: [Suppliers]
+      summary: List suppliers with qualification status (PRC-01)
+      operationId: listSuppliers
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/SupplierStatus"
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Supplier list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupplierPage"
+    post:
+      tags: [Suppliers]
+      summary: Register a supplier for qualification
+      operationId: createSupplier
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSupplierRequest"
+      responses:
+        "201":
+          description: Supplier created in status "pending-qualification"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/procurement/suppliers/{supplierId}/qualification:
+    parameters:
+      - $ref: "#/components/parameters/SupplierId"
+    post:
+      tags: [Suppliers]
+      summary: Record the qualification result (score, grade, status) from the supplier scorecard (PRC-12)
+      operationId: recordSupplierQualification
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordQualificationRequest"
+      responses:
+        "200":
+          description: Qualification recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-requests:
+    get:
+      tags: [PurchaseRequests]
+      summary: List purchase requests (PRC-02)
+      operationId: listPurchaseRequests
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PurchaseRequestStatus"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Purchase requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseRequestPage"
+    post:
+      tags: [PurchaseRequests]
+      summary: Raise a purchase request (from stores at reorder point, or from a department)
+      operationId: createPurchaseRequest
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePurchaseRequestRequest"
+      responses:
+        "201":
+          description: Purchase request created in status "submitted"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseRequest"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/procurement/purchase-requests/{requestId}/decision:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      tags: [PurchaseRequests]
+      summary: Approve or reject a purchase request at the caller's approval step
+      operationId: decidePurchaseRequest
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequest"
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/rfqs:
+    get:
+      tags: [RFQs]
+      summary: List requests for quotation (PRC-06)
+      operationId: listRfqs
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/RfqStatus"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: RFQs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RfqPage"
+    post:
+      tags: [RFQs]
+      summary: Create an RFQ from approved purchase requests to at least three suppliers
+      operationId: createRfq
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRfqRequest"
+      responses:
+        "201":
+          description: RFQ sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/procurement/rfqs/{rfqId}/quotes:
+    parameters:
+      - $ref: "#/components/parameters/RfqId"
+    post:
+      tags: [RFQs]
+      summary: Capture a supplier quotation against the RFQ
+      operationId: recordRfqQuote
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordQuoteRequest"
+      responses:
+        "201":
+          description: Quote recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/rfqs/{rfqId}/comparison:
+    parameters:
+      - $ref: "#/components/parameters/RfqId"
+    get:
+      tags: [RFQs]
+      summary: "Comparative statement: landed cost, lead time, terms and compliance per supplier, with the recommended L1"
+      operationId: getRfqComparison
+      responses:
+        "200":
+          description: Comparison statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comparison"
+
+  /v1/procurement/rfqs/{rfqId}/award:
+    parameters:
+      - $ref: "#/components/parameters/RfqId"
+    post:
+      tags: [RFQs]
+      summary: Award the RFQ to a supplier (goes to approval by value band)
+      operationId: awardRfq
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AwardRfqRequest"
+      responses:
+        "200":
+          description: Award submitted for approval
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders:
+    get:
+      tags: [PurchaseOrders]
+      summary: List purchase orders (PRC-03)
+      operationId: listPurchaseOrders
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: "#/components/schemas/PurchaseOrderStatus"
+        - name: supplierId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: Purchase orders
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrderPage"
+    post:
+      tags: [PurchaseOrders]
+      summary: Create a purchase order from an awarded RFQ or a direct order to an approved supplier
+      operationId: createPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePurchaseOrderRequest"
+      responses:
+        "201":
+          description: Purchase order created in status "draft"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    get:
+      tags: [PurchaseOrders]
+      summary: Get a purchase order with lines and receipt progress
+      operationId: getPurchaseOrder
+      responses:
+        "200":
+          description: Purchase order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /v1/procurement/purchase-orders/{poId}/submit:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Submit the PO for approval by its value band
+      operationId: submitPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}/decision:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Approve or reject the PO at the caller's approval step
+      operationId: decidePurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionRequest"
+      responses:
+        "200":
+          description: Decision recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}/release:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Release the approved PO to the supplier; emits po.issued
+      operationId: releasePurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}/acknowledge:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Record the supplier's signed acknowledgement (due within 48 hours of release)
+      operationId: acknowledgePurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcknowledgePurchaseOrderRequest"
+      responses:
+        "200":
+          description: Acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}/close:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Close the PO once stores has posted the goods receipt; emits po.closed
+      operationId: closePurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Session token from the platform service. The product checks the procurement permissions.
+
+  parameters:
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Client-generated key. Repeating a request with the same key returns the first response.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+    SupplierId:
+      name: supplierId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RfqId:
+      name: rfqId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PoId:
+      name: poId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    ValidationError:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: The caller is not the approver at this step, or lacks the permission
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Conflict:
+      description: The request conflicts with the current state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    Money:
+      type: string
+      pattern: "^-?[0-9]+(\\.[0-9]{1,4})?$"
+      description: Decimal string in the document currency. Never a number.
+      example: "12500.00"
+
+    Quantity:
+      type: string
+      pattern: "^[0-9]+(\\.[0-9]{1,4})?$"
+      description: Decimal string in the item's purchase unit.
+      example: "10"
+
+    Currency:
+      type: string
+      pattern: "^[A-Z]{3}$"
+      example: INR
+
+    Id:
+      type: string
+      format: uuid
+
+    SupplierStatus:
+      type: string
+      enum: [pending-qualification, approved, conditionally-approved, on-hold, rejected]
+
+    Supplier:
+      type: object
+      required: [id, partyId, name, status, categories]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        partyId:
+          description: The party record on the platform service
+          allOf:
+            - $ref: "#/components/schemas/Id"
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/SupplierStatus"
+        categories:
+          type: array
+          items:
+            type: string
+            example: raw-material
+        grade:
+          type: string
+          nullable: true
+          enum: [A, B, C, D]
+        score:
+          type: string
+          nullable: true
+          description: Weighted score as a percentage string, for example "72.5"
+        qualifiedOn:
+          type: string
+          format: date
+          nullable: true
+        nextReviewOn:
+          type: string
+          format: date
+          nullable: true
+        trialUntil:
+          type: string
+          format: date
+          nullable: true
+          description: End of the trial period for a new supplier or transporter, where it applies
+
+    CreateSupplierRequest:
+      type: object
+      required: [partyId, categories]
+      properties:
+        partyId:
+          $ref: "#/components/schemas/Id"
+        categories:
+          type: array
+          minItems: 1
+          items:
+            type: string
+
+    RecordQualificationRequest:
+      type: object
+      required: [scores, outcome]
+      properties:
+        scores:
+          type: array
+          description: One entry per scorecard criterion, scored 1 to 5
+          items:
+            type: object
+            required: [criterion, score]
+            properties:
+              criterion:
+                type: string
+                example: product-quality
+              score:
+                type: integer
+                minimum: 1
+                maximum: 5
+        criticalFailure:
+          type: boolean
+          default: false
+          description: A critical failure disqualifies regardless of score
+        outcome:
+          $ref: "#/components/schemas/SupplierStatus"
+
+    SupplierPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Supplier"
+        nextCursor:
+          type: string
+          nullable: true
+
+    PurchaseRequestStatus:
+      type: string
+      enum: [submitted, in-approval, approved, rejected, converted]
+
+    PurchaseRequestLine:
+      type: object
+      required: [itemId, quantity, requiredBy]
+      properties:
+        itemId:
+          $ref: "#/components/schemas/Id"
+        description:
+          type: string
+        specification:
+          type: string
+          description: Grade, size, make or model, and drawing reference
+        quantity:
+          $ref: "#/components/schemas/Quantity"
+        requiredBy:
+          type: string
+          format: date
+
+    PurchaseRequest:
+      type: object
+      required: [id, number, status, source, requestedBy, lines, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        number:
+          type: string
+          example: PR-000123
+        status:
+          $ref: "#/components/schemas/PurchaseRequestStatus"
+        source:
+          type: string
+          enum: [stores-reorder, stores-order-shortage, department]
+        requestedBy:
+          $ref: "#/components/schemas/Id"
+        departmentId:
+          $ref: "#/components/schemas/Id"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseRequestLine"
+        createdAt:
+          type: string
+          format: date-time
+
+    CreatePurchaseRequestRequest:
+      type: object
+      required: [source, lines]
+      properties:
+        source:
+          type: string
+          enum: [stores-reorder, stores-order-shortage, department]
+        departmentId:
+          $ref: "#/components/schemas/Id"
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PurchaseRequestLine"
+
+    PurchaseRequestPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseRequest"
+        nextCursor:
+          type: string
+          nullable: true
+
+    DecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [approve, reject]
+        comment:
+          type: string
+          maxLength: 1000
+
+    RfqStatus:
+      type: string
+      enum: [open, quotes-in, compared, awarded, cancelled]
+
+    RfqVendorQuote:
+      type: object
+      required: [supplierId, unitPrice, currency, leadTimeDays]
+      properties:
+        supplierId:
+          $ref: "#/components/schemas/Id"
+        unitPrice:
+          $ref: "#/components/schemas/Money"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        taxRate:
+          type: string
+          description: Decimal percentage, for example "18.00"
+        freight:
+          $ref: "#/components/schemas/Money"
+        insurance:
+          $ref: "#/components/schemas/Money"
+        leadTimeDays:
+          type: integer
+          minimum: 0
+        paymentTerms:
+          type: string
+        warrantyMonths:
+          type: integer
+          minimum: 0
+        validUntil:
+          type: string
+          format: date
+        deviations:
+          type: string
+          description: Any difference from the specification, stated by the supplier
+        quotedAt:
+          type: string
+          format: date-time
+
+    Rfq:
+      type: object
+      required: [id, number, status, purchaseRequestIds, suppliers, quotes]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        number:
+          type: string
+          example: RFQ-000045
+        status:
+          $ref: "#/components/schemas/RfqStatus"
+        purchaseRequestIds:
+          type: array
+          items:
+            $ref: "#/components/schemas/Id"
+        suppliers:
+          type: array
+          minItems: 3
+          description: At least three suppliers, from the approved supplier list, for standard items
+          items:
+            $ref: "#/components/schemas/Id"
+        responseDeadline:
+          type: string
+          format: date-time
+        deliveryLocation:
+          type: string
+        quotes:
+          type: array
+          items:
+            $ref: "#/components/schemas/RfqVendorQuote"
+        awardedSupplierId:
+          $ref: "#/components/schemas/Id"
+          nullable: true
+
+    CreateRfqRequest:
+      type: object
+      required: [purchaseRequestIds, supplierIds, responseDeadline]
+      properties:
+        purchaseRequestIds:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/Id"
+        supplierIds:
+          type: array
+          minItems: 3
+          items:
+            $ref: "#/components/schemas/Id"
+        responseDeadline:
+          type: string
+          format: date-time
+        deliveryLocation:
+          type: string
+        termsAndConditions:
+          type: string
+
+    RecordQuoteRequest:
+      $ref: "#/components/schemas/RfqVendorQuote"
+
+    RfqPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Rfq"
+        nextCursor:
+          type: string
+          nullable: true
+
+    ComparisonRow:
+      type: object
+      required: [supplierId, landedUnitPrice, leadTimeDays, rank]
+      properties:
+        supplierId:
+          $ref: "#/components/schemas/Id"
+        landedUnitPrice:
+          $ref: "#/components/schemas/Money"
+        leadTimeDays:
+          type: integer
+        meetsDeliveryDate:
+          type: boolean
+        complianceNotes:
+          type: string
+        rank:
+          type: integer
+          minimum: 1
+        recommended:
+          type: boolean
+
+    Comparison:
+      type: object
+      required: [rfqId, rows]
+      properties:
+        rfqId:
+          $ref: "#/components/schemas/Id"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/ComparisonRow"
+        recommendedSupplierId:
+          $ref: "#/components/schemas/Id"
+          nullable: true
+        missingQuotes:
+          type: array
+          description: Suppliers that have not quoted yet, so the comparison is incomplete
+          items:
+            $ref: "#/components/schemas/Id"
+
+    AwardRfqRequest:
+      type: object
+      required: [supplierId, justification]
+      properties:
+        supplierId:
+          $ref: "#/components/schemas/Id"
+        justification:
+          type: string
+          description: Required when the award is not the L1 supplier
+          minLength: 1
+
+    PurchaseOrderStatus:
+      type: string
+      enum: [draft, in-approval, approved, rejected, released, acknowledged, partially-received, received, closed, cancelled]
+
+    PurchaseOrderLine:
+      type: object
+      required: [lineNo, itemId, quantity, unitPrice, taxRate, requiredBy]
+      properties:
+        lineNo:
+          type: integer
+          minimum: 1
+        itemId:
+          $ref: "#/components/schemas/Id"
+        description:
+          type: string
+        quantity:
+          $ref: "#/components/schemas/Quantity"
+        receivedQuantity:
+          $ref: "#/components/schemas/Quantity"
+        unitPrice:
+          $ref: "#/components/schemas/Money"
+        taxRate:
+          type: string
+        requiredBy:
+          type: string
+          format: date
+        lineTotal:
+          $ref: "#/components/schemas/Money"
+          description: Quantity times unit price, rounded by the tax rules. Computed by the server.
+
+    PurchaseOrder:
+      type: object
+      required: [id, number, status, supplierId, currency, lines, total, createdAt]
+      properties:
+        id:
+          $ref: "#/components/schemas/Id"
+        number:
+          type: string
+          example: PO-000789
+        status:
+          $ref: "#/components/schemas/PurchaseOrderStatus"
+        supplierId:
+          $ref: "#/components/schemas/Id"
+        rfqId:
+          $ref: "#/components/schemas/Id"
+          nullable: true
+        currency:
+          $ref: "#/components/schemas/Currency"
+        paymentTerms:
+          type: string
+        deliveryLocation:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/PurchaseOrderLine"
+        total:
+          $ref: "#/components/schemas/Money"
+          description: Sum of line totals plus tax, computed by the server
+        approvalStep:
+          type: integer
+          nullable: true
+          description: The approval step currently waiting, if the PO is in approval
+        acknowledgedOn:
+          type: string
+          format: date
+          nullable: true
+        dueAcknowledgementAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+
+    CreatePurchaseOrderRequest:
+      type: object
+      required: [supplierId, currency, lines]
+      properties:
+        supplierId:
+          $ref: "#/components/schemas/Id"
+        rfqId:
+          $ref: "#/components/schemas/Id"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        paymentTerms:
+          type: string
+        deliveryLocation:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [itemId, quantity, unitPrice, taxRate, requiredBy]
+            properties:
+              itemId:
+                $ref: "#/components/schemas/Id"
+              description:
+                type: string
+              quantity:
+                $ref: "#/components/schemas/Quantity"
+              unitPrice:
+                $ref: "#/components/schemas/Money"
+              taxRate:
+                type: string
+              requiredBy:
+                type: string
+                format: date
+
+    AcknowledgePurchaseOrderRequest:
+      type: object
+      required: [acknowledgedOn, signedCopyRef]
+      properties:
+        acknowledgedOn:
+          type: string
+          format: date
+        signedCopyRef:
+          type: string
+          description: Reference to the stored signed acknowledgement (PLT-11 document)
+
+    PurchaseOrderPage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseOrder"
+        nextCursor:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: VALIDATION
+            message:
+              type: string
+              example: Invalid request payload

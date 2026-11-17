@@ -1,6 +1,14 @@
+import { timingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { Pool } from "@erp/db";
+
+/** Compares two secrets in constant time, so the admin key cannot be guessed byte by byte from response timing. */
+function sameSecret(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 const PageBody = z.object({
   title: z.string().min(1).max(200),
@@ -38,7 +46,7 @@ export function registerCmsRoutes(app: FastifyInstance, pool: Pool, adminKey: st
   // --- Admin Authentication Guard ---
   function requireAdmin(req: FastifyRequest, reply: FastifyReply, next: () => void) {
     const key = req.headers["x-admin-key"] || (req.headers.authorization || "").replace(/^Bearer\s+/, "");
-    if (!key || key !== adminKey) {
+    if (typeof key !== "string" || !sameSecret(key, adminKey)) {
       reply.status(401).send({ error: "Unauthorized: Invalid or missing admin authorization key" });
       return;
     }
@@ -138,7 +146,7 @@ export function registerCmsRoutes(app: FastifyInstance, pool: Pool, adminKey: st
   // Auth verify
   app.post("/v1/admin/cms/auth/verify", async (req, reply) => {
     const body = req.body as { key?: string };
-    if (!body?.key || body.key !== adminKey) {
+    if (typeof body?.key !== "string" || !sameSecret(body.key, adminKey)) {
       return reply.status(401).send({ ok: false, error: "Invalid admin key" });
     }
     return reply.send({ ok: true, message: "Admin authenticated successfully" });

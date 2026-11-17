@@ -1,7 +1,12 @@
+import { randomBytes } from "node:crypto";
+import { type TicketStore } from "./stream-tickets";
+
+const STREAM_TICKET_TTL_SECONDS = 60;
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { hasPermission, type Principal } from "@erp/identity";
 import { DomainError, type Clock } from "@erp/kernel";
+import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
 import type { Company } from "@erp/tenancy";
 import {
   PgInvoicingStore,
@@ -145,9 +150,18 @@ export interface InvoicingRouteDeps {
   readonly pool: Pool;
   readonly clock: Clock;
   readonly authenticate: (request: FastifyRequest) => Promise<Principal>;
+  readonly tickets: TicketStore;
 }
 
 export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRouteDeps): void {
+  /** Issues a ticket for one stream connection. The client calls this again after every reconnect. */
+  app.post("/v1/events/tickets", async (request) => {
+    const principal = await signedIn(request);
+    const ticket = randomBytes(24).toString("base64url");
+    await deps.tickets.issue(ticket, principal.tenantId, STREAM_TICKET_TTL_SECONDS);
+    return { ticket, expiresInSeconds: STREAM_TICKET_TTL_SECONDS };
+  });
+
   async function signedIn(request: FastifyRequest, permission?: string): Promise<Principal> {
     const principal = await deps.authenticate(request);
     if (permission && !hasPermission(principal.permissions, permission)) {
@@ -160,26 +174,34 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Real-Time Event Streaming (SSE / Step 3)
   // ==========================================
   app.get("/v1/events/stream", async (request: FastifyRequest, reply: FastifyReply) => {
-    // Authenticate via Authorization header or ?token= query parameter (for standard EventSource)
-    let token = "";
-    const authHeader = request.headers.authorization;
-    if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
-      token = authHeader.slice(7);
+    // Preferred: ?ticket= from POST /v1/events/tickets (single use, 60 seconds, not a session token).
+    // Legacy: ?token= carries the session token in the URL, which can end up in logs. It is kept only
+    // for clients that have not moved to tickets yet; remove it once they have.
+    const q = request.query as { ticket?: string; token?: string };
+    let tenantId: string;
+    if (typeof q.ticket === "string" && q.ticket.length > 0) {
+      const consumed = await deps.tickets.consume(q.ticket);
+      if (!consumed) {
+        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Stream ticket is invalid or expired" } });
+      }
+      tenantId = consumed;
     } else {
-      const q = request.query as { token?: string };
-      if (q.token) token = q.token;
-    }
-
-    if (!token) {
-      return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Token required for live event stream" } });
-    }
-
-    let principal: Principal;
-    try {
-      request.headers.authorization = `Bearer ${token}`;
-      principal = await deps.authenticate(request);
-    } catch (err) {
-      return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Invalid or expired token" } });
+      let token = "";
+      const authHeader = request.headers.authorization;
+      if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+        token = authHeader.slice(7);
+      } else if (q.token) {
+        token = q.token;
+      }
+      if (!token) {
+        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "A stream ticket is required for the live event stream" } });
+      }
+      try {
+        request.headers.authorization = `Bearer ${token}`;
+        tenantId = (await deps.authenticate(request)).tenantId;
+      } catch {
+        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Invalid or expired token" } });
+      }
     }
 
     // Set Server-Sent Events headers
@@ -191,10 +213,10 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     reply.raw.flushHeaders();
 
     // Initial connection ack
-    reply.raw.write(`data: ${JSON.stringify({ type: "connected", tenantId: principal.tenantId, time: deps.clock.now().toISOString() })}\n\n`);
+    reply.raw.write(`data: ${JSON.stringify({ type: "connected", tenantId, time: deps.clock.now().toISOString() })}\n\n`);
 
     // Subscribe to live tenant events
-    const unsubscribe = realtimeEvents.subscribe(principal.tenantId, (evt) => {
+    const unsubscribe = realtimeEvents.subscribe(tenantId, (evt) => {
       reply.raw.write(`data: ${JSON.stringify(evt)}\n\n`);
     });
 
@@ -242,15 +264,17 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   app.post("/v1/invoicing/invoices", async (request, reply) => {
     const principal = await signedIn(request);
     const body = CreateInvoiceBody.parse(request.body);
-    const created = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
-      const company = await firstCompany(tx, principal.tenantId);
-      const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-      return store.createInvoice(company.id, body);
-    });
-
-    // Real-time broadcast
-    realtimeEvents.broadcast(principal.tenantId, "sales.invoice.created", created);
-    return reply.status(201).send(created);
+    const key = idempotencyKeyFrom(request);
+    const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
+      runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.invoice.create", key, payload: body }, async () => {
+        const company = await firstCompany(tx, principal.tenantId);
+        const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
+        return { status: 201, body: await store.createInvoice(company.id, body) };
+      }),
+    );
+    // A replayed response was already announced when it was first created.
+    if (!result.replayed) realtimeEvents.broadcast(principal.tenantId, "sales.invoice.created", result.body);
+    return reply.status(result.status).send(result.body);
   });
 
   app.put("/v1/invoicing/invoices/:id", async (request) => {
@@ -281,13 +305,15 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   app.post("/v1/invoicing/invoices/:id/pay", async (request) => {
     const principal = await signedIn(request);
     const { id } = request.params as { id: string };
-    const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
-      const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-      return store.markInvoicePaid(id);
-    });
-
-    realtimeEvents.broadcast(principal.tenantId, "sales.invoice.paid", updated);
-    return updated;
+    const key = idempotencyKeyFrom(request);
+    const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
+      runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.invoice.pay", key, payload: { id } }, async () => {
+        const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
+        return { status: 200, body: await store.markInvoicePaid(id) };
+      }),
+    );
+    if (!result.replayed) realtimeEvents.broadcast(principal.tenantId, "sales.invoice.paid", result.body);
+    return result.body;
   });
 
   // ==========================================
@@ -335,13 +361,15 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   app.post("/v1/invoicing/bills", async (request, reply) => {
     const principal = await signedIn(request);
     const body = CreateBillBody.parse(request.body);
-    const created = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
-      const company = await firstCompany(tx, principal.tenantId);
-      const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-      return store.createBill(company.id, body);
-    });
-
-    realtimeEvents.broadcast(principal.tenantId, "purchasing.bill.created", created);
-    return reply.status(201).send(created);
+    const key = idempotencyKeyFrom(request);
+    const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
+      runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.bill.create", key, payload: body }, async () => {
+        const company = await firstCompany(tx, principal.tenantId);
+        const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
+        return { status: 201, body: await store.createBill(company.id, body) };
+      }),
+    );
+    if (!result.replayed) realtimeEvents.broadcast(principal.tenantId, "purchasing.bill.created", result.body);
+    return reply.status(result.status).send(result.body);
   });
 }

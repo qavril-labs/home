@@ -46,7 +46,8 @@ def test_agent_meets_the_standard(agent: BaseAgent) -> None:
     assert agent.card.guardrails >= MANDATORY_GUARDRAILS
     assert agent.card.error_handling.keys() >= MANDATORY_ERROR_CODES
     assert "*" not in agent.principal.grants
-    assert "<user_request>" in agent.system_prompt
+    if not getattr(agent, "deterministic", False):
+        assert "<user_request>" in agent.system_prompt
 
 
 @pytest.mark.parametrize("agent", SERVICE_AGENTS, ids=lambda a: a.card.agent_id)
@@ -59,7 +60,13 @@ def test_every_edge_case_names_a_real_test(agent: BaseAgent) -> None:
 @pytest.mark.parametrize("agent", SERVICE_AGENTS, ids=lambda a: a.card.agent_id)
 def test_agents_override_only_handle_and_formatting(agent: BaseAgent) -> None:
     # The fixed pipeline cannot be replaced by an agent.
+    from uaap.agents.deterministic import DeterministicBot
+
     for name in ("respond", "_ground_reply", "ask_model", "run_tool", "approve", "error_reply"):
+        if name == "ask_model" and isinstance(agent, DeterministicBot):
+            # Deterministic bots refuse model calls through the base's own override, nothing else.
+            assert getattr(type(agent), name) is getattr(DeterministicBot, name)
+            continue
         assert getattr(type(agent), name) is getattr(BaseAgent, name), f"{name} must not be overridden"
 
 

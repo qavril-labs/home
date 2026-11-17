@@ -840,16 +840,17 @@ export const apiClient = {
   ): () => void {
     if (typeof window === "undefined") return () => {};
 
-    const token = getApiSessionToken() || "tok_demo";
-    const url = `${getApiBaseUrl()}/v1/events/stream?token=${encodeURIComponent(token)}`;
     let eventSource: EventSource | null = null;
     let isCancelled = false;
 
-    function connect() {
+    async function connect() {
       if (isCancelled) return;
       onStatusChange?.("connecting");
       try {
-        eventSource = new EventSource(url);
+        // A fresh single-use ticket for every connection, so the session token never appears in a URL.
+        const { ticket } = await requestJson<{ ticket: string }>("/v1/events/tickets", { method: "POST" });
+        if (isCancelled) return;
+        eventSource = new EventSource(`${getApiBaseUrl()}/v1/events/stream?ticket=${encodeURIComponent(ticket)}`);
         eventSource.onopen = () => {
           onStatusChange?.("connected");
         };
@@ -873,6 +874,7 @@ export const apiClient = {
         };
       } catch {
         onStatusChange?.("disconnected");
+        if (!isCancelled) setTimeout(connect, 3000);
       }
     }
 

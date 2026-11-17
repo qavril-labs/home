@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
 import { IdentityService, tenantFromToken } from "@erp/identity";
@@ -17,6 +17,7 @@ import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
 import { registerInvoicingRoutes } from "./invoicing-routes";
+import { MemoryTicketStore, type TicketStore } from "./stream-tickets";
 import { registerCmsRoutes } from "./cms-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
@@ -80,6 +81,8 @@ export interface AppOptions {
   readonly signupRateLimit?: RateLimitOptions;
   /** Optional URL that receives a JSON copy of each new lead, for example a chat or form tool. */
   readonly leadWebhookUrl?: string;
+  /** Where stream tickets are kept. Pass a Redis store when more than one API instance runs. */
+  readonly ticketStore?: TicketStore;
 }
 
 /** Sends a copy of a new lead to the operator's webhook. A failed send is logged and the lead is kept. */
@@ -127,7 +130,44 @@ function assertPlatformKey(provided: string | string[] | undefined, expected: st
 
 export function buildApp(options: AppOptions): FastifyInstance {
   const { pool, platformKey, clock = systemClock } = options;
-  const app = Fastify({ logger: options.logger ?? false, trustProxy: options.trustProxy ?? false });
+  const app = Fastify({
+    // Request logs keep the path but never the query string, so tokens passed in a URL are not written to logs.
+    logger: options.logger
+      ? {
+          serializers: {
+            req: (req: { method: string; url: string; id: unknown; ip?: string }) => ({
+              method: req.method,
+              url: req.url.split("?")[0],
+              reqId: req.id,
+              remoteAddress: req.ip,
+            }),
+          },
+        }
+      : false,
+    trustProxy: options.trustProxy ?? false,
+    // Every request gets an id: it is logged and echoed back, so a support ticket can be traced.
+    genReqId: (request) => {
+      const incoming = request.headers["x-request-id"];
+      return typeof incoming === "string" && /^[A-Za-z0-9._-]{8,64}$/.test(incoming) ? incoming : randomUUID();
+    },
+    // Larger bodies are refused before parsing. The biggest legitimate request is a CMS article.
+    bodyLimit: 256 * 1024,
+  });
+
+  // Security headers on every response. The API serves JSON only, so nothing here may be rendered.
+  app.addHook("onSend", async (request, reply, payload) => {
+    reply.header("x-request-id", request.id);
+    reply.header("x-content-type-options", "nosniff");
+    reply.header("x-frame-options", "DENY");
+    reply.header("referrer-policy", "no-referrer");
+    reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
+    reply.header("strict-transport-security", "max-age=31536000");
+    // Signed-in data must not be stored by browsers or shared caches. Public CMS content may be cached.
+    if (request.url.startsWith("/v1/") && !request.url.startsWith("/v1/public/cms/")) {
+      reply.header("cache-control", "no-store");
+    }
+    return payload;
+  });
   const corsOrigins = new Set(options.corsOrigins ?? []);
   const leadLimiter = new RateLimiter(options.leadRateLimit ?? { max: 5, windowMs: 10 * 60 * 1000 });
   const signupLimiter = new RateLimiter(options.signupRateLimit ?? { max: 5, windowMs: 60 * 60 * 1000 });
@@ -154,7 +194,17 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   const authenticate = createAuthenticator(pool, clock);
 
+  // Liveness: the process is up. Readiness: the process can reach its database, so a load balancer
+  // should route traffic to it. Keep the readiness check cheap; it runs on every probe.
   app.get("/health", async () => ({ status: "ok" }));
+  app.get("/ready", async (_request, reply) => {
+    try {
+      await pool.query("SELECT 1");
+      return { status: "ready" };
+    } catch {
+      return reply.status(503).send({ status: "unavailable" });
+    }
+  });
 
   /** Creates a tenant, its first company, and its administrator in one transaction. */
   app.post("/v1/platform/tenants", async (request, reply) => {
@@ -341,7 +391,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
-  registerInvoicingRoutes(app, { pool, clock, authenticate });
+  registerInvoicingRoutes(app, { pool, clock, authenticate, tickets: options.ticketStore ?? new MemoryTicketStore() });
   registerCmsRoutes(app, pool, platformKey);
 
   return app;

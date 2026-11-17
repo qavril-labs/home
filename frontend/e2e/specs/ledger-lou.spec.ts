@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Ledger Lou dedicated screen via top navigation
-    await page.getByRole("button", { name: "Ledger Lou (AGT-03)" }).first().click();
+    await page.goto("#ledger-lou");
+    await expect(page.getByRole("heading", { name: "Ledger Lou" })).toBeVisible();
   });
 
   test("Renders Ledger Lou bot header, Lou avatar, and Live indicator", async ({ page }) => {

@@ -1,3 +1,5 @@
+import { balancesFor, computeInsights } from "./insights";
+import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { hasPermission, type Principal } from "@erp/identity";
@@ -80,11 +82,6 @@ async function firstCompany(tx: Queryable, tenantId: string): Promise<Company> {
   return company;
 }
 
-/** Normal balance: assets and expenses grow with debits, the rest grow with credits. */
-function signedBalance(type: AccountType, debit: Money, credit: Money): Money {
-  return type === "ASSET" || type === "EXPENSE" ? debit.subtract(credit) : credit.subtract(debit);
-}
-
 const QuickEntryBody = z.object({
   kind: z.enum(["sale", "expense", "owner_investment", "customer_payment"]),
   amount: z.string().trim().regex(/^\d{1,13}(\.\d{1,3})?$/),
@@ -125,18 +122,14 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
       const accounts = await store.listAccounts(company.id);
       const booksReady = products.has("FIN-01") && accounts.length > 0;
       const zero = Money.zero(company.baseCurrency);
-      const sums = new Map<string, { debit: Money; credit: Money }>();
       const entries = booksReady ? await store.listEntries(company.id) : [];
-      for (const entry of entries) {
-        for (const line of entry.lines) {
-          const s = sums.get(line.account) ?? { debit: zero, credit: zero };
-          sums.set(line.account, line.side === "DEBIT" ? { ...s, debit: s.debit.add(line.baseAmount) } : { ...s, credit: s.credit.add(line.baseAmount) });
-        }
-      }
-      const rows = accounts.map((account) => {
-        const s = sums.get(account.code) ?? { debit: zero, credit: zero };
-        return { code: account.code, name: account.name, type: account.type, balance: signedBalance(account.type, s.debit, s.credit) };
-      });
+      const balances = balancesFor(accounts, entries, company.baseCurrency);
+      const rows = accounts.map((account) => ({
+        code: account.code,
+        name: account.name,
+        type: account.type,
+        balance: balances.get(account.code) ?? zero,
+      }));
       const total = (pick: (r: (typeof rows)[number]) => boolean) => rows.filter(pick).reduce((sum, r) => sum.add(r.balance), zero);
       const cash = total((r) => r.code === "1000" || r.code === "1100");
       const revenue = total((r) => r.type === "REVENUE");
@@ -163,41 +156,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
         }
         return { month, revenue: rev.toDecimal(), expenses: exp.toDecimal() };
       });
-      const month = today.slice(0, 7);
-      const thisMonth = entries.filter((e) => e.date.slice(0, 7) === month);
-      const expenseLines = entries.flatMap((e) =>
-        e.lines
-          .filter((l) => l.side === "DEBIT" && types.get(l.account) === "EXPENSE")
-          .map((l) => ({ entry: e, amount: l.baseAmount })),
-      );
-      const largestExpense = expenseLines.reduce<(typeof expenseLines)[number] | null>(
-        (best, x) => (best === null || x.amount.compare(best.amount) > 0 ? x : best),
-        null,
-      );
-      const expenseTotalMinor = expenseLines.reduce((sum, x) => sum.add(x.amount), zero);
-      // Possible duplicates: same date, same total, same note.
-      const seen = new Map<string, typeof entries>();
-      for (const e of entries) {
-        if (e.reversalOf) continue;
-        const total = e.lines.filter((l) => l.side === "DEBIT").reduce((sum, l) => sum.add(l.baseAmount), zero);
-        const key = `${e.date}|${total.toDecimal()}|${(e.memo ?? "").trim().toLowerCase()}`;
-        seen.set(key, [...(seen.get(key) ?? []), e]);
-      }
-      const duplicates = [...seen.values()]
-        .filter((group) => group.length > 1)
-        .map((group) => ({ date: group[0]!.date, memo: group[0]!.memo, references: group.map((e) => e.reference) }));
-      const insights = {
-        entriesThisMonth: thisMonth.length,
-        entriesWithoutNote: thisMonth.filter((e) => !e.memo).length,
-        expenseCount: expenseLines.length,
-        averageExpense: expenseLines.length ? expenseTotalMinor.allocate(expenseLines.map(() => 1n))[0]!.toDecimal() : "0.00",
-        largestExpense: largestExpense
-          ? { amount: largestExpense.amount.toDecimal(), memo: largestExpense.entry.memo, date: largestExpense.entry.date, reference: largestExpense.entry.reference }
-          : null,
-        duplicates,
-        stock: total((r) => r.code === "1300").toDecimal(),
-        costOfSales: total((r) => r.code === "5000").toDecimal(),
-      };
+      const insights = computeInsights({ entries, accounts, currency: company.baseCurrency, today });
       const recent = [...entries]
         .sort((a, b) => (a.date === b.date ? b.postedAt.localeCompare(a.postedAt) : b.date.localeCompare(a.date)))
         .slice(0, 8)
@@ -236,6 +195,26 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
     });
   });
 
+  /**
+   * The bot signals on their own, for the bots and for the approvals inbox. Reads only; each
+   * figure is computed from every posted entry, not from the recent ones shown on the dashboard.
+   */
+  app.get("/v1/workspace/insights", async (request) => {
+    const principal = await signedIn(request, "fin.report.read");
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const company = await firstCompany(tx, principal.tenantId);
+      const store = new PgLedgerStore(tx, principal.tenantId);
+      const accounts = await store.listAccounts(company.id);
+      const entries = await store.listEntries(company.id);
+      const today = deps.clock.now().toISOString().slice(0, 10);
+      return {
+        asOf: today,
+        currency: company.baseCurrency,
+        insights: computeInsights({ entries, accounts, currency: company.baseCurrency, today }),
+      };
+    });
+  });
+
   app.post("/v1/workspace/starter-books", async (request, reply) => {
     const principal = await signedIn(request, "fin.accounts.write");
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) =>
@@ -247,7 +226,8 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
   app.post("/v1/workspace/quick-entries", async (request, reply) => {
     const principal = await signedIn(request, "fin.journal.post");
     const body = QuickEntryBody.parse(request.body);
-    const entry = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+    const key = idempotencyKeyFrom(request);
+    const postEntry = async (tx: Queryable) => {
       const company = await firstCompany(tx, principal.tenantId);
       const store = new PgLedgerStore(tx, principal.tenantId);
       const accounts = new Map((await store.listAccounts(company.id)).map((a) => [a.code, a]));
@@ -289,7 +269,14 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
           { account: credit, side: "CREDIT", amount, memo: null },
         ],
       });
-    });
-    return reply.status(201).send({ id: entry.id, reference: entry.reference });
+    };
+    // A retry with the same Idempotency-Key replays the first response instead of posting again.
+    const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
+      runIdempotent(tx, { tenantId: principal.tenantId, scope: "workspace.quick-entry", key, payload: body }, async () => {
+        const entry = await postEntry(tx);
+        return { status: 201, body: { id: entry.id, reference: entry.reference } };
+      }),
+    );
+    return reply.status(result.status).send(result.body);
   });
 }

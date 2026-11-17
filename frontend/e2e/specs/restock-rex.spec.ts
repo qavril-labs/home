@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Restock Rex (AGT-04 / INV-05) Dedicated Screen & PO Drawer", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Restock Rex screen
-    await page.getByRole("button", { name: "Restock Rex (AGT-04)" }).first().click();
+    await page.goto("#restock-rex");
+    await expect(page.getByRole("heading", { name: "Restock Rex" })).toBeVisible();
   });
 
   test("Renders Restock Rex header, avatar, and live indicator", async ({ page }) => {

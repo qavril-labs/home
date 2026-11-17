@@ -1,4 +1,6 @@
 import { createPool } from "@erp/db";
+import { redisConnection } from "@erp/queue";
+import { RedisTicketStore } from "./stream-tickets";
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
 
@@ -9,6 +11,8 @@ const app = buildApp({
   corsOrigins: config.corsOrigins,
   trustProxy: config.trustProxy,
   leadWebhookUrl: config.leadWebhookUrl,
+  // Tickets are shared through Redis when it is configured, so any instance can accept one.
+  ticketStore: config.redisUrl ? new RedisTicketStore(redisConnection(config.redisUrl)) : undefined,
   logger: true,
 });
 

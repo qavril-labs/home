@@ -2,9 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Forecast Finn screen
-    await page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first().click();
+    await page.goto("#forecast-finn");
+    await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
   });
 
   test("Renders Forecast Finn header, violet avatar, and live indicator", async ({ page }) => {

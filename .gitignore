@@ -53,3 +53,9 @@ frontend/e2e/test-results/
 .worktrees/
 *.tar.gz
 
+
+# Local live-test secrets (database role password, platform key)
+**/.live-env
+
+# AWS SSH key for the staging server. Keep it here only; never commit.
+qavril-staging-key.pem
