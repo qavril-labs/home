@@ -35,6 +35,7 @@ Related: [product-split-plan.md](product-split-plan.md) (products, APIs, events,
 | Decision | Answer |
 |---|---|
 | Hosting | Each product is its own ECS service, behind the gateway. Each repository builds and deploys its own container |
+| AWS region | **Mumbai (`ap-south-1`).** Services, load balancers, S3, ElastiCache and ECR run here. Databases stay in Neon Singapore (`aws-ap-southeast-1`), because Neon has no Mumbai region. Each database call crosses to Singapore, so latency is accepted for the first release and can be measured later. Moving the databases to RDS in Mumbai would replace Neon and is a separate decision |
 | Events | Outbox table in each product's database, written in the same transaction as the business change. A relay worker publishes to one shared Redis with BullMQ. Queues are named by product and tenant |
 | Environments | `dev`, `staging` and `prod` per repository |
 | Secrets | AWS Secrets Manager, injected at deploy time. Local `.env` files for development only |
