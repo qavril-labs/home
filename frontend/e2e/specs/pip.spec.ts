@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("#pip");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Pip (AGT-02)" }).first().click();
     await expect(page.getByRole("heading", { name: "Pip" })).toBeVisible();
   });
 

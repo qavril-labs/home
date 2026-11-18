@@ -472,12 +472,16 @@ components:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
-      required: true
-      description: Client-generated key. Repeating a request with the same key returns the first response.
+      required: false
+      description: >
+        Optional. Send a unique key (8 to 128 letters, digits, dots, colons, dashes or underscores)
+        per submission. A retry with the same key and body returns the first response; the same key
+        with a different body returns 409.
       schema:
         type: string
         minLength: 8
         maxLength: 128
+        pattern: "^[A-Za-z0-9._:-]{8,128}$"
     SupplierId:
       name: supplierId
       in: path
@@ -508,6 +512,12 @@ components:
         format: uuid
 
   responses:
+    UnauthenticatedError:
+      description: Missing or invalid session token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     ValidationError:
       description: Invalid request
       content:
@@ -1042,3 +1052,7 @@ components:
             message:
               type: string
               example: Invalid request payload
+            details:
+              type: array
+              items:
+                type: object

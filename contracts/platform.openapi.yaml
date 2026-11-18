@@ -240,6 +240,12 @@ components:
         type: string
 
   responses:
+    UnauthenticatedError:
+      description: Missing or invalid session token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     ValidationError:
       description: Invalid request
       content:
@@ -434,3 +440,7 @@ components:
             message:
               type: string
               example: Invalid request payload
+            details:
+              type: array
+              items:
+                type: object

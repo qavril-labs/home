@@ -102,7 +102,7 @@ export interface ApiResult<T> {
 // Helpers & Mappers
 // ---------------------------------------------------------------------------
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const winConfig = (window as unknown as { ERP_CONFIG?: { apiBase?: string } }).ERP_CONFIG;
     if (winConfig?.apiBase) {

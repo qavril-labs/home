@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("#ledger-lou");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Ledger Lou (AGT-03)" }).first().click();
     await expect(page.getByRole("heading", { name: "Ledger Lou" })).toBeVisible();
   });
 

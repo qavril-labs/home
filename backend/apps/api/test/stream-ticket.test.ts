@@ -42,7 +42,8 @@ describe("live event stream tickets", () => {
   it("refuses the stream with no credential, an unknown ticket, or the session token in the URL", async () => {
     expect((await app.inject({ method: "GET", url: "/v1/events/stream" })).statusCode).toBe(401);
     expect((await app.inject({ method: "GET", url: "/v1/events/stream?ticket=unknown-ticket-value-12345" })).statusCode).toBe(401);
-    // The session token is accepted only as the legacy path, never as a ticket.
+    // The session token is never accepted in a URL, neither as a ticket nor as the legacy token parameter.
     expect((await app.inject({ method: "GET", url: `/v1/events/stream?ticket=${token}` })).statusCode).toBe(401);
+    expect((await app.inject({ method: "GET", url: `/v1/events/stream?token=${token}` })).statusCode).toBe(401);
   });
 });

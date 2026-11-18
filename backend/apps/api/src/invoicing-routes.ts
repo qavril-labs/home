@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { type TicketStore } from "./stream-tickets";
+import type { RealtimeBus, RealtimeMessage } from "./realtime-bus";
 
 const STREAM_TICKET_TTL_SECONDS = 60;
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -26,6 +27,16 @@ export type RealtimeEventListener = (event: {
 
 export class RealtimeEventManager {
   private readonly listeners = new Map<string, Set<RealtimeEventListener>>();
+  private bus: RealtimeBus | null = null;
+
+  /**
+   * Sends events through a bus shared by all API instances. Without one, events reach only the
+   * clients connected to this process.
+   */
+  attachBus(bus: RealtimeBus): void {
+    this.bus = bus;
+    bus.onMessage((tenantId, message) => this.deliver(tenantId, message));
+  }
 
   subscribe(tenantId: string, listener: RealtimeEventListener): () => void {
     let set = this.listeners.get(tenantId);
@@ -43,14 +54,17 @@ export class RealtimeEventManager {
   }
 
   broadcast(tenantId: string, type: string, payload: unknown): void {
+    const evt = { type, tenantId, occurredAt: new Date().toISOString(), payload };
+    if (this.bus) {
+      this.bus.publish(tenantId, evt);
+    } else {
+      this.deliver(tenantId, evt);
+    }
+  }
+
+  private deliver(tenantId: string, evt: RealtimeMessage): void {
     const set = this.listeners.get(tenantId);
     if (!set || set.size === 0) return;
-    const evt = {
-      type,
-      tenantId,
-      occurredAt: new Date().toISOString(),
-      payload,
-    };
     for (const listener of set) {
       try {
         listener(evt);
@@ -174,34 +188,11 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Real-Time Event Streaming (SSE / Step 3)
   // ==========================================
   app.get("/v1/events/stream", async (request: FastifyRequest, reply: FastifyReply) => {
-    // Preferred: ?ticket= from POST /v1/events/tickets (single use, 60 seconds, not a session token).
-    // Legacy: ?token= carries the session token in the URL, which can end up in logs. It is kept only
-    // for clients that have not moved to tickets yet; remove it once they have.
-    const q = request.query as { ticket?: string; token?: string };
-    let tenantId: string;
-    if (typeof q.ticket === "string" && q.ticket.length > 0) {
-      const consumed = await deps.tickets.consume(q.ticket);
-      if (!consumed) {
-        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Stream ticket is invalid or expired" } });
-      }
-      tenantId = consumed;
-    } else {
-      let token = "";
-      const authHeader = request.headers.authorization;
-      if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
-        token = authHeader.slice(7);
-      } else if (q.token) {
-        token = q.token;
-      }
-      if (!token) {
-        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "A stream ticket is required for the live event stream" } });
-      }
-      try {
-        request.headers.authorization = `Bearer ${token}`;
-        tenantId = (await deps.authenticate(request)).tenantId;
-      } catch {
-        return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "Invalid or expired token" } });
-      }
+    // A single-use ticket from POST /v1/events/tickets. The session token is never accepted in a URL.
+    const q = request.query as { ticket?: string };
+    const tenantId = typeof q.ticket === "string" && q.ticket.length > 0 ? await deps.tickets.consume(q.ticket) : null;
+    if (!tenantId) {
+      return reply.status(401).send({ error: { code: "UNAUTHENTICATED", message: "A valid stream ticket is required" } });
     }
 
     // Set Server-Sent Events headers

@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Guard Gus (AI-04 / AUD-01) Dedicated Screen & Anomaly Inspection", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("#guard-gus");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Guard Gus (AI-04)" }).first().click();
     await expect(page.getByRole("heading", { name: "Guard Gus" })).toBeVisible();
   });
 

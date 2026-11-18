@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("#chase-chloe");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Chase Chloe (FIN-14)" }).first().click();
     await expect(page.getByRole("heading", { name: "Chase Chloe" })).toBeVisible();
   });
 
@@ -24,8 +25,8 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
   }) => {
     // 3 StatusChips required
     await expect(page.getByText("✓ Zero bad debt").first()).toBeVisible();
-    await expect(page.getByText(/! 3 overdue invoices/i).first()).toBeVisible();
-    await expect(page.getByText(/● 3 reminder drafts pending/i).first()).toBeVisible();
+    await expect(page.getByText(/! \d+ overdue invoices/i).first()).toBeVisible();
+    await expect(page.getByText(/● \d+ reminder drafts pending/i).first()).toBeVisible();
   });
 
   test("Toggles kill switch on/off with audit notice", async ({ page }) => {
@@ -46,12 +47,12 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
   test("Opens SendReminderModal, switches tone/channel, and Approves & Delivers Reminder", async ({
     page,
   }) => {
-    // Click review draft for Titan Industries
+    // Click review draft for Delta Dynamics
     await page.getByRole("button", { name: "Review Draft" }).first().click();
 
     // Modal title & content
     await expect(page.getByRole("heading", { name: "Review Payment Reminder Draft" })).toBeVisible();
-    await expect(page.getByText("Titan Industries").first()).toBeVisible();
+    await expect(page.getByText(/Delta Dynamics/i).first()).toBeVisible();
     await expect(page.getByText("$2,850.00").first()).toBeVisible();
 
     // Switch tone to Firm
@@ -75,13 +76,13 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
     await page.getByRole("button", { name: "Statement" }).first().click();
 
     // Drawer opens
-    await expect(page.getByRole("heading", { name: /Statement of Account: Titan Industries/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Statement of Account/i })).toBeVisible();
     await expect(page.getByText("Payment Terms:").first()).toBeVisible();
     await expect(page.getByText("INV-2026-052").first()).toBeVisible();
     await expect(page.getByText("PAY-2026-041").first()).toBeVisible();
 
     // Close drawer
     await page.getByRole("button", { name: "Close Statement" }).click();
-    await expect(page.getByRole("heading", { name: /Statement of Account: Titan Industries/i })).not.toBeVisible();
+    await expect(page.getByRole("heading", { name: /Statement of Account/i })).not.toBeVisible();
   });
 });

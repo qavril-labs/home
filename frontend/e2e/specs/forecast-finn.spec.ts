@@ -2,7 +2,8 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("#forecast-finn");
+    await page.goto("/");
+    await page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first().click();
     await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
   });
 

@@ -15,6 +15,8 @@ export interface DrawerProps {
   secondaryActionLabel?: string;
   onSecondaryAction?: () => void;
   isSubmitting?: boolean;
+  size?: "sm" | "md" | "lg" | "xl" | "full";
+  className?: string;
 }
 
 export const Drawer: React.FC<DrawerProps> = ({
@@ -29,8 +31,18 @@ export const Drawer: React.FC<DrawerProps> = ({
   secondaryActionLabel = "Cancel",
   onSecondaryAction,
   isSubmitting = false,
+  size = "md",
+  className,
 }) => {
   const drawerRef = useRef<HTMLDivElement>(null);
+
+  const sizeClasses: Record<NonNullable<DrawerProps["size"]>, string> = {
+    sm: "min-[520px]:max-w-[420px]",
+    md: "min-[520px]:max-w-[540px]",
+    lg: "min-[640px]:max-w-[720px]",
+    xl: "min-[768px]:max-w-[880px] min-[1280px]:max-w-[1020px]",
+    full: "w-full max-w-[100vw]",
+  };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -75,7 +87,9 @@ export const Drawer: React.FC<DrawerProps> = ({
       <div
         ref={drawerRef}
         className={cn(
-          "w-full min-[520px]:max-w-[480px] h-full bg-panel border-l-0 min-[520px]:border-l-line shadow-card flex flex-col justify-between transform transition-transform duration-180 animate-in slide-in-from-right"
+          "w-full h-full bg-panel border-l-0 min-[520px]:border-l-line shadow-card flex flex-col justify-between transform transition-transform duration-180 animate-in slide-in-from-right",
+          sizeClasses[size],
+          className
         )}
       >
         {/* Drawer Header */}

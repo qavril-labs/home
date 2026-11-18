@@ -1,31 +1,9 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
 import { Sidebar } from "./components/ui/Sidebar";
 import { CommandBar } from "./components/ui/CommandBar";
 import { ToastContainer } from "./components/ui/Toast";
 import { Gate } from "./components/ui/Gate";
-import { Dashboard } from "./pages/Dashboard";
-import { ItemsPage } from "./pages/ItemsPage";
-import { ContactsPage } from "./pages/ContactsPage";
-import { AccountsPage } from "./pages/AccountsPage";
-import { InvoicesPage } from "./pages/InvoicesPage";
-import { PayablesManager } from "./modules/invoicing/PayablesManager";
-import { LedgerPage } from "./pages/LedgerPage";
-import { InventoryPage } from "./pages/InventoryPage";
-import { CrmPipelinePage } from "./pages/CrmPipelinePage";
-import { BankReconciliationPage } from "./pages/BankReconciliationPage";
-import { FinancialStatementsPage } from "./pages/FinancialStatementsPage";
-import { PurchasingPage } from "./pages/PurchasingPage";
-import { ImportPage } from "./pages/ImportPage";
-import { GalleryPage } from "./pages/GalleryPage";
-import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
-import { LedgerLou } from "./modules/bots/LedgerLou";
-import { ChaseChloe } from "./modules/bots/ChaseChloe";
-import { RestockRex } from "./modules/bots/RestockRex";
-import { GuardGus } from "./modules/bots/GuardGus";
-import { ForecastFinn } from "./modules/bots/ForecastFinn";
-import { Pip } from "./modules/bots/Pip";
-import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
   initialMockAccounts,
@@ -76,7 +54,32 @@ function getTabFromLocation(): string {
   return "dashboard";
 }
 
+const SignInForm = lazy(() => import("./modules/auth/SignInForm").then((m) => ({ default: m.SignInForm })));
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const ItemsPage = lazy(() => import("./pages/ItemsPage").then((m) => ({ default: m.ItemsPage })));
+const ContactsPage = lazy(() => import("./pages/ContactsPage").then((m) => ({ default: m.ContactsPage })));
+const AccountsPage = lazy(() => import("./pages/AccountsPage").then((m) => ({ default: m.AccountsPage })));
+const InvoicesPage = lazy(() => import("./pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
+const PayablesManager = lazy(() => import("./modules/invoicing/PayablesManager").then((m) => ({ default: m.PayablesManager })));
+const LedgerPage = lazy(() => import("./pages/LedgerPage").then((m) => ({ default: m.LedgerPage })));
+const InventoryPage = lazy(() => import("./pages/InventoryPage").then((m) => ({ default: m.InventoryPage })));
+const CrmPipelinePage = lazy(() => import("./pages/CrmPipelinePage").then((m) => ({ default: m.CrmPipelinePage })));
+const BankReconciliationPage = lazy(() => import("./pages/BankReconciliationPage").then((m) => ({ default: m.BankReconciliationPage })));
+const FinancialStatementsPage = lazy(() => import("./pages/FinancialStatementsPage").then((m) => ({ default: m.FinancialStatementsPage })));
+const PurchasingPage = lazy(() => import("./pages/PurchasingPage").then((m) => ({ default: m.PurchasingPage })));
+const ImportPage = lazy(() => import("./pages/ImportPage").then((m) => ({ default: m.ImportPage })));
+const GalleryPage = lazy(() => import("./pages/GalleryPage").then((m) => ({ default: m.GalleryPage })));
+const IndustryPacksHub = lazy(() => import("./modules/packs/IndustryPacksHub").then((m) => ({ default: m.IndustryPacksHub })));
+const LedgerLou = lazy(() => import("./modules/bots/LedgerLou").then((m) => ({ default: m.LedgerLou })));
+const ChaseChloe = lazy(() => import("./modules/bots/ChaseChloe").then((m) => ({ default: m.ChaseChloe })));
+const RestockRex = lazy(() => import("./modules/bots/RestockRex").then((m) => ({ default: m.RestockRex })));
+const GuardGus = lazy(() => import("./modules/bots/GuardGus").then((m) => ({ default: m.GuardGus })));
+const ForecastFinn = lazy(() => import("./modules/bots/ForecastFinn").then((m) => ({ default: m.ForecastFinn })));
+const Pip = lazy(() => import("./modules/bots/Pip").then((m) => ({ default: m.Pip })));
+const ApprovalsInbox = lazy(() => import("./modules/approvals/ApprovalsInbox").then((m) => ({ default: m.ApprovalsInbox })));
+
 export const App: React.FC = () => {
+  const [showSignIn, setShowSignIn] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== "undefined" && window.location.hash.includes("signed-out")) return false;
     return true;
@@ -541,8 +544,18 @@ export const App: React.FC = () => {
         />
 
         {/* Main Content Area */}
+        <Suspense fallback={<div className="p-8 text-center text-sm text-muted">Loading…</div>}>
         <main className="flex-1 pb-16 px-3 sm:px-6 md:px-8 max-w-[1400px] w-full mx-auto" id="main">
-        {!isAuthenticated ? (
+        {!isAuthenticated && showSignIn ? (
+          <SignInForm
+            onCancel={() => setShowSignIn(false)}
+            onSignedIn={() => {
+              setShowSignIn(false);
+              setIsAuthenticated(true);
+              navigateToTab("dashboard");
+            }}
+          />
+        ) : !isAuthenticated ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-12">
             <Gate
               type="signed-out"
@@ -557,6 +570,15 @@ export const App: React.FC = () => {
                 navigateToTab("dashboard");
               }}
             />
+            <p className="text-center mt-4">
+              <button
+                type="button"
+                className="underline font-bold"
+                onClick={() => setShowSignIn(true)}
+              >
+                Sign in with your workspace account
+              </button>
+            </p>
           </div>
         ) : activeTab === "dashboard" ? (
           <Dashboard onNavigateToBot={handleNavigateBot} />
@@ -770,6 +792,7 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+        </Suspense>
 
       {/* Global CommandBar (Ctrl+K) */}
       <CommandBar

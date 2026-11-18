@@ -1319,13 +1319,6 @@ paths:
             A single-use ticket from POST /v1/events/tickets, valid for 60 seconds. Send this, not a session token.
           schema:
             type: string
-        - name: token
-          in: query
-          required: false
-          deprecated: true
-          description: Legacy. The session token in the URL. Will be removed; use a ticket.
-          schema:
-            type: string
       responses:
         "200":
           description: Live tenant events as server-sent events, one JSON object per data line.

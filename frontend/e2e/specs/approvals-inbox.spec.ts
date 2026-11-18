@@ -10,6 +10,10 @@ import { test, expect } from "@playwright/test";
 test.describe("Approvals inbox, connected to the UAAP API", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
+    const menu = page.getByRole("button", { name: "Open navigation sidebar" });
+    if (await menu.isVisible()) {
+      await menu.click();
+    }
     await page.getByRole("button", { name: /Approvals/i }).first().click();
     await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible();
   });

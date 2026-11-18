@@ -1,10 +1,17 @@
 import { createPool } from "@erp/db";
 import { redisConnection } from "@erp/queue";
 import { RedisTicketStore } from "./stream-tickets";
+import { RedisRealtimeBus } from "./realtime-bus";
+import { realtimeEvents } from "./invoicing-routes";
 import { buildApp } from "./app";
 import { loadConfig } from "./config";
 
 const config = loadConfig(process.env);
+// Live events fan out to every instance through Redis when it is configured.
+if (config.redisUrl) {
+  realtimeEvents.attachBus(new RedisRealtimeBus(redisConnection(config.redisUrl), redisConnection(config.redisUrl)));
+}
+
 const app = buildApp({
   pool: createPool(config.databaseUrl),
   platformKey: config.platformKey,
