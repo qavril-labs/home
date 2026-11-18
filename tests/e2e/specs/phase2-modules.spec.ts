@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { openScreen, useLiveSession } from "../fixtures/live-session";
 
-test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation", () => {
+test.describe("Phase 2 Modules: Inventory, Till, CRM Pipeline, and Bank Reconciliation", () => {
   test.beforeEach(async ({ page }) => {
     // Clear any signed-out session state before each test
     await page.addInitScript(() => {
@@ -8,66 +9,62 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
         sessionStorage.removeItem("qavril-session");
       } catch {}
     });
-    await page.goto("/");
+    // The first load of a dev server compiles its modules, so wait for the document, not for every asset.
+    await page.goto("/app/", { waitUntil: "domcontentloaded" });
   });
 
-  test("Inventory & Warehouses (INV-01 to INV-05) Flow", async ({ page, isMobile }) => {
-    // 1. Navigate to Inventory
-    await page.getByRole("button", { name: "Inventory (INV-01)" }).first().click();
+  test("Inventory (INV-01) without a live session says so and shows no figures", async ({ page }) => {
+    await openScreen(page, "Inventory (INV-01)");
+    await expect(page.getByRole("heading", { name: "Inventory & Warehouses" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in to see live stock" })).toBeVisible();
+    await expect(page.getByText("Expired stock, at cost")).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Receive stock" })).toHaveCount(0);
+  });
+
+  test("Inventory (INV-01) shows the live figures, the stock list and the receive drawer", async ({ page }) => {
+    await useLiveSession(page);
+    await page.goto("/app/", { waitUntil: "domcontentloaded" });
+    await openScreen(page, "Inventory (INV-01)");
     await expect(page.getByRole("heading", { name: "Inventory & Warehouses" })).toBeVisible();
 
-    // 2. Verify 4 KPI cards
-    await expect(page.getByText("Total Units In Stock")).toBeVisible();
-    await expect(page.getByText("Active Warehouses")).toBeVisible();
-    await expect(page.getByText("Low Stock Warnings")).toBeVisible();
-    await expect(page.getByText("In-Transit Transfers")).toBeVisible();
+    // The four figures come from the server.
+    await expect(page.getByText("Expired stock, at cost")).toBeVisible();
+    await expect(page.getByText("Expiring within 30 days")).toBeVisible();
+    await expect(page.getByText("Waiting for approval", { exact: true })).toBeVisible();
+    await expect(page.getByText("Counts in progress")).toBeVisible();
 
-    // 3. Test 2D / 3D view toggle
-    const toggle2D = page.getByRole("button", { name: /2D Stock Grid/i });
-    await expect(toggle2D).toBeVisible();
-    await toggle2D.click();
+    // The seeded batches are in the stock list.
+    await expect(page.getByText("PX-2026-03").first()).toBeVisible();
+    await expect(page.getByText("PX-2027").first()).toBeVisible();
 
-    // Verify 2D Table headers
-    await expect(page.getByRole("columnheader", { name: "SKU" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Item Description" })).toBeVisible();
-    await expect(page.getByRole("columnheader", { name: "Stock Qty" })).toBeVisible();
+    // Receive stock opens its drawer, and Escape closes it.
+    await page.getByRole("button", { name: "Receive stock" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
 
-    // Filter by specific warehouse
-    const eastDepotBtn = page.getByRole("button", { name: /WH-EAST/i });
-    if (await eastDepotBtn.isVisible()) {
-      await eastDepotBtn.click();
-      await expect(page.getByText("WH-EAST").first()).toBeVisible();
-    }
+  test("Till (POS-01) without a live session says so and shows no sale figures", async ({ page }) => {
+    await openScreen(page, "Till (POS-01)");
+    await expect(page.getByRole("heading", { name: "Till", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Sign in to see live stock" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Complete the sale" })).toHaveCount(0);
+  });
 
-    if (!isMobile) {
-      // Switch back to 3D View
-      const toggle3D = page.getByRole("button", { name: /3D Warehouse View/i });
-      await toggle3D.click();
-    }
-
-    // 4. Test Stock Transfers (INV-02)
-    await expect(page.getByRole("heading", { name: /Stock Transfers & Movements/i })).toBeVisible();
-
-    // Open Transfer Drawer
-    await page.getByRole("button", { name: "New Stock Transfer" }).click();
-    await expect(page.getByRole("heading", { name: /Initiate Stock Transfer/i })).toBeVisible();
-
-    // Fill transfer notes and submit
-    const notesInput = page.getByPlaceholder(/Replenishment for Vanguard aerospace/i);
-    await notesInput.fill("Automated E2E Transfer Test");
-    await page.getByRole("button", { name: "Dispatch Transfer" }).click();
-
-    // Verify toast
-    const toast = page.locator('[aria-live="polite"]');
-    await expect(toast).toContainText(/Stock Transfer Dispatched/i);
-
-    // Verify record in table
-    await expect(page.getByText("Automated E2E Transfer Test").first()).toBeVisible();
+  test("Till (POS-01) lists the sale kept for review, from the live API", async ({ page }) => {
+    await useLiveSession(page);
+    await page.goto("/app/", { waitUntil: "domcontentloaded" });
+    await openScreen(page, "Till (POS-01)");
+    await expect(page.getByRole("heading", { name: "Till", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Review and approvals" }).click();
+    await expect(page.getByRole("heading", { name: "Sales waiting for a decision" })).toBeVisible();
+    await expect(page.getByText("KES 23.80").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: "Post now" }).first()).toBeVisible();
   });
 
   test("CRM Pipeline & Quotes (SAL-01 & SAL-02) Flow", async ({ page }) => {
     // 1. Navigate to CRM Pipeline
-    await page.getByRole("button", { name: "CRM Pipeline (SAL-01)" }).first().click();
+    await openScreen(page, "CRM Pipeline (SAL-01)");
     await expect(page.getByRole("heading", { name: "CRM Pipeline & Quotes" })).toBeVisible();
 
     // 2. Verify 4 KPI cards
@@ -109,7 +106,7 @@ test.describe("Phase 2 Modules: Inventory, CRM Pipeline, and Bank Reconciliation
 
   test("Bank & Cash Reconciliation (FIN-04) Flow", async ({ page }) => {
     // 1. Navigate to Bank Rec
-    await page.getByRole("button", { name: "Bank Rec (FIN-04)" }).first().click();
+    await openScreen(page, "Bank Rec (FIN-04)");
     await expect(page.getByRole("heading", { name: "Bank & Cash Reconciliation" })).toBeVisible();
 
     // 2. Verify 4 KPI cards
