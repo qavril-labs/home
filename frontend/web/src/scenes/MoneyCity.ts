@@ -33,33 +33,8 @@ const CASH_COLOR = 0xc6ff3d;
 const PLINTH_COLOR = 0x16122e; // Dark neo-brutal panel
 const ACCENT_LIGHT = 0xff4fa3; // Pink rim light
 
-/**
- * Checks WebGL capability
- */
-export function hasWebGL(): boolean {
-  if (typeof window === "undefined") return false;
-  try {
-    const canvas = document.createElement("canvas");
-    return !!(
-      window.WebGLRenderingContext &&
-      (canvas.getContext("webgl2") || canvas.getContext("webgl") || (canvas.getContext("experimental-webgl") as any))
-    );
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Validates 3D eligibility:
- * Desktop only: fine pointer + motion allowed + WebGL support per UI contract
- */
-export function is3DSupported(): boolean {
-  if (typeof window === "undefined") return false;
-  const webgl = hasWebGL();
-  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return webgl && finePointer && motionOk;
-}
+export { hasWebGL, is3DSupported } from "./3d-support";
+import { hasWebGL } from "./3d-support";
 
 export function mountMoneyCity(
   container: HTMLElement,

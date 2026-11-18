@@ -11,7 +11,8 @@ import { useToast } from "../context/ToastContext";
 import { formatMoney } from "../lib/currency";
 import { initialMockInsights, initialMockEntries } from "../lib/api-mock";
 import { apiClient } from "../lib/api-client";
-import { is3DSupported, MoneyCityInstance } from "../scenes/MoneyCity";
+import { is3DSupported } from "../scenes/3d-support";
+import type { MoneyCityInstance } from "../scenes/MoneyCity";
 import type { WorkspaceInsights, RecentEntry, QuickEntryPayload, BotInsight } from "../types";
 import {
   Boxes,

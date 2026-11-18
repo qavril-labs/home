@@ -4,11 +4,11 @@ test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => 
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.getByRole("button", { name: "Pip (AGT-02)" }).first().click();
-    await expect(page.getByRole("heading", { name: "Pip" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pip", exact: true })).toBeVisible();
   });
 
   test("Renders Pip header, lime avatar, and live indicator", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Pip" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pip", exact: true })).toBeVisible();
     await expect(page.getByText("Deal Closer").first()).toBeVisible();
     await expect(page.getByText("AGT-02 / SAL-02")).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
@@ -41,8 +41,8 @@ test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => 
   test("Renders pipeline funnel stages and active opportunities", async ({ page }) => {
     await expect(page.getByText("Vanguard Aerospace Titanium Machining Tender")).toBeVisible();
     await expect(page.getByText("Kinetics Robotics Joint Actuator Brackets")).toBeVisible();
-    await expect(page.getByText("Discovery")).toBeVisible();
-    await expect(page.getByText("Negotiation")).toBeVisible();
+    await expect(page.getByText("Discovery").first()).toBeVisible();
+    await expect(page.getByText("Negotiation").first()).toBeVisible();
   });
 
   test("Opens DealFollowUpModal and sends follow-up outreach message", async ({ page }) => {

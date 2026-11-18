@@ -55,8 +55,8 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     // Side-by-side debit/credit table entries
     await expect(page.getByText("DEP-2026-11")).toBeVisible();
     await expect(page.getByText("ACCR-2026-11")).toBeVisible();
-    await expect(page.getByText("6900")).toBeVisible();
-    await expect(page.getByText("Depreciation expense")).toBeVisible();
+    await expect(page.getByText("6900", { exact: true })).toBeVisible();
+    await expect(page.getByText("Depreciation expense", { exact: true })).toBeVisible();
 
     // Grand total & Invariant check
     await expect(page.getByText("$1,250.00").first()).toBeVisible();
@@ -69,7 +69,7 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     await expect(
       page.getByRole("heading", { name: "Approve & Post Journal Entries" })
     ).toBeVisible();
-    await expect(page.getByText(/irreversible/i)).toBeVisible();
+    await expect(page.getByText(/Tier 3 action/i)).toBeVisible();
 
     // Confirm action
     await page.getByRole("button", { name: "Post $1,250.00" }).click();
@@ -97,7 +97,7 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     await expect(page.getByText(/Matched QE-00012/i)).toBeVisible();
 
     // Close drawer
-    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
   });
 
   test("Locks closed fiscal period with Tier 3 ConfirmDialog", async ({ page }) => {
