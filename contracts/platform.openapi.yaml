@@ -44,6 +44,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Product"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
 
   /v1/platform/entitlements:
     get:
@@ -63,6 +65,8 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Entitlement"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
 
   /v1/platform/entitlements/{productKey}:
     parameters:
@@ -84,8 +88,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Entitlement"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -114,10 +124,14 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/ApprovalMatrix"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
     post:
       tags: [Approvals]
       summary: Create an approval matrix version
       operationId: createApprovalMatrix
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -133,6 +147,31 @@ paths:
                 $ref: "#/components/schemas/ApprovalMatrix"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/platform/approval-matrices/{matrixId}:
+    parameters:
+      - $ref: "#/components/parameters/MatrixId"
+    get:
+      tags: [Approvals]
+      summary: Get an approval matrix version by id
+      operationId: getApprovalMatrix
+      responses:
+        "200":
+          description: Approval matrix details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApprovalMatrix"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/platform/approval-matrices/{matrixId}/activate:
     parameters:
@@ -148,6 +187,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ApprovalMatrix"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -156,6 +203,13 @@ paths:
       tags: [Sequences]
       summary: List document number sequences for the tenant and branch
       operationId: listSequences
+      parameters:
+        - name: branchId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Sequences
@@ -169,6 +223,44 @@ paths:
                     type: array
                     items:
                       $ref: "#/components/schemas/Sequence"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
+  /v1/platform/sequences/{key}:
+    parameters:
+      - $ref: "#/components/parameters/SequenceKey"
+    put:
+      tags: [Sequences]
+      summary: Configure or update a document number sequence prefix and starting counter
+      operationId: updateSequence
+      parameters:
+        - name: branchId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSequenceRequest"
+      responses:
+        "200":
+          description: Sequence updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sequence"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/platform/audit-log:
     get:
@@ -203,6 +295,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuditPage"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
 
 components:
   securitySchemes:
@@ -225,6 +321,13 @@ components:
       schema:
         type: string
         format: uuid
+    SequenceKey:
+      name: key
+      in: path
+      required: true
+      schema:
+        type: string
+        example: purchase-order
     Limit:
       name: limit
       in: query
@@ -238,6 +341,19 @@ components:
       in: query
       schema:
         type: string
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >
+        Optional. Send a unique key (8 to 128 letters, digits, dots, colons, dashes or underscores)
+        per submission. A retry with the same key and body returns the first response; the same key
+        with a different body returns 409.
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+        pattern: "^[A-Za-z0-9._:-]{8,128}$"
 
   responses:
     UnauthenticatedError:
@@ -258,6 +374,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
     Conflict:
       description: The request conflicts with the current state
       content:
@@ -269,6 +391,10 @@ components:
     ProductKey:
       type: string
       enum: [platform, procurement, stores, sales, production, finance]
+
+    ApprovalRole:
+      type: string
+      enum: [department-head, purchase-manager, finance-controller, operations-director, managing-director, board]
 
     Product:
       type: object
@@ -356,8 +482,7 @@ components:
             required: [role]
             properties:
               role:
-                type: string
-                example: department-head
+                $ref: "#/components/schemas/ApprovalRole"
               order:
                 type: integer
                 minimum: 1
@@ -389,6 +514,17 @@ components:
         branchId:
           type: string
           format: uuid
+
+    UpdateSequenceRequest:
+      type: object
+      properties:
+        prefix:
+          type: string
+          example: PO-
+        nextNumber:
+          type: integer
+          minimum: 1
+          example: 1001
 
     AuditEntry:
       type: object

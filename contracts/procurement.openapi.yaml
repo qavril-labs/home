@@ -7,7 +7,7 @@ info:
     comparison and award, and purchase orders. Parties (the supplier record itself) and items are
     read from the platform service. Quantities and amounts are decimal strings; prices are never
     floats. Business dates are YYYY-MM-DD; timestamps are UTC ISO 8601. Write requests accept an
-    Idempotency-Key header.
+    Idempotency-Key header (required on release).
     Status: draft for review by the frontend lane (Antigravity). Not yet implemented.
 
 servers:
@@ -53,6 +53,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SupplierPage"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
     post:
       tags: [Suppliers]
       summary: Register a supplier for qualification
@@ -74,6 +76,33 @@ paths:
                 $ref: "#/components/schemas/Supplier"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/suppliers/{supplierId}:
+    parameters:
+      - $ref: "#/components/parameters/SupplierId"
+    get:
+      tags: [Suppliers]
+      summary: Get a supplier record with qualification status (PRC-01)
+      operationId: getSupplier
+      responses:
+        "200":
+          description: Supplier details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Supplier"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/procurement/suppliers/{supplierId}/qualification:
     parameters:
@@ -97,6 +126,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Supplier"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -110,6 +147,30 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/PurchaseRequestStatus"
+        - name: departmentId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: source
+          in: query
+          schema:
+            type: string
+            enum: [stores-reorder, stores-order-shortage, department]
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
       responses:
@@ -119,6 +180,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseRequestPage"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
     post:
       tags: [PurchaseRequests]
       summary: Raise a purchase request (from stores at reorder point, or from a department)
@@ -140,6 +203,33 @@ paths:
                 $ref: "#/components/schemas/PurchaseRequest"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-requests/{requestId}:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    get:
+      tags: [PurchaseRequests]
+      summary: Get purchase request details and lines (PRC-02)
+      operationId: getPurchaseRequest
+      responses:
+        "200":
+          description: Purchase request details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseRequest"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/procurement/purchase-requests/{requestId}/decision:
     parameters:
@@ -163,8 +253,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseRequest"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-requests/{requestId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/RequestId"
+    post:
+      tags: [PurchaseRequests]
+      summary: Cancel a submitted purchase request
+      operationId: cancelPurchaseRequest
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Purchase request cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseRequest"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -178,6 +299,20 @@ paths:
           in: query
           schema:
             $ref: "#/components/schemas/RfqStatus"
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
       responses:
@@ -187,6 +322,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RfqPage"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
     post:
       tags: [RFQs]
       summary: Create an RFQ from approved purchase requests to at least three suppliers
@@ -208,6 +345,33 @@ paths:
                 $ref: "#/components/schemas/Rfq"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/rfqs/{rfqId}:
+    parameters:
+      - $ref: "#/components/parameters/RfqId"
+    get:
+      tags: [RFQs]
+      summary: Get RFQ details, invited suppliers, and received quotes (PRC-06)
+      operationId: getRfq
+      responses:
+        "200":
+          description: RFQ details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/procurement/rfqs/{rfqId}/quotes:
     parameters:
@@ -231,6 +395,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Rfq"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -248,6 +420,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Comparison"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /v1/procurement/rfqs/{rfqId}/award:
     parameters:
@@ -271,6 +447,39 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Rfq"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/rfqs/{rfqId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/RfqId"
+    post:
+      tags: [RFQs]
+      summary: Cancel an RFQ
+      operationId: cancelRfq
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: RFQ cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -289,6 +498,20 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
       responses:
@@ -298,6 +521,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrderPage"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
     post:
       tags: [PurchaseOrders]
       summary: Create a purchase order from an awarded RFQ or a direct order to an approved supplier
@@ -319,6 +544,12 @@ paths:
                 $ref: "#/components/schemas/PurchaseOrder"
         "400":
           $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -336,6 +567,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -355,6 +588,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -380,8 +621,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -390,10 +637,18 @@ paths:
       - $ref: "#/components/parameters/PoId"
     post:
       tags: [PurchaseOrders]
-      summary: Release the approved PO to the supplier; emits po.issued
+      summary: Release the approved PO to the supplier; emits po.issued (requires Idempotency-Key)
       operationId: releasePurchaseOrder
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Required for releasing purchase orders. Ensures exactly-once commitment.
+          schema:
+            type: string
+            minLength: 8
+            maxLength: 128
+            pattern: "^[A-Za-z0-9._:-]{8,128}$"
       responses:
         "200":
           description: Released
@@ -401,6 +656,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -426,6 +689,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -445,6 +716,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+
+  /v1/procurement/purchase-orders/{poId}/cancel:
+    parameters:
+      - $ref: "#/components/parameters/PoId"
+    post:
+      tags: [PurchaseOrders]
+      summary: Cancel a purchase order before goods receipt
+      operationId: cancelPurchaseOrder
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Purchase order cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseOrder"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
 
@@ -661,7 +967,7 @@ components:
 
     PurchaseRequestStatus:
       type: string
-      enum: [submitted, in-approval, approved, rejected, converted]
+      enum: [submitted, in-approval, approved, rejected, cancelled, converted]
 
     PurchaseRequestLine:
       type: object
@@ -917,8 +1223,16 @@ components:
           minimum: 1
         itemId:
           $ref: "#/components/schemas/Id"
+        itemSku:
+          type: string
+          description: Item SKU or code
+          example: "TOOL-CNC-01"
         description:
           type: string
+        unit:
+          type: string
+          description: Purchase unit of measure
+          example: "pcs"
         quantity:
           $ref: "#/components/schemas/Quantity"
         receivedQuantity:
@@ -947,6 +1261,10 @@ components:
           $ref: "#/components/schemas/PurchaseOrderStatus"
         supplierId:
           $ref: "#/components/schemas/Id"
+        supplierName:
+          type: string
+          description: Snapshot of the supplier name for display
+          example: "Industrial Tools Corp"
         rfqId:
           $ref: "#/components/schemas/Id"
           nullable: true
