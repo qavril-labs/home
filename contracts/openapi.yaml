@@ -113,6 +113,60 @@ paths:
         "204":
           description: Successfully signed out
 
+  /v1/auth/forgot-password:
+    post:
+      summary: Request password reset email instructions (PLT-01)
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tenantSlug, email]
+              properties:
+                tenantSlug: {type: string}
+                email: {type: string, format: email}
+      responses:
+        "200":
+          description: Password reset request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, message]
+                properties:
+                  ok: {type: boolean}
+                  message: {type: string}
+
+  /v1/auth/reset-password:
+    post:
+      summary: Reset account password with one-time token (PLT-01)
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token: {type: string}
+                newPassword: {type: string, minLength: 8}
+      responses:
+        "200":
+          description: Password successfully updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, message]
+                properties:
+                  ok: {type: boolean}
+                  message: {type: string}
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
   /v1/me:
     get:
       summary: Get current authenticated principal and permissions
@@ -656,6 +710,138 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TrialBalance"
+
+  # ---- Banking & Reconciliation (FIN-04) ----
+  /v1/banking/lines:
+    get:
+      summary: List bank feed lines with optional reconciliation status filter (FIN-04)
+      operationId: getBankLines
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [ALL, Unmatched, Suggested, Reconciled]
+      responses:
+        "200":
+          description: List of bank feed lines
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, lines]
+                properties:
+                  ok: {type: boolean}
+                  lines:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BankFeedLine"
+
+  /v1/banking/statements/import:
+    post:
+      summary: Import bank feed lines with auto-matching against invoices/bills (FIN-04)
+      operationId: importBankStatement
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lines]
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    required: [postedDate, reference, description, amount, direction]
+                    properties:
+                      postedDate: {type: string, format: date}
+                      reference: {type: string}
+                      description: {type: string}
+                      amount: {type: string}
+                      direction: {type: string, enum: [IN, OUT]}
+      responses:
+        "201":
+          description: Bank statement imported
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, imported, lines]
+                properties:
+                  ok: {type: boolean}
+                  imported: {type: integer}
+                  lines:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BankFeedLine"
+
+  /v1/banking/reconcile:
+    post:
+      summary: Reconcile bank line with matched document reference (FIN-04)
+      operationId: reconcileBankLine
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lineId, matchedRef]
+              properties:
+                lineId: {type: string}
+                matchedRef: {type: string}
+      responses:
+        "200":
+          description: Bank line reconciled
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, lineId, matchedRef, status]
+                properties:
+                  ok: {type: boolean}
+                  lineId: {type: string}
+                  matchedRef: {type: string}
+                  status: {type: string, example: "Reconciled"}
+
+  /v1/banking/unreconcile:
+    post:
+      summary: Unreconcile bank line back to unmatched status (FIN-04)
+      operationId: unreconcileBankLine
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lineId]
+              properties:
+                lineId: {type: string}
+      responses:
+        "200":
+          description: Bank line reverted to unmatched
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, lineId, status]
+                properties:
+                  ok: {type: boolean}
+                  lineId: {type: string}
+                  status: {type: string, example: "Unmatched"}
 
   # ---- Bot API (UAAP agent service). Served by services/uaap, not apps/api. ----
 
@@ -2761,6 +2947,21 @@ components:
         reply:
           $ref: "#/components/schemas/AgentReply"
 
+    BankFeedLine:
+      type: object
+      required: [id, postedDate, reference, description, amount, direction, status]
+      properties:
+        id: {type: string}
+        postedDate: {type: string, format: date}
+        reference: {type: string}
+        description: {type: string}
+        amount: {type: string}
+        direction: {type: string, enum: [IN, OUT]}
+        status: {type: string, enum: [Unmatched, Suggested, Reconciled]}
+        matchedRef: {type: string}
+        matchedLabel: {type: string}
+        confidence: {type: number}
+
     CmsAuthVerifyInput:
       type: object
       required: [key]
@@ -2949,15 +3150,73 @@ components:
         page: {type: object, additionalProperties: true}
         article: {type: object, additionalProperties: true}
         faq: {type: object, additionalProperties: true}
+    CmsPageListItem:
+      type: object
+      required: [slug, title]
+      properties:
+        slug: {type: string}
+        title: {type: string}
+        meta_description: {type: string}
+        kicker: {type: string}
+        hero_headline: {type: string}
+        hero_subhead: {type: string}
+        hero_badge: {type: string}
+        updated_at: {type: string}
+    CmsArticleListItem:
+      type: object
+      required: [id, slug, type, title]
+      properties:
+        id: {type: string}
+        slug: {type: string}
+        type: {type: string, enum: [blog, case_study, news]}
+        title: {type: string}
+        excerpt: {type: string}
+        author: {type: string}
+        read_time: {type: string}
+        category_tag: {type: string}
+        is_featured: {type: boolean}
+        published_at: {type: string}
+    CmsFaqListItem:
+      type: object
+      required: [id, category, question, answer]
+      properties:
+        id: {type: string}
+        category: {type: string}
+        question: {type: string}
+        answer: {type: string}
+        sort_order: {type: integer}
+        is_active: {type: boolean}
+    CmsLeadListItem:
+      type: object
+      required: [id, email]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        email: {type: string}
+        company: {type: string}
+        notes: {type: string}
+        created_at: {type: string}
     CmsListResponse:
       type: object
       required: [ok]
       properties:
         ok: {type: boolean}
-        pages: {type: array, items: {type: object, additionalProperties: true}}
-        articles: {type: array, items: {type: object, additionalProperties: true}}
-        faqs: {type: array, items: {type: object, additionalProperties: true}}
-        leads: {type: array, items: {type: object, additionalProperties: true}}
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/CmsPageListItem"
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/CmsArticleListItem"
+        faqs:
+          type: array
+          items:
+            $ref: "#/components/schemas/CmsFaqListItem"
+        leads:
+          type: array
+          items:
+            $ref: "#/components/schemas/CmsLeadListItem"
     CmsOverview:
       type: object
       required: [ok, stats]

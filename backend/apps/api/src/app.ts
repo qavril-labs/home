@@ -1,7 +1,7 @@
-import { randomUUID, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
-import { IdentityService, tenantFromToken } from "@erp/identity";
+import { hashPassword, IdentityService, tenantFromToken } from "@erp/identity";
 import { missingDependencies } from "@erp/tenancy";
 import { buildRegistry, isFoundation } from "@erp/catalog";
 import {
@@ -17,8 +17,10 @@ import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
 import { registerInvoicingRoutes } from "./invoicing-routes";
+import { registerApprovalsRoutes } from "./approvals-routes";
 import { MemoryTicketStore, type TicketStore } from "./stream-tickets";
 import { registerCmsRoutes } from "./cms-routes";
+import { registerBankingRoutes } from "./banking-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -65,6 +67,16 @@ const LoginBody = z.object({
   tenantSlug: z.string().min(1),
   email: z.string().min(1),
   password: z.string().min(1),
+});
+
+const ForgotPasswordBody = z.object({
+  tenantSlug: z.string().min(1),
+  email: z.string().email(),
+});
+
+const ResetPasswordBody = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export interface AppOptions {
@@ -172,6 +184,23 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const leadLimiter = new RateLimiter(options.leadRateLimit ?? { max: 5, windowMs: 10 * 60 * 1000 });
   const signupLimiter = new RateLimiter(options.signupRateLimit ?? { max: 5, windowMs: 60 * 60 * 1000 });
   const loginLimiter = new RateLimiter({ max: 20, windowMs: 10 * 60 * 1000 });
+  const apiLimiter = new RateLimiter({ max: 300, windowMs: 60 * 1000 });
+
+  // Global rate limiter for authenticated /v1/ API routes (PLT-21)
+  app.addHook("preHandler", async (request, reply) => {
+    if (request.url.startsWith("/v1/") && !request.url.startsWith("/v1/public/") && request.method !== "OPTIONS") {
+      const authHeader = request.headers.authorization;
+      const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      const tenantId = token ? tenantFromToken(token) : null;
+      const key = tenantId || request.ip;
+      const now = clock.now().getTime();
+      if (apiLimiter.blocked(key, now)) {
+        reply.header("retry-after", "60");
+        throw new DomainError("RATE_LIMITED", "API rate limit exceeded. Please wait a moment before sending more requests.");
+      }
+      apiLimiter.hit(key, now);
+    }
+  });
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof DomainError) {
@@ -246,16 +275,70 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return reply.status(204).send();
   });
 
+  app.post("/v1/auth/forgot-password", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    const body = ForgotPasswordBody.parse(request.body);
+    const tenant = await new PgTenantRepository(pool).findTenantBySlug(body.tenantSlug.toLowerCase());
+    if (tenant && tenant.status === "ACTIVE") {
+      await withTenantTransaction(pool, tenant.id, async (tx) => {
+        const user = await tx.query("SELECT id FROM users WHERE email = $1", [body.email.trim().toLowerCase()]);
+        if (user.rows.length > 0) {
+          const rawToken = randomUUID() + "-" + randomUUID();
+          const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+          const expiresAt = new Date(clock.now().getTime() + 3600 * 1000).toISOString();
+          await tx.query(
+            "INSERT INTO password_reset_tokens (token_hash, tenant_id, user_id, expires_at) VALUES ($1, $2, $3, $4)",
+            [tokenHash, tenant.id, user.rows[0].id, expiresAt]
+          );
+        }
+      });
+    }
+    return { ok: true, message: "If an account exists with this email, password reset instructions have been generated." };
+  });
+
+  app.post("/v1/auth/reset-password", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    const body = ResetPasswordBody.parse(request.body);
+    const tokenHash = createHash("sha256").update(body.token).digest("hex");
+    const now = clock.now().toISOString();
+
+    const record = await pool.query(
+      "SELECT * FROM password_reset_tokens WHERE token_hash = $1 AND expires_at > $2",
+      [tokenHash, now]
+    );
+
+    if (record.rows.length === 0) {
+      throw new DomainError("UNAUTHENTICATED", "Password reset token is invalid or expired");
+    }
+
+    const { tenant_id: tenantId, user_id: userId } = record.rows[0];
+    const newHash = await hashPassword(body.newPassword);
+
+    await withTenantTransaction(pool, tenantId, async (tx) => {
+      await tx.query("UPDATE users SET password_hash = $1 WHERE id = $2 AND tenant_id = $3", [newHash, userId, tenantId]);
+      await tx.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [userId]);
+      await tx.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
+    });
+
+    return { ok: true, message: "Password has been successfully updated. Please sign in with your new password." };
+  });
+
   function allowBrowserOrigin(request: FastifyRequest, reply: FastifyReply): void {
     const origin = request.headers.origin;
     reply.header("vary", "Origin");
     if (typeof origin === "string" && corsOrigins.has(origin)) {
       reply.header("access-control-allow-origin", origin);
-      reply.header("access-control-allow-methods", "GET, POST, OPTIONS");
-      reply.header("access-control-allow-headers", "content-type, authorization");
+      reply.header("access-control-allow-methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      reply.header("access-control-allow-headers", "content-type, authorization, x-platform-key, x-request-id");
       reply.header("access-control-max-age", "600");
     }
   }
+
+  // Handle all CORS preflight OPTIONS requests across all API routes
+  app.options("/*", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    return reply.status(204).send();
+  });
 
   // The signed-in app calls these from the site's origin too.
   app.addHook("onRequest", async (request, reply) => {
@@ -264,6 +347,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       request.url.startsWith("/v1/master-data/") ||
       request.url.startsWith("/v1/invoicing/") ||
       request.url.startsWith("/v1/events/") ||
+      request.url.startsWith("/v1/approvals") ||
       request.url === "/v1/me"
     ) {
       allowBrowserOrigin(request, reply);
@@ -392,6 +476,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
   registerInvoicingRoutes(app, { pool, clock, authenticate, tickets: options.ticketStore ?? new MemoryTicketStore() });
+  registerApprovalsRoutes(app, { pool, clock, authenticateRequest: authenticate });
+  registerBankingRoutes(app, { pool, clock, authenticate });
   registerCmsRoutes(app, pool, platformKey);
 
   return app;

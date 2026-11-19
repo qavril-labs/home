@@ -64,7 +64,7 @@ export const Modal: React.FC<ModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/60 backdrop-blur-sm transition-opacity duration-180"
+      className="fixed inset-0 z-50 overflow-y-auto p-2 sm:p-4 bg-ink/60 backdrop-blur-sm flex items-start sm:items-center justify-center transition-opacity duration-180"
       onClick={(e) => {
         if (e.target === e.currentTarget && !isSubmitting) {
           onClose();
@@ -77,7 +77,7 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         ref={modalRef}
         className={cn(
-          "w-full bg-panel border-line shadow-card p-6 relative transition-transform duration-180",
+          "w-full my-auto max-h-[calc(100vh-2rem)] overflow-y-auto bg-panel border-line shadow-card p-4 sm:p-6 relative transition-transform duration-180",
           maxWidth
         )}
       >

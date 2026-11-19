@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Button } from "./Button";
 import {
   LayoutDashboard,
   Users,
@@ -20,6 +21,7 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  LogOut,
 } from "lucide-react";
 
 export interface NavItem {
@@ -40,6 +42,7 @@ export interface SidebarProps {
   isOpenMobile: boolean;
   onCloseMobile: () => void;
   workspaceName?: string;
+  onSignOut?: () => void;
 }
 
 const NAV_SECTIONS: NavSection[] = [
@@ -98,6 +101,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
   workspaceName = "Apex Production",
+  onSignOut,
 }) => {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -109,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const renderNavContent = () => (
-    <div className="flex flex-col h-full select-none">
+    <div className="flex flex-col h-full select-none min-w-0">
       {/* Brand Header */}
       <div className="h-16 flex items-center justify-between px-4 border-b-line bg-panel shrink-0">
         <a
@@ -119,13 +123,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onNavigate("dashboard");
             onCloseMobile();
           }}
-          className="flex items-center gap-2 group text-text no-underline"
+          className="flex items-center gap-2 group text-text no-underline min-w-0"
         >
-          <span className="w-8 h-8 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-lg shadow-[2px_2px_0_var(--q-ink)] group-hover:scale-105 transition-transform">
+          <span className="w-8 h-8 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-lg shadow-[2px_2px_0_var(--q-ink)] group-hover:scale-105 transition-transform shrink-0">
             Q
           </span>
-          <div className="flex flex-col">
-            <span className="font-display font-extrabold text-sm tracking-tight uppercase leading-none">
+          <div className="flex flex-col min-w-0">
+            <span className="font-display font-extrabold text-sm tracking-tight uppercase leading-none truncate">
               QAVRIL<span className="text-pink">/</span>LABS
             </span>
             <span className="text-[10px] font-mono text-muted tracking-wider uppercase mt-0.5">
@@ -137,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Mobile close button */}
         <button
           onClick={onCloseMobile}
-          className="md:hidden p-1.5 text-text hover:bg-page border border-transparent hover:border-line"
+          className="md:hidden p-1.5 text-text hover:bg-page border border-transparent hover:border-line shrink-0"
           aria-label="Close navigation sidebar"
         >
           <X className="w-5 h-5" />
@@ -151,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span className="w-2 h-2 rounded-full bg-good animate-pulse shrink-0" />
             <span className="text-xs font-bold text-text truncate">{workspaceName}</span>
           </div>
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow text-ink border border-ink">
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-yellow text-ink border border-ink shrink-0">
             PROD
           </span>
         </div>
@@ -224,6 +228,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
+
+      {/* Mobile Sign out Action (available via sidebar menu on mobile) */}
+      {onSignOut && (
+        <div className="p-3 border-t border-grid bg-panel shrink-0 md:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              onCloseMobile();
+              onSignOut();
+            }}
+            className="w-full justify-center text-xs font-bold flex items-center gap-2"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Sign out</span>
+          </Button>
+        </div>
+      )}
 
       {/* Footer Info */}
       <div className="p-3 border-t-line bg-page text-[11px] font-mono text-muted shrink-0 flex items-center justify-between">

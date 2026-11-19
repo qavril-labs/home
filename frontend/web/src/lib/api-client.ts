@@ -6,6 +6,9 @@
 import type {
   Account,
   AccountType,
+  AgentAuditLogRecord,
+  ApprovalRequestRecord,
+  BankFeedLine,
   Bill,
   CustomerStatement,
   Invoice,
@@ -832,6 +835,143 @@ export const apiClient = {
     } catch {
       return { data: bill, isLive: false, endpoint };
     }
+  },
+
+  // ── PLT-07 & AGT-01: Approvals Inbox & Agent Governance ──────────────
+  async listApprovals(params?: { status?: string; botId?: string }): Promise<ApiResult<ApprovalRequestRecord[]>> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.botId) query.set("botId", params.botId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const endpoint = `/v1/approvals${qs}`;
+    try {
+      const res = await requestJson<{ requests: ApprovalRequestRecord[] }>(endpoint);
+      return { data: res.requests, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async createApproval(request: {
+    botId: string;
+    botName: string;
+    actionType: string;
+    title: string;
+    summary: string;
+    amount?: string | null;
+    currency?: string;
+    riskLevel?: "low" | "medium" | "high" | "critical";
+    payload?: Record<string, unknown>;
+    confidenceScore?: number;
+  }): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = "/v1/approvals";
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async approveRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = `/v1/approvals/${encodeURIComponent(id)}/approve`;
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async rejectRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = `/v1/approvals/${encodeURIComponent(id)}/reject`;
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async listAgentAuditLogs(params?: { botId?: string; limit?: number }): Promise<ApiResult<AgentAuditLogRecord[]>> {
+    const query = new URLSearchParams();
+    if (params?.botId) query.set("botId", params.botId);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const endpoint = `/v1/approvals/audit-logs${qs}`;
+    try {
+      const res = await requestJson<{ logs: AgentAuditLogRecord[] }>(endpoint);
+      return { data: res.logs, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  // ── FIN-04: Banking & Reconciliation ──────────────────────────────────
+  async listBankLines(status?: "ALL" | "Unmatched" | "Suggested" | "Reconciled"): Promise<ApiResult<BankFeedLine[]>> {
+    const qs = status && status !== "ALL" ? `?status=${status}` : "";
+    const endpoint = `/v1/banking/lines${qs}`;
+    try {
+      const res = await requestJson<{ ok: boolean; lines: BankFeedLine[] }>(endpoint);
+      return { data: res.lines, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async importBankStatement(lines: Array<Omit<BankFeedLine, "id" | "status">>): Promise<ApiResult<BankFeedLine[]>> {
+    const endpoint = "/v1/banking/statements/import";
+    try {
+      const res = await requestJson<{ ok: boolean; imported: number; lines: BankFeedLine[] }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lines }),
+      });
+      return { data: res.lines, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async reconcileBankLine(lineId: string, matchedRef: string): Promise<ApiResult<{ lineId: string; matchedRef: string }>> {
+    const endpoint = "/v1/banking/reconcile";
+    try {
+      const res = await requestJson<{ ok: boolean; lineId: string; matchedRef: string }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lineId, matchedRef }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { lineId, matchedRef }, isLive: false, endpoint };
+    }
+  },
+
+  async unreconcileBankLine(lineId: string): Promise<ApiResult<{ lineId: string }>> {
+    const endpoint = "/v1/banking/unreconcile";
+    try {
+      const res = await requestJson<{ ok: boolean; lineId: string }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lineId }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { lineId }, isLive: false, endpoint };
+    }
+  },
+
+  // ── PLT-01: Password Reset ───────────────────────────────────────────
+  async forgotPassword(tenantSlug: string, email: string): Promise<ApiResult<{ ok: boolean; message: string }>> {
+    const endpoint = "/v1/auth/forgot-password";
+    const res = await requestJson<{ ok: boolean; message: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ tenantSlug, email }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<ApiResult<{ ok: boolean; message: string }>> {
+    const endpoint = "/v1/auth/reset-password";
+    const res = await requestJson<{ ok: boolean; message: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return { data: res, isLive: true, endpoint };
   },
 
   subscribeToEvents(

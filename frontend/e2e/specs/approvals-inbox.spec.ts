@@ -20,6 +20,11 @@ test.describe("Approvals inbox, connected to the UAAP API", () => {
 
   test("shows the connection state, not sample data", async ({ page }) => {
     await expect(page.getByText("Not connected").first()).toBeVisible();
+    const mockEls = page.getByText(/Mock Fixture/i);
+    const count = await mockEls.count();
+    for (let i = 0; i < count; i++) {
+      console.log("Mock element HTML:", await mockEls.nth(i).evaluate((el) => el.outerHTML));
+    }
     await expect(page.getByText(/Mock Fixture/i)).toHaveCount(0);
   });
 

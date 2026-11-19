@@ -24,23 +24,23 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-20 w-full bg-panel border-b-line shadow-sm">
-      <div className="w-full px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div className="w-full px-3 sm:px-6 h-16 flex items-center justify-between min-w-0">
         {/* Left: Mobile Sidebar Toggle + Brand indicator for small viewports */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="md:hidden p-2 bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-text focus:outline-none"
+            className="md:hidden p-2 bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-text focus:outline-none shrink-0"
             aria-label="Open navigation sidebar"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex md:hidden items-center gap-2">
-            <span className="w-7 h-7 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-sm shadow-[1.5px_1.5px_0_var(--q-ink)]">
+          <div className="flex md:hidden items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className="w-7 h-7 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-sm shadow-[1.5px_1.5px_0_var(--q-ink)] shrink-0">
               Q
             </span>
-            <span className="font-display font-black text-sm tracking-tight uppercase">
+            <span className="hidden min-[360px]:inline font-display font-black text-xs sm:text-sm tracking-tight uppercase truncate">
               QAVRIL<span className="text-pink">/</span>LABS
             </span>
           </div>
@@ -56,16 +56,16 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         </div>
 
         {/* Right: Search, Workspace Selector, Theme Toggle, Sign Out */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
           {/* Quick search shortcut trigger */}
           <button
             onClick={onOpenCommandBar}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-muted"
+            className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-muted shrink-0"
             title="Open quick command palette (Ctrl+K)"
           >
             <Search className="w-3.5 h-3.5 text-text" />
             <span className="hidden sm:inline text-text">Search actions</span>
-            <kbd className="px-1.5 py-0.5 text-[10px] bg-panel border border-ink text-text font-mono">
+            <kbd className="hidden sm:inline px-1.5 py-0.5 text-[10px] bg-panel border border-ink text-text font-mono">
               Ctrl+K
             </kbd>
           </button>
@@ -113,7 +113,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             onClick={toggleTheme}
             aria-label={`Switch to ${theme === "light" ? "dark" : "light"} theme`}
             aria-pressed={theme === "dark"}
-            className="w-9 h-9 flex items-center justify-center bg-panel border-line shadow-[2px_2px_0_var(--q-ink)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--q-ink)] transition-all cursor-pointer"
+            className="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center bg-panel border-line shadow-[2px_2px_0_var(--q-ink)] hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[3px_3px_0_var(--q-ink)] transition-all cursor-pointer shrink-0"
           >
             {theme === "light" ? (
               <Moon className="w-4 h-4 text-ink" />
@@ -122,7 +122,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             )}
           </button>
 
-          {/* Sign Out */}
+          {/* Sign Out (Desktop / Tablet) */}
           <Button
             variant="ghost"
             size="sm"

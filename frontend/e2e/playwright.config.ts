@@ -14,7 +14,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: [["html", { open: "never" }], ["list"]],
   use: {
-    baseURL: process.env.E2E_BASE_URL || "http://localhost:5173/app/",
+    baseURL: process.env.E2E_BASE_URL || "http://127.0.0.1:5173",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
@@ -30,15 +30,18 @@ export default defineConfig({
       name: "Mobile Safari (375px)",
       use: {
         ...devices["iPhone 13"],
+        browserName: "chromium",
         viewport: { width: 375, height: 667 },
       },
     },
   ],
-  webServer: {
-    command: "npm run dev:web",
+  webServer: process.env.E2E_EXTERNAL_SERVER === "1" ? undefined : {
+    command: process.platform === "win32" ? "npm.cmd run dev:web" : "npm run dev:web",
     cwd: "..",
-    url: "http://localhost:5173/app/",
+    url: "http://127.0.0.1:5173/",
     reuseExistingServer: !process.env.CI,
+    stdout: "pipe",
+    stderr: "pipe",
     timeout: 120 * 1000,
   },
 });

@@ -440,6 +440,43 @@ export interface AgentRegistryItem {
   lastActive: string;
 }
 
+export interface ApprovalRequestRecord {
+  id: string;
+  tenantId: string;
+  companyId: string;
+  botId: string;
+  botName: string;
+  actionType: string;
+  title: string;
+  summary: string;
+  amount?: string | null;
+  currency: string;
+  riskLevel: "low" | "medium" | "high" | "critical";
+  status: "pending" | "approved" | "rejected" | "executed" | "cancelled";
+  payload: Record<string, unknown>;
+  confidenceScore: number;
+  requestedAt: string;
+  decidedAt?: string | null;
+  decidedBy?: string | null;
+  decisionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentAuditLogRecord {
+  id: string;
+  tenantId: string;
+  companyId: string;
+  botId: string;
+  eventType: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: Record<string, unknown>;
+  hashChain?: string | null;
+  createdAt: string;
+}
+
 export interface StockReplenishmentItem {
   id: string;
   sku: string;

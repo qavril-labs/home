@@ -204,6 +204,8 @@ export const App: React.FC = () => {
           void apiClient.listBills().then((res) => {
             if (res.isLive) setBills(res.data);
           });
+        } else if (event.type.startsWith("approvals.request.")) {
+          console.log("[Realtime Approvals Event]", event.type, event.payload);
         }
       },
       (status) => {
@@ -524,6 +526,11 @@ export const App: React.FC = () => {
           isOpenMobile={isSidebarOpenMobile}
           onCloseMobile={() => setIsSidebarOpenMobile(false)}
           workspaceName="Apex Production"
+          onSignOut={() => {
+            setApiSessionToken(null);
+            setIsAuthenticated(false);
+            navigateToTab("signed-out");
+          }}
         />
       )}
 

@@ -12,11 +12,12 @@
     "node": ">=22"
   },
   "scripts": {
+    "api:generate": "node scripts/generate-openapi-client.mjs",
     "dev:web": "npm run dev -w @erp/web",
     "build:web": "npm run build -w @erp/web",
     "site:build": "node scripts/build-site-pages.mjs",
     "site:check": "node scripts/check-site.mjs",
     "site:serve": "node scripts/serve-site.mjs",
-    "test:e2e": "npm run test -w @erp/e2e-tests"
+    "test:e2e": "node scripts/run-e2e.mjs"
   }
 }

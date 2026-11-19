@@ -105,7 +105,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
       description="Chase Chloe prepared this collection draft based on customer terms and past payment velocity."
       maxWidth="max-w-xl"
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Invoice Summary Banner */}
         <div className="p-3 bg-panel border-line shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <div>

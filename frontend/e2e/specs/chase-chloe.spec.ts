@@ -1,8 +1,14 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
     await page.goto("/");
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+      }
+    }
     await page.getByRole("button", { name: "Chase Chloe (FIN-14)" }).first().click();
     await expect(page.getByRole("heading", { name: "Chase Chloe" })).toBeVisible();
   });

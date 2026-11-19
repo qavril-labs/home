@@ -50,6 +50,10 @@ test.describe("Live approval in the browser (local stack)", () => {
     await expect(page.getByText(/Good (morning|afternoon|evening)/)).toBeVisible({ timeout: 30_000 });
 
     // 3. The owner opens the inbox, sees the proposal and approves it.
+    const menu = page.getByRole("button", { name: "Open navigation sidebar" });
+    if (await menu.isVisible()) {
+      await menu.click();
+    }
     await page.getByRole("button", { name: /Approvals/i }).first().click();
     await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible();
     await expect(page.getByText("API Connected", { exact: true }).first()).toBeVisible({ timeout: 30_000 });

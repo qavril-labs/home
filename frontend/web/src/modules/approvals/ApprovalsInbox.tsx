@@ -186,8 +186,8 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* 1. Breadcrumbs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {onNavigateBack && (
             <button
               type="button"
@@ -198,14 +198,14 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
             </button>
           )}
           <span className="text-muted text-xs">/</span>
-          <span className="text-xs font-mono font-bold text-muted uppercase">
+          <span className="hidden sm:inline text-xs font-mono font-bold text-muted uppercase">
             Security & Governance
           </span>
-          <span className="text-muted text-xs">/</span>
-          <span className="text-xs font-bold text-text">Approvals Platform (PLT-07)</span>
+          <span className="hidden sm:inline text-muted text-xs">/</span>
+          <span className="text-xs font-bold text-text truncate">Approvals Platform (PLT-07)</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-line ${
               isLiveApi ? "bg-lime text-ink" : "bg-cream text-ink"
@@ -214,7 +214,7 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
             <span className={`w-1.5 h-1.5 rounded-full ${isLiveApi ? "bg-good" : "bg-watch"}`} />
             {isLiveApi ? "API Connected" : "Not connected"}
           </span>
-          <span className="text-xs font-mono font-bold text-muted">
+          <span className="hidden sm:inline text-xs font-mono font-bold text-muted">
             PLT-07 · AGT-01 · AGT-06
           </span>
         </div>
@@ -222,21 +222,21 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
 
       {/* 2. Platform Header */}
       <section
-        className="neo-card p-6 bg-panel border-line shadow-card"
+        className="neo-card p-4 sm:p-6 bg-panel border-line shadow-card"
         aria-label="Approvals Platform Header"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-16 h-16 bg-pink text-white border-line shadow-[3px_3px_0_var(--q-ink)] flex items-center justify-center select-none flex-shrink-0">
-              <ShieldCheck className="w-10 h-10" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-pink text-white border-line shadow-[3px_3px_0_var(--q-ink)] flex items-center justify-center select-none flex-shrink-0">
+              <ShieldCheck className="w-7 h-7 sm:w-10 sm:h-10" />
             </div>
 
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                <h1 className="font-display font-extrabold text-xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
                   Approvals Inbox
                 </h1>
-                <span className="px-2 py-0.5 bg-pink/20 border border-pink text-[11px] font-bold text-ink uppercase tracking-wider">
+                <span className="px-2 py-0.5 bg-pink/20 border border-pink text-[10px] sm:text-[11px] font-bold text-ink uppercase tracking-wider">
                   Human-in-the-Loop Engine
                 </span>
                 <span className="px-1.5 py-0.5 bg-page border border-grid text-[10px] font-mono text-muted">
@@ -250,9 +250,9 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-2 bg-page px-3 py-1.5 border-line shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-good animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-good animate-ping shrink-0" />
               <span className="text-xs font-bold text-text">
                 Live · updated {lastRefreshed || "just now"}
               </span>
@@ -394,8 +394,8 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
         </div>
 
         {/* Approvals Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="neo-table-wrapper overflow-x-auto max-w-full">
+          <table className="w-full min-w-[640px] text-left text-xs border-collapse">
             <thead>
               <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
                 <th className="py-2.5 px-3">Proposal & Proposer</th>
@@ -521,7 +521,7 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
       </section>
 
       {loadError && (
-        <p role="alert" className="mb-3 text-sm font-bold">
+        <p role="alert" className="mb-3 p-3 bg-act/10 border-line border-act text-act text-xs font-bold">
           {loadError} Nothing shown here is a sample; retry when the service is back.
         </p>
       )}
