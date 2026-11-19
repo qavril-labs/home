@@ -11,6 +11,7 @@ import type {
   BankFeedLine,
   Bill,
   CustomerStatement,
+  GoodsReceiptNote,
   Invoice,
   InvoicesSummary,
   ItemType,
@@ -21,7 +22,10 @@ import type {
   PartyType,
   PaymentTerms,
   ProductItem,
+  PurchaseOrder,
   ReminderDraft,
+  ThreeWayMatchItem,
+  ThreeWayMatchSummary,
   WorkspaceInsights,
 } from "../types";
 import {
@@ -35,6 +39,10 @@ import {
   initialOverdueInvoices,
   initialMockInsights,
   mockCustomerStatements,
+  initialPurchaseOrders,
+  initialGoodsReceiptNotes,
+  initialThreeWayMatches,
+  initialThreeWaySummary,
 } from "./api-mock";
 
 // ---------------------------------------------------------------------------
@@ -972,6 +980,111 @@ export const apiClient = {
       body: JSON.stringify({ token, newPassword }),
     });
     return { data: res, isLive: true, endpoint };
+  },
+
+  // ── PRC-01 to PRC-04: Purchasing & 3-Way Matching ────────────────────────
+  async listPurchaseOrders(status?: string): Promise<ApiResult<PurchaseOrder[]>> {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/orders${query}`;
+    try {
+      const res = await requestJson<{ ok: boolean; orders: PurchaseOrder[] }>(endpoint);
+      return { data: res.orders, isLive: true, endpoint };
+    } catch {
+      return { data: initialPurchaseOrders, isLive: false, endpoint };
+    }
+  },
+
+  async createPurchaseOrder(po: PurchaseOrder): Promise<ApiResult<PurchaseOrder>> {
+    const endpoint = "/v1/procurement/orders";
+    try {
+      const res = await requestJson<{ ok: boolean; order: PurchaseOrder }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(po),
+      });
+      return { data: res.order, isLive: true, endpoint };
+    } catch {
+      return { data: po, isLive: false, endpoint };
+    }
+  },
+
+  async updatePurchaseOrderStatus(
+    id: string,
+    status: PurchaseOrder["status"]
+  ): Promise<ApiResult<{ id: string; status: string }>> {
+    const endpoint = `/v1/procurement/orders/${encodeURIComponent(id)}/status`;
+    try {
+      const res = await requestJson<{ ok: boolean; id: string; status: string }>(endpoint, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { id, status }, isLive: false, endpoint };
+    }
+  },
+
+  async listGoodsReceipts(status?: string): Promise<ApiResult<GoodsReceiptNote[]>> {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/receipts${query}`;
+    try {
+      const res = await requestJson<{ ok: boolean; receipts: GoodsReceiptNote[] }>(endpoint);
+      return { data: res.receipts, isLive: true, endpoint };
+    } catch {
+      return { data: initialGoodsReceiptNotes, isLive: false, endpoint };
+    }
+  },
+
+  async createGoodsReceipt(grn: GoodsReceiptNote): Promise<ApiResult<GoodsReceiptNote>> {
+    const endpoint = "/v1/procurement/receipts";
+    try {
+      const res = await requestJson<{ ok: boolean; receipt: GoodsReceiptNote }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(grn),
+      });
+      return { data: res.receipt, isLive: true, endpoint };
+    } catch {
+      return { data: grn, isLive: false, endpoint };
+    }
+  },
+
+  async listThreeWayMatches(status?: string): Promise<
+    ApiResult<{ matches: ThreeWayMatchItem[]; summary: ThreeWayMatchSummary }>
+  > {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/matches${query}`;
+    try {
+      const res = await requestJson<{
+        ok: boolean;
+        matches: ThreeWayMatchItem[];
+        summary: ThreeWayMatchSummary;
+      }>(endpoint);
+      return { data: { matches: res.matches, summary: res.summary }, isLive: true, endpoint };
+    } catch {
+      return {
+        data: { matches: initialThreeWayMatches, summary: initialThreeWaySummary },
+        isLive: false,
+        endpoint,
+      };
+    }
+  },
+
+  async overrideThreeWayMatch(
+    id: string,
+    note: string
+  ): Promise<ApiResult<{ id: string; note: string; overrideApproved: boolean }>> {
+    const endpoint = `/v1/procurement/matches/${encodeURIComponent(id)}/override`;
+    try {
+      const res = await requestJson<{
+        ok: boolean;
+        match: { id: string; note: string; overrideApproved: boolean };
+      }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      });
+      return { data: res.match, isLive: true, endpoint };
+    } catch {
+      return { data: { id, note, overrideApproved: true }, isLive: false, endpoint };
+    }
   },
 
   subscribeToEvents(

@@ -14,7 +14,7 @@ const screens = [
   { slug: "ledger-lou", hash: "#ledger-lou", readySelector: 'h1:has-text("Ledger Lou")' },
   { slug: "forecast-finn", hash: "#forecast-finn", readySelector: 'h1:has-text("Forecast Finn")' },
   { slug: "packs", hash: "#packs", readySelector: 'h1:has-text("Industry Pack Agents")' },
-  { slug: "gallery", hash: "#gallery", readySelector: 'h1:has-text("Neo-Brutalist Component Gallery")' },
+  { slug: "gallery", hash: "#gallery", readySelector: 'h1:has-text("Component Gallery")' },
 ];
 
 test.describe("Pre-PR Visual Screenshots (375px / 1280px in Light & Dark)", () => {

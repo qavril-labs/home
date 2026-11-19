@@ -150,7 +150,7 @@ export const App: React.FC = () => {
   const syncAllMasterData = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes, billsRes] =
+      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes, billsRes, poRes, grnRes, matchRes] =
         await Promise.all([
           apiClient.listParties(),
           apiClient.listItems(),
@@ -158,6 +158,9 @@ export const App: React.FC = () => {
           apiClient.listInvoices(),
           apiClient.listJournalEntries(),
           apiClient.listBills(),
+          apiClient.listPurchaseOrders(),
+          apiClient.listGoodsReceipts(),
+          apiClient.listThreeWayMatches(),
         ]);
 
       setParties(partiesRes.data);
@@ -167,8 +170,11 @@ export const App: React.FC = () => {
       setInvoicesSummary(invoicesRes.data.summary);
       setJournals(journalsRes.data);
       setBills(billsRes.data);
+      setPurchaseOrders(poRes.data);
+      setGoodsReceipts(grnRes.data);
+      setThreeWayMatches(matchRes.data.matches);
       setIsLiveApi(
-        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive || invoicesRes.isLive
+        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive || invoicesRes.isLive || poRes.isLive
       );
     } catch (err) {
       console.warn("Real-time DB sync warning:", err);
@@ -203,6 +209,18 @@ export const App: React.FC = () => {
         } else if (event.type.startsWith("purchasing.bill.")) {
           void apiClient.listBills().then((res) => {
             if (res.isLive) setBills(res.data);
+          });
+        } else if (event.type.startsWith("procurement.order.")) {
+          void apiClient.listPurchaseOrders().then((res) => {
+            if (res.isLive) setPurchaseOrders(res.data);
+          });
+        } else if (event.type.startsWith("procurement.receipt.")) {
+          void apiClient.listGoodsReceipts().then((res) => {
+            if (res.isLive) setGoodsReceipts(res.data);
+          });
+        } else if (event.type.startsWith("procurement.match.")) {
+          void apiClient.listThreeWayMatches().then((res) => {
+            if (res.isLive) setThreeWayMatches(res.data.matches);
           });
         } else if (event.type.startsWith("approvals.request.")) {
           console.log("[Realtime Approvals Event]", event.type, event.payload);
@@ -370,6 +388,13 @@ export const App: React.FC = () => {
   // Purchasing & 3-Way Matching actions (PRC-01 to PRC-04)
   const handleAddPurchaseOrder = (po: PurchaseOrder) => {
     setPurchaseOrders((prev) => [po, ...prev]);
+    void apiClient.createPurchaseOrder(po).then((res) => {
+      if (res.isLive) {
+        setPurchaseOrders((prev) =>
+          prev.map((existing) => (existing.id === po.id ? res.data : existing))
+        );
+      }
+    });
   };
 
   const handleUpdatePurchaseOrderStatus = (
@@ -379,10 +404,18 @@ export const App: React.FC = () => {
     setPurchaseOrders((prev) =>
       prev.map((po) => (po.id === id ? { ...po, status } : po))
     );
+    void apiClient.updatePurchaseOrderStatus(id, status);
   };
 
   const handleAddGoodsReceipt = (grn: GoodsReceiptNote) => {
     setGoodsReceipts((prev) => [grn, ...prev]);
+    void apiClient.createGoodsReceipt(grn).then((res) => {
+      if (res.isLive) {
+        setGoodsReceipts((prev) =>
+          prev.map((existing) => (existing.id === grn.id ? res.data : existing))
+        );
+      }
+    });
   };
 
   const handleApproveMatchOverride = (matchId: string, note: string) => {
@@ -393,6 +426,7 @@ export const App: React.FC = () => {
           : m
       )
     );
+    void apiClient.overrideThreeWayMatch(matchId, note);
   };
 
   // Item Master actions (MDM-02 -> /v1/master-data/items)
