@@ -59,3 +59,7 @@ frontend/e2e/test-results/
 
 # AWS SSH key for the staging server. Keep it here only; never commit.
 qavril-staging-key.pem
+
+# Screenshots
+frontend/screenshots/
+**/screenshots/

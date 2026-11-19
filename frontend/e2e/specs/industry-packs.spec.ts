@@ -74,12 +74,12 @@ test.describe("Industry Packs Hub (GAR/FMCG) & AI-09 CommandBar Operations Assis
     // Switch to AI-09 Chat tab
     const chatTab = page.locator('[data-testid="commandbar-tab-ai09"]');
     await chatTab.click();
-    await expect(page.getByText("AI-09 Operations Co-Pilot")).toBeVisible();
+    await expect(page.locator('[data-testid="commandbar-ai09-panel"]')).toBeVisible();
 
     // Type a query regarding Industry Packs
-    const chatInput = page.getByPlaceholder(/Ask anything across your books/i);
+    const chatInput = page.locator('[data-testid="ai09-chat-input"]');
     await chatInput.fill("What is the status of the garment tech pack and cost sheet?");
-    await page.locator('button:has-text("Send")').click();
+    await page.locator('[data-testid="ai09-send-btn"]').click();
 
     // Verify turn appears and response includes provenance reference
     await expect(page.getByText("What is the status of the garment tech pack and cost sheet?")).toBeVisible();
