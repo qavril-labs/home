@@ -55,6 +55,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: staging
+    env:
+      # Set the repository variable DEPLOY_UAAP to true once the agent service has its own settings and service.
+      DEPLOY_UAAP: ${{ vars.DEPLOY_UAAP == 'true' && 'yes' || '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +72,7 @@ jobs:
           for repo in "$ECR_API_REPO" "$ECR_UAAP_REPO"; do
             aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1 || { echo "::error::ECR repository $repo does not exist"; missing=1; }
           done
-          for svc in qavril-staging-api qavril-staging-worker qavril-staging-uaap; do
+          for svc in qavril-staging-api qavril-staging-worker ${DEPLOY_UAAP:+qavril-staging-uaap}; do
             status=$(aws ecs describe-services --cluster "$CLUSTER" --services "$svc" --query 'services[0].status' --output text 2>/dev/null || echo NONE)
             [ "$status" = "ACTIVE" ] || { echo "::error::ECS service $svc is not ACTIVE in $CLUSTER (got $status)"; missing=1; }
           done
@@ -85,11 +88,13 @@ jobs:
           TAG: ${{ github.sha }}
         run: |
           docker build -t "$REGISTRY/$ECR_API_REPO:$TAG" backend
-          docker build -t "$REGISTRY/$ECR_UAAP_REPO:$TAG" backend/services/uaap
           docker push "$REGISTRY/$ECR_API_REPO:$TAG"
-          docker push "$REGISTRY/$ECR_UAAP_REPO:$TAG"
           echo "api_image=$REGISTRY/$ECR_API_REPO:$TAG" >> "$GITHUB_OUTPUT"
-          echo "uaap_image=$REGISTRY/$ECR_UAAP_REPO:$TAG" >> "$GITHUB_OUTPUT"
+          if [ -n "$DEPLOY_UAAP" ]; then
+            docker build -t "$REGISTRY/$ECR_UAAP_REPO:$TAG" backend/services/uaap
+            docker push "$REGISTRY/$ECR_UAAP_REPO:$TAG"
+            echo "uaap_image=$REGISTRY/$ECR_UAAP_REPO:$TAG" >> "$GITHUB_OUTPUT"
+          fi
 
       # Migrations run first, as a one-off task of the API task definition with a command override.
       - name: Run database migrations
@@ -129,6 +134,7 @@ jobs:
           aws ecs update-service --cluster "$CLUSTER" --service qavril-staging-worker --task-definition "$arn" >/dev/null
 
       - name: Roll the agent service
+        if: env.DEPLOY_UAAP == 'yes'
         run: |
           aws ecs describe-task-definition --task-definition qavril-staging-uaap --query taskDefinition > td.json
           jq --arg img "${{ steps.build.outputs.uaap_image }}" 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image=$img' td.json > td-new.json
@@ -136,4 +142,4 @@ jobs:
           aws ecs update-service --cluster "$CLUSTER" --service qavril-staging-uaap --task-definition "$arn" >/dev/null
 
       - name: Wait for the services to settle
-        run: aws ecs wait services-stable --cluster "$CLUSTER" --services qavril-staging-api qavril-staging-worker qavril-staging-uaap
+        run: aws ecs wait services-stable --cluster "$CLUSTER" --services qavril-staging-api qavril-staging-worker ${DEPLOY_UAAP:+qavril-staging-uaap}
