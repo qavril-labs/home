@@ -1,7 +1,8 @@
 // Background worker: relays committed outbox events into BullMQ (PLT-06) and runs queue workers.
 // Needs DATABASE_URL (the core database, as the non-superuser app role) and REDIS_URL.
 import { OutboxDispatcher } from "@erp/events";
-import { PgOutboxStore, createPool } from "@erp/db";
+import { PgNotificationStore, PgOutboxStore, createPool } from "@erp/db";
+import { ConsoleEmailProvider, EMAIL_SEND_JOB, SesEmailProvider, createEmailSendHandler, loadSesConfig, type EmailSendJob } from "@erp/notifications";
 import { QUEUES, QueueEventSink, createQueue, createWorker, redisConnection } from "@erp/queue";
 
 function required(name: string): string {
@@ -28,6 +29,19 @@ const eventsWorker = createWorker(QUEUES.events, connection, async (job) => {
   console.log(JSON.stringify({ level: "info", msg: "event received", type: job.name, id: job.id }));
 });
 
+// Email (PLT-10): sends queued messages through Amazon SES, or logs them when SES_FROM_ADDRESS is unset.
+const sesConfig = loadSesConfig(process.env);
+const emailProvider = sesConfig ? new SesEmailProvider(sesConfig) : new ConsoleEmailProvider();
+const sendEmail = createEmailSendHandler(new PgNotificationStore(pool), emailProvider);
+const notificationsWorker = createWorker<EmailSendJob>(QUEUES.notifications, connection, async (job) => {
+  if (job.name !== EMAIL_SEND_JOB) {
+    throw new Error(`Unknown notifications job: ${job.name}`);
+  }
+  const record = await sendEmail(job);
+  console.log(JSON.stringify({ level: "info", msg: "email sent", id: record.id, tenantId: record.tenantId }));
+  return { id: record.id };
+});
+
 let stopping = false;
 let timer: NodeJS.Timeout | undefined;
 
@@ -49,6 +63,7 @@ async function shutdown(): Promise<void> {
   stopping = true;
   if (timer) clearTimeout(timer);
   await eventsWorker.close();
+  await notificationsWorker.close();
   await eventsQueue.close();
   connection.disconnect();
   await pool.end();
@@ -58,5 +73,5 @@ async function shutdown(): Promise<void> {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
-console.log(JSON.stringify({ level: "info", msg: "worker started", redis: redisUrl.replace(/\/\/.*@/, "//***@"), relayEveryMs }));
+console.log(JSON.stringify({ level: "info", msg: "worker started", redis: redisUrl.replace(/\/\/.*@/, "//***@"), relayEveryMs, email: sesConfig ? "ses" : "console" }));
 void relay();

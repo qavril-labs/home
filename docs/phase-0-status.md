@@ -15,7 +15,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
-| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security | API routes, worker job that sends queued mail, bounce handling, SMS, WhatsApp, push, template management |
+| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send) | API routes, bounce handling, SMS, WhatsApp, push, template management |
 | PLT-11 | Documents & Files | Not started | | Storage, versions, retention, e-signature |
 | PLT-12 | Print & PDF | Not started | | Templates, PDF output, labels |
 | PLT-13 | Reporting & BI | Not started | | Report builder, dashboards |
