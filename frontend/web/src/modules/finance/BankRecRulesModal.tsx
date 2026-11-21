@@ -38,6 +38,9 @@ export const BankRecRulesModal: React.FC<BankRecRulesModalProps> = ({ isOpen, on
       size="xl"
     >
       <div className="space-y-6 pb-6 text-xs font-sans">
+        <div className="p-3 border-line bg-yellow/30 text-ink font-bold" role="note">
+          Sample data. This studio is a preview and is not connected to your records yet. Live bank lines are on the Bank Reconciliation page; custom rules need a backend that is not built yet.
+        </div>
         {/* Status Strip */}
         <div className="p-4 bg-page border-line flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">

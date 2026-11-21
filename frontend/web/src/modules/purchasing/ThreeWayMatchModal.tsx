@@ -33,6 +33,9 @@ export const ThreeWayMatchModal: React.FC<ThreeWayMatchModalProps> = ({ isOpen, 
       size="xl"
     >
       <div className="space-y-6 pb-6 text-xs font-sans">
+        <div className="p-3 border-line bg-yellow/30 text-ink font-bold" role="note">
+          Sample data. This studio is a preview and is not connected to your records yet. Live matches are on the Purchasing page.
+        </div>
         {/* Navigation Selector */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-3 bg-page border-line">
           <div className="flex items-center gap-2">
