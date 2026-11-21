@@ -8,7 +8,7 @@ import { Button } from "../components/ui/Button";
 import { useToast } from "../context/ToastContext";
 import { formatMoney } from "../lib/currency";
 import { initialMockInvoicesSummary } from "../lib/api-mock";
-import { apiClient } from "../lib/api-client";
+import { apiClient, describeReminderOutcome } from "../lib/api-client";
 import type {
   CustomerStatement,
   Invoice,
@@ -100,12 +100,11 @@ export const InvoicesPage: React.FC<InvoicesPageProps> = ({
   };
 
   const handleSendReminder = async (draft: ReminderDraft) => {
-    await apiClient.sendPaymentReminder(draft.invoiceId, draft);
-    showToast(
-      `Chase Chloe dispatched ${draft.tone} payment reminder to ${draft.recipient}`,
-      { type: "success" }
-    );
-    setReminderCandidate(null);
+    const result = await apiClient.sendPaymentReminder(draft.invoiceId, draft);
+    const outcome = describeReminderOutcome(result, draft.recipient);
+    showToast(outcome.text, { type: outcome.type });
+    // Close the modal only when the server took the reminder; otherwise keep it open to retry.
+    if (result.isLive) setReminderCandidate(null);
   };
 
   return (

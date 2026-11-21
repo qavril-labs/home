@@ -300,6 +300,30 @@ export function mapWireToAccount(wire: OpenApiAccountWire): Account {
 // Contract API Client Singleton
 // ---------------------------------------------------------------------------
 
+export interface ReminderDispatchResult {
+  invoiceId: string;
+  sentAt?: string;
+  status: "draft" | "approved" | "sent";
+  notificationId?: string | null;
+}
+
+/** What to tell the user after a reminder request. Never claims a send that did not happen. */
+export function describeReminderOutcome(
+  result: ApiResult<ReminderDispatchResult>,
+  recipient: string
+): { type: "success" | "warning"; text: string } {
+  if (!result.isLive) {
+    return { type: "warning", text: "Could not reach the server. The reminder was not sent." };
+  }
+  if (result.data.status === "sent") {
+    return { type: "success", text: `Reminder queued for delivery to ${recipient}.` };
+  }
+  return {
+    type: "warning",
+    text: "Reminder saved as approved but not delivered. Email delivery is not available for this reminder.",
+  };
+}
+
 export const apiClient = {
   // ── MDM-01: Parties (Customers & Suppliers) ───────────────────────────────
   async listParties(params?: {
@@ -625,20 +649,19 @@ export const apiClient = {
   async sendPaymentReminder(
     invoiceId: string,
     draft: ReminderDraft
-  ): Promise<ApiResult<{ invoiceId: string; sentAt: string }>> {
+  ): Promise<ApiResult<ReminderDispatchResult>> {
     const endpoint = "/v1/invoicing/reminders";
     try {
-      const res = await requestJson<{ invoiceId: string; sentAt: string }>(
-        endpoint,
-        {
-          method: "POST",
-          body: JSON.stringify({ ...draft, invoiceId }),
-        }
-      );
+      // status "sent" asks the server to dispatch. The server answers "sent" only when the message
+      // was queued for delivery, and "approved" when it could not be delivered.
+      const res = await requestJson<ReminderDispatchResult>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ ...draft, invoiceId, status: "sent" }),
+      });
       return { data: res, isLive: true, endpoint };
     } catch {
       return {
-        data: { invoiceId, sentAt: new Date().toISOString() },
+        data: { invoiceId, sentAt: new Date().toISOString(), status: "draft", notificationId: null },
         isLive: false,
         endpoint,
       };

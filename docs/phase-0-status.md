@@ -96,4 +96,4 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 - **Tenant-prefixed session tokens** so the server selects the tenant before any query runs.
 - **Transactional outbox** for events, so no event is published for a rolled-back change.
 
-- `POST /v1/invoicing/reminders` used to record every reminder as sent without sending anything. It now queues email, and records WhatsApp, or email with no queue, as approved. The web app should show `approved` as not yet delivered.
+- `POST /v1/invoicing/reminders` used to record every reminder as sent without sending anything. It now queues email, and records WhatsApp, or email with no queue, as approved. The invoices page and the Chase Chloe screen now ask the server to dispatch, and say "queued for delivery", "saved as approved but not delivered", or "was not sent" from the real result. The Chase Chloe e2e spec covers the not-sent path only (the e2e run has no live API).

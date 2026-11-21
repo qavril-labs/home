@@ -72,9 +72,11 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
     // Approve & Deliver
     await page.getByRole("button", { name: "Approve & Deliver Reminder" }).click();
 
-    // Modal closes and reminder status updates
-    await expect(page.getByRole("heading", { name: "Review Payment Reminder Draft" })).not.toBeVisible();
-    await expect(page.getByText("✓ Reminder Sent").first()).toBeVisible();
+    // The demo invoices are not real API records, so the server refuses the reminder. The screen
+    // must say so and must not claim a send: the modal stays open for a retry.
+    await expect(page.getByText(/was not sent/i).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Review Payment Reminder Draft" })).toBeVisible();
+    await expect(page.getByText("✓ Reminder Sent")).toHaveCount(0);
   });
 
   test("Opens Customer Statement Drawer and views transaction history", async ({ page }) => {

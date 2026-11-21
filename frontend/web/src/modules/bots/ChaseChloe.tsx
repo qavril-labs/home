@@ -6,6 +6,7 @@ import { SendReminderModal } from "./SendReminderModal";
 import { CustomerStatementDrawer } from "./CustomerStatementDrawer";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
+import { apiClient, describeReminderOutcome } from "../../lib/api-client";
 import {
   initialChaseChloeData,
   initialOverdueInvoices,
@@ -96,54 +97,29 @@ export const ChaseChloe: React.FC<ChaseChloeProps> = ({ onNavigateBack }) => {
   };
 
   // Reminder Dispatch Handler (Tier 2 Supervisor Action)
-  const handleSendReminder = (draft: ReminderDraft) => {
-    // Update invoice status in memory
+  const handleSendReminder = async (draft: ReminderDraft) => {
+    const result = await apiClient.sendPaymentReminder(draft.invoiceId, draft);
+    const outcome = describeReminderOutcome(result, draft.recipientName);
+    if (!result.isLive) {
+      // Nothing reached the server: keep the draft as it was so it can be retried.
+      showToast(outcome.text, { type: "warning" });
+      return;
+    }
+    const delivered = result.data.status === "sent";
     setInvoices((prev) =>
-      prev.map((inv) => {
-        if (inv.id === draft.invoiceId) {
-          return {
-            ...inv,
-            status: "reminder_sent",
-            draftReminder: {
-              ...draft,
-              status: "sent",
-            },
-          };
-        }
-        return inv;
-      })
+      prev.map((inv) =>
+        inv.id === draft.invoiceId
+          ? {
+              ...inv,
+              status: delivered ? "reminder_sent" : inv.status,
+              draftReminder: { ...draft, status: delivered ? "sent" : "approved" },
+            }
+          : inv
+      )
     );
-
     setActiveReminderInvoice(null);
-
-    showToast(
-      `${draft.channel === "whatsapp" ? "WhatsApp" : "Email"} reminder sent to ${
-        draft.recipientName
-      } for invoice ${draft.invoiceId}.`,
-      {
-        type: "success",
-        undoAction: () => {
-          setInvoices((prev) =>
-            prev.map((inv) => {
-              if (inv.id === draft.invoiceId) {
-                return {
-                  ...inv,
-                  status: "overdue",
-                  draftReminder: {
-                    ...draft,
-                    status: "draft",
-                  },
-                };
-              }
-              return inv;
-            })
-          );
-          showToast(`Reversed reminder dispatch for invoice ${draft.invoiceId}.`, {
-            type: "info",
-          });
-        },
-      }
-    );
+    // A queued email cannot be taken back, so there is no undo here.
+    showToast(outcome.text, { type: outcome.type });
   };
 
   // Open Statement Drawer
