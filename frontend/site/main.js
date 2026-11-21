@@ -645,7 +645,8 @@
         signal: signal
       });
       if (sRes.ok) {
-        var settings = await sRes.json();
+        var settingsBody = await sRes.json();
+        var settings = settingsBody && settingsBody.settings ? settingsBody.settings : null;
         // Dynamic ticker announcement
         if (settings && settings.announcement_text && settings.announcement_active !== false) {
           var tickerTracks = document.querySelectorAll(".ticker-track");
@@ -680,7 +681,8 @@
         signal: signal
       });
       if (pRes.ok) {
-        var page = await pRes.json();
+        var pageBody = await pRes.json();
+        var page = pageBody && pageBody.page ? pageBody.page : null;
         if (page && page.is_published !== false) {
           if (page.title) document.title = page.title;
           var kicker = document.querySelector("main .kicker, .hero-copy .kicker");
@@ -707,8 +709,9 @@
           signal: signal
         });
         if (fRes.ok) {
-          var faqs = await fRes.json();
-          if (Array.isArray(faqs) && faqs.length > 0) {
+          var faqBody = await fRes.json();
+          var faqs = faqBody && Array.isArray(faqBody.faqs) ? faqBody.faqs : [];
+          if (faqs.length > 0) {
             var mainEl = document.querySelector("main");
             if (mainEl) {
               var existingDynamic = document.getElementById("cms-dynamic-faqs");
@@ -744,8 +747,9 @@
           signal: signal
         });
         if (aRes.ok) {
-          var articles = await aRes.json();
-          if (Array.isArray(articles) && articles.length > 0) {
+          var articleBody = await aRes.json();
+          var articles = articleBody && Array.isArray(articleBody.articles) ? articleBody.articles : [];
+          if (articles.length > 0) {
             var gridEl = document.querySelector("main .grid");
             if (gridEl) {
               var existingDynamicGrid = document.getElementById("cms-dynamic-articles");
@@ -753,9 +757,9 @@
                 var dynGrid = document.createElement("div");
                 dynGrid.id = "cms-dynamic-articles";
                 dynGrid.style.display = "contents";
-                dynGrid.innerHTML = articles.filter(function (a) { return a.is_published; }).map(function (a) {
+                dynGrid.innerHTML = articles.filter(function (a) { return a.is_published !== false; }).map(function (a) {
                   return '<article class="item card-link" style="border: 3px solid var(--black); box-shadow: 4px 4px 0 var(--black); background: var(--cream);">' +
-                         '<span class="kicker" style="font-size: 10px; margin-bottom: 6px;">' + (a.category || 'LIVE ARTICLE') + '</span>' +
+                         '<span class="kicker" style="font-size: 10px; margin-bottom: 6px;">' + (a.category_tag || 'LIVE ARTICLE') + '</span>' +
                          '<h3>' + (a.title || '') + '</h3>' +
                          '<p>' + (a.excerpt || (a.content || '').substring(0, 120) + '...') + '</p>' +
                          '<span class="more" style="font-weight: 700;">' + (a.read_time || '5 min read') + ' &rarr;</span>' +
