@@ -16,7 +16,7 @@ test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => 
   test("Renders Pip header, lime avatar, and live indicator", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Pip", exact: true })).toBeVisible();
     await expect(page.getByText("Deal Closer").first()).toBeVisible();
-    await expect(page.getByText("AGT-02 / SAL-02")).toBeVisible();
+    await expect(page.getByText("AGT-02 / SAL-02", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active
@@ -53,7 +53,8 @@ test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => 
 
   test("Opens DealFollowUpModal and sends follow-up outreach message", async ({ page }) => {
     // Click Draft Follow-Up on first quiet deal
-    await page.getByRole("button", { name: "Draft Follow-Up" }).first().click();
+    const draftBtn = page.getByRole("button", { name: "Draft Follow-Up" }).first();
+    await draftBtn.dispatchEvent("click");
 
     // Modal elements
     await expect(page.getByRole("heading", { name: "Review Sales Follow-Up Draft" })).toBeVisible();

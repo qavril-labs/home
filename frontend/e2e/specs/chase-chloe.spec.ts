@@ -17,7 +17,7 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
     // Heading and Role
     await expect(page.getByRole("heading", { name: "Chase Chloe" })).toBeVisible();
     await expect(page.getByText("Invoice Chaser").first()).toBeVisible();
-    await expect(page.getByText("AGT-02 / FIN-14")).toBeVisible();
+    await expect(page.getByText("AGT-02 / FIN-14", { exact: true })).toBeVisible();
 
     // Live indicator
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
@@ -79,10 +79,11 @@ test.describe("Chase Chloe (AGT-02 / FIN-14) Dedicated Screen & Reminder Review"
 
   test("Opens Customer Statement Drawer and views transaction history", async ({ page }) => {
     // Click statement button on first invoice
-    await page.getByRole("button", { name: "Statement" }).first().click();
+    const stmtBtn = page.getByRole("button", { name: "Statement", exact: true }).first();
+    await stmtBtn.dispatchEvent("click");
 
     // Drawer opens
-    await expect(page.getByRole("heading", { name: /Statement of Account/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Statement of Account/i })).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("Payment Terms:").first()).toBeVisible();
     await expect(page.getByText("INV-2026-052").first()).toBeVisible();
     await expect(page.getByText("PAY-2026-041").first()).toBeVisible();

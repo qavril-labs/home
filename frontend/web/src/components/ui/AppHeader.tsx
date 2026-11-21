@@ -8,6 +8,8 @@ export interface AppHeaderProps {
   activeTab?: string;
   syncStatus?: "connected" | "connecting" | "disconnected";
   onOpenCommandBar?: () => void;
+  onOpenThreeWayMatch?: () => void;
+  onOpenBankRecRules?: () => void;
   onSignOut?: () => void;
   onToggleSidebar?: () => void;
 }
@@ -17,6 +19,8 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   activeTab = "dashboard",
   syncStatus = "connected",
   onOpenCommandBar,
+  onOpenThreeWayMatch,
+  onOpenBankRecRules,
   onSignOut,
   onToggleSidebar,
 }) => {
@@ -60,6 +64,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           {/* Quick search shortcut trigger */}
           <button
             onClick={onOpenCommandBar}
+            aria-label="Search actions (Ctrl+K)"
             className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-cream text-muted shrink-0"
             title="Open quick command palette (Ctrl+K)"
           >
@@ -69,6 +74,30 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               Ctrl+K
             </kbd>
           </button>
+
+          {/* 3-Way Match Audit Trigger (PRC-04) */}
+          {onOpenThreeWayMatch && (
+            <button
+              type="button"
+              onClick={onOpenThreeWayMatch}
+              className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-lime hover:text-ink transition-colors cursor-pointer shrink-0"
+              title="Open Automated 3-Way Match Studio (PO ⟷ GRN ⟷ Bill)"
+            >
+              <span>3-Way Match</span>
+            </button>
+          )}
+
+          {/* Bank Rec Auto-Rules Trigger (FIN-04) */}
+          {onOpenBankRecRules && (
+            <button
+              type="button"
+              onClick={onOpenBankRecRules}
+              className="hidden lg:flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold bg-page border-line shadow-[2px_2px_0_var(--q-ink)] hover:bg-yellow hover:text-ink transition-colors cursor-pointer shrink-0"
+              title="Open Automated Bank Reconciliation Engine"
+            >
+              <span>Bank Rec Rules</span>
+            </button>
+          )}
 
           {/* Workspace badge */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-page border-line shadow-[2px_2px_0_var(--q-ink)]">
@@ -122,12 +151,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             )}
           </button>
 
-          {/* Sign Out (Desktop / Tablet) */}
+          {/* Sign Out */}
           <Button
             variant="ghost"
             size="sm"
             onClick={onSignOut}
-            className="hidden sm:inline-flex"
+            className="inline-flex px-2 sm:px-3 shrink-0"
           >
             Sign out
           </Button>

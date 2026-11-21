@@ -6,10 +6,13 @@ import path from "node:path";
 export default defineConfig({
   base: process.env.VITE_BASE || "/",
   plugins: [react()],
+  css: {
+    postcss: path.resolve(__dirname, "./postcss.config.cjs"),
+  },
   server: {
-    port: 5173,
+    port: Number(process.env.VITE_PORT || 5173),
     host: "127.0.0.1",
-    strictPort: true,
+    strictPort: false,
   },
   resolve: {
     alias: {

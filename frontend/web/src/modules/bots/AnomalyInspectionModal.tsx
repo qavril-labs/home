@@ -91,7 +91,7 @@ export const AnomalyInspectionModal: React.FC<AnomalyInspectionModalProps> = ({
           <span className="text-[10px] font-bold uppercase text-muted block mb-1">
             Audit Finding Evidence & Details
           </span>
-          <p className="text-xs text-text font-medium leading-relaxed">
+          <p className="text-xs text-text font-medium leading-relaxed break-words">
             {finding.details}
           </p>
         </div>

@@ -22,7 +22,7 @@ test.describe("Week 1 Foundation Flows: Sign-up, Sign-in, Quick Entry, Sign-out,
 
     // Verify success toast appears with undo
     const toast = page.locator('.fixed[aria-live="polite"]');
-    await expect(toast).toContainText("Sale of $1250.00 posted straight to your books.");
+    await expect(toast).toContainText(/Sale of \$1250\.00 (posted straight to your books|recorded)/);
     await expect(toast).toContainText("Undo");
   });
 

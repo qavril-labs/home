@@ -3,6 +3,7 @@ import { StatusChip } from "../../components/ui/StatusChip";
 import { Button } from "../../components/ui/Button";
 import { Drawer } from "../../components/ui/Drawer";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
+import { AgentAssistanceBanner } from "../../components/ui/AgentAssistanceBanner";
 import { UnpostedEntriesModal } from "./UnpostedEntriesModal";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
@@ -267,7 +268,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
 
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight break-words">
                   Ledger Lou
                 </h1>
                 <span className="px-2 py-0.5 bg-cyan/20 border border-cyan text-[11px] font-bold text-ink uppercase tracking-wider">
@@ -278,7 +279,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal">
+              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal break-words">
                 Continuous month-end checking: verifies trial balance zero-sum invariants, reconciles bank balances against general ledger, drafts depreciation entries, and prepares fiscal period locks.
               </p>
             </div>
@@ -347,10 +348,10 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-grid">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted break-words">
               Live Invariant & Closing Status
             </h2>
-            <p className="text-xs text-text font-medium mt-0.5">
+            <p className="text-xs text-text font-medium mt-0.5 break-words">
               Continuous monitoring of General Ledger zero-sum balance and closing requirements.
             </p>
           </div>
@@ -391,7 +392,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
               <span className="font-display font-black text-lg text-text">Zero Diff</span>
               <span className="text-xs font-mono font-bold text-good">Δ $0.00</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">142 journals balanced</p>
+            <p className="text-[11px] text-muted mt-1 break-words">142 journals balanced</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -402,7 +403,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
               <span className="font-display font-black text-lg text-text">$42,150.00</span>
               <span className="text-xs font-mono font-bold text-good">100% matched</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Statement reconciled</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Statement reconciled</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -421,7 +422,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 {unpostedEntries.length} items
               </span>
             </div>
-            <p className="text-[11px] text-muted mt-1">
+            <p className="text-[11px] text-muted mt-1 break-words">
               {unpostedEntries.length > 0 ? "Tier 2 drafts pending" : "All drafts posted"}
             </p>
           </div>
@@ -440,10 +441,30 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 {isPeriodLocked ? "Locked" : "Open"}
               </span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Period close target: Nov 30</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Period close target: Nov 30</p>
           </div>
         </div>
       </section>
+
+      {/* 3b. Proactive Copilot Human-In-The-Loop Task Assistance */}
+      {unpostedEntries.length > 0 && isKillSwitchActive && (
+        <AgentAssistanceBanner
+          botName="Ledger Lou"
+          catalogId="AGT-03 / FIN-13"
+          accentColor="cyan"
+          taskSummary={`${unpostedEntries.length} Period-End Entries Prepared & Balanced`}
+          recommendation="Lou has verified double-entry invariants, depreciation schedules, and accruals. Approving these draft postings reconciles general ledger accounts and eliminates manual bookkeeping data entry while preserving full human audit signoff."
+          evidencePoints={[
+            `Draft Amount: $${data.totalDraftAmount}`,
+            "Variance: $0.00 (Balanced)",
+            "Governance: Tier 3 Human Sign-off Required",
+          ]}
+          primaryActionLabel="Review & Post Journals"
+          onPrimaryAction={() => setIsUnpostedModalOpen(true)}
+          secondaryActionLabel="Open Bank Reconciliation"
+          onSecondaryAction={() => setIsBankDrawerOpen(true)}
+        />
+      )}
 
       {/* 4. Month-End Review & Ledger Verification Hub */}
       <section
@@ -530,24 +551,24 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                       className="hover:bg-page/70 transition-colors"
                     >
                       {/* Item & Description */}
-                      <td className="py-3 px-3 align-top max-w-xs">
+                      <td className="py-3 px-3 align-top max-w-xs break-words">
                         <div className="font-bold text-sm text-text flex items-center gap-1.5">
                           {item.title}
                         </div>
-                        <p className="text-xs text-muted mt-0.5 leading-snug">
+                        <p className="text-xs text-muted mt-0.5 leading-snug break-words">
                           {item.description}
                         </p>
                       </td>
 
                       {/* Target Account */}
-                      <td className="py-3 px-3 align-top font-mono text-xs text-text font-semibold">
+                      <td className="py-3 px-3 align-top font-mono text-xs text-text font-semibold break-words">
                         <span className="px-2 py-0.5 bg-page border border-grid">
                           {item.targetAccount}
                         </span>
                       </td>
 
                       {/* Figures */}
-                      <td className="py-3 px-3 align-top">
+                      <td className="py-3 px-3 align-top break-words">
                         <div className="space-y-1">
                           {item.figures.map((fig, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
@@ -619,21 +640,21 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 <tbody className="divide-y divide-grid">
                   {mockTrialBalanceData.map((row: TrialBalanceRow) => (
                     <tr key={row.code} className="hover:bg-page/70 transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-text">
+                      <td className="py-2 px-3 font-mono font-bold text-text break-words">
                         {row.code}
                       </td>
-                      <td className="py-2 px-3 font-medium text-text">
+                      <td className="py-2 px-3 font-medium text-text break-words">
                         {row.name}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-3 break-words">
                         <span className="px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-page border border-grid text-muted">
                           {row.type}
                         </span>
                       </td>
-                      <td className="py-2 px-3 font-mono font-bold text-right text-text">
+                      <td className="py-2 px-3 font-mono font-bold text-right text-text break-words">
                         {row.debit === "0.00" ? "-" : formatMoney(row.debit)}
                       </td>
-                      <td className="py-2 px-3 font-mono font-bold text-right text-text">
+                      <td className="py-2 px-3 font-mono font-bold text-right text-text break-words">
                         {row.credit === "0.00" ? "-" : formatMoney(row.credit)}
                       </td>
                     </tr>
@@ -644,10 +665,10 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                     <td colSpan={3} className="py-2.5 px-3 uppercase tracking-wider text-text">
                       Total Balanced Sums
                     </td>
-                    <td className="py-2.5 px-3 font-mono font-black text-right text-text">
+                    <td className="py-2.5 px-3 font-mono font-black text-right text-text break-words">
                       $173,370.50
                     </td>
-                    <td className="py-2.5 px-3 font-mono font-black text-right text-text">
+                    <td className="py-2.5 px-3 font-mono font-black text-right text-text break-words">
                       $173,370.50
                     </td>
                   </tr>
@@ -684,24 +705,24 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 <tbody className="divide-y divide-grid">
                   {mockCurrencyBalanceData.map((row: CurrencyBalanceRow) => (
                     <tr key={row.currency} className="hover:bg-page/70 transition-colors">
-                      <td className="py-2.5 px-3 font-mono font-bold text-text">
+                      <td className="py-2.5 px-3 font-mono font-bold text-text break-words">
                         <span className="px-2 py-0.5 bg-page border border-line">
                           {row.currency}
                         </span>
                       </td>
-                      <td className="py-2.5 px-3 text-muted font-medium">
+                      <td className="py-2.5 px-3 text-muted font-medium break-words">
                         {row.journalCount} entries
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text">
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text break-words">
                         {formatMoney(row.totalDebit)}
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text">
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-text break-words">
                         {formatMoney(row.totalCredit)}
                       </td>
-                      <td className="py-2.5 px-3 font-mono font-bold text-right text-good">
+                      <td className="py-2.5 px-3 font-mono font-bold text-right text-good break-words">
                         Δ {formatMoney(row.variance)}
                       </td>
-                      <td className="py-2.5 px-3 text-center">
+                      <td className="py-2.5 px-3 text-center break-words">
                         <StatusChip status="good" label="✓ Balanced" />
                       </td>
                     </tr>
@@ -719,10 +740,10 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
         <div className="lg:col-span-7 neo-card p-4 bg-panel border-line shadow-card">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-grid">
             <div>
-              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
                 Lou Activity Log
               </h3>
-              <p className="text-[11px] text-muted">
+              <p className="text-[11px] text-muted break-words">
                 Audit trail of recent invariant evaluations and reconciliation alerts.
               </p>
             </div>
@@ -767,7 +788,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-text truncate">{feed.event}</p>
-                  <p className="text-[11px] text-muted mt-0.5">{feed.result}</p>
+                  <p className="text-[11px] text-muted mt-0.5 break-words">{feed.result}</p>
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -787,7 +808,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
         <div className="lg:col-span-5 neo-card p-4 bg-panel border-line shadow-card space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-grid">
             <ShieldCheck className="w-4 h-4 text-good" />
-            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
               Agent Guardrails (AGT-03)
             </h3>
           </div>
@@ -795,21 +816,21 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
           <div className="space-y-2 text-xs">
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Non-Autonomous Period Close</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Ledger Lou reads and flags invariants. It never locks periods or posts journals without Tier 3 human approval.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Strict Token Conformance</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Avatar colors (cyan design token) and status indicators strictly honor QAVRIL design tokens.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Deterministic Provenance</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Every calculation cites its underlying register schedule (FIN-04, FIN-13) and maintains double-entry equality.
               </p>
             </div>
@@ -852,7 +873,7 @@ export const LedgerLou: React.FC<LedgerLouProps> = ({ onNavigateBack }) => {
             </div>
           </div>
 
-          <h3 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted">
+          <h3 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted break-words">
             Cleared Statement Lines
           </h3>
 

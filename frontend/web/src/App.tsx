@@ -1,8 +1,16 @@
 import React, { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
 import { Sidebar } from "./components/ui/Sidebar";
-import { CommandBar } from "./components/ui/CommandBar";
 import { ToastContainer } from "./components/ui/Toast";
+const CommandBar = lazy(() =>
+  import("./components/ui/CommandBar").then((m) => ({ default: m.CommandBar }))
+);
+const ThreeWayMatchModal = lazy(() =>
+  import("./modules/purchasing/ThreeWayMatchModal").then((m) => ({ default: m.ThreeWayMatchModal }))
+);
+const BankRecRulesModal = lazy(() =>
+  import("./modules/finance/BankRecRulesModal").then((m) => ({ default: m.BankRecRulesModal }))
+);
 import { Gate } from "./components/ui/Gate";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
@@ -88,6 +96,8 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => getTabFromLocation());
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
+  const [isThreeWayMatchOpen, setIsThreeWayMatchOpen] = useState<boolean>(false);
+  const [isBankRecRulesOpen, setIsBankRecRulesOpen] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
   const [parties, setParties] = useState<Party[]>(initialMockParties);
@@ -576,6 +586,8 @@ export const App: React.FC = () => {
           activeTab={activeTab}
           syncStatus={syncStatus}
           onOpenCommandBar={() => setIsCommandBarOpen(true)}
+          onOpenThreeWayMatch={() => setIsThreeWayMatchOpen(true)}
+          onOpenBankRecRules={() => setIsBankRecRulesOpen(true)}
           onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
           onSignOut={() => {
             setApiSessionToken(null);
@@ -836,14 +848,38 @@ export const App: React.FC = () => {
         </Suspense>
 
       {/* Global CommandBar (Ctrl+K) */}
-      <CommandBar
-        isOpen={isCommandBarOpen}
-        onClose={() => setIsCommandBarOpen(false)}
-        onNavigate={navigateToTab}
-        onOpenQuickEntry={() => navigateToTab("dashboard")}
-        onOpenContactDrawer={() => navigateToTab("contacts")}
-        onOpenItemDrawer={() => navigateToTab("items")}
-      />
+      {isCommandBarOpen && (
+        <Suspense fallback={null}>
+          <CommandBar
+            isOpen={isCommandBarOpen}
+            onClose={() => setIsCommandBarOpen(false)}
+            onNavigate={navigateToTab}
+            onOpenQuickEntry={() => navigateToTab("dashboard")}
+            onOpenContactDrawer={() => navigateToTab("contacts")}
+            onOpenItemDrawer={() => navigateToTab("items")}
+          />
+        </Suspense>
+      )}
+
+      {/* PRC-04: Automated 3-Way Match Verification Modal */}
+      {isThreeWayMatchOpen && (
+        <Suspense fallback={null}>
+          <ThreeWayMatchModal
+            isOpen={isThreeWayMatchOpen}
+            onClose={() => setIsThreeWayMatchOpen(false)}
+          />
+        </Suspense>
+      )}
+
+      {/* FIN-04: Automated Bank Reconciliation Rules Modal */}
+      {isBankRecRulesOpen && (
+        <Suspense fallback={null}>
+          <BankRecRulesModal
+            isOpen={isBankRecRulesOpen}
+            onClose={() => setIsBankRecRulesOpen(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Global Toast Container */}
       <ToastContainer />

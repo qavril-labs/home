@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
 import { Button } from "../../components/ui/Button";
+import { AgentAssistanceBanner } from "../../components/ui/AgentAssistanceBanner";
 import { DealFollowUpModal } from "./DealFollowUpModal";
 import { PipelineFunnel3D } from "../../scenes/PipelineFunnel3D";
 import { useToast } from "../../context/ToastContext";
@@ -176,7 +177,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
 
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight break-words">
                   Pip
                 </h1>
                 <span className="px-2 py-0.5 bg-lime/30 border border-lime text-[11px] font-bold text-ink uppercase tracking-wider">
@@ -187,7 +188,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal">
+              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal break-words">
                 Continuous sales velocity assistant: flags quiet proposals nearing decision windows, drafts warm re-engagement outreach, monitors discount margins, and tracks probability-weighted pipeline.
               </p>
             </div>
@@ -252,10 +253,10 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-grid">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted break-words">
               Live Sales Pipeline Health Status
             </h2>
-            <p className="text-xs text-text font-medium mt-0.5">
+            <p className="text-xs text-text font-medium mt-0.5 break-words">
               Monitoring deal momentum across all commercial machining and fabrication tenders.
             </p>
           </div>
@@ -294,7 +295,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
               </span>
               <span className="text-xs font-mono font-bold text-good">Probability Wtd</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">$87,900.00 gross active pipeline</p>
+            <p className="text-[11px] text-muted mt-1 break-words">$87,900.00 gross active pipeline</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -307,7 +308,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
               </span>
               <span className="text-xs font-mono font-bold text-lime">In Flight</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Proposal & Negotiation stages</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Proposal & Negotiation stages</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -320,7 +321,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
               </span>
               <span className="text-xs font-mono font-bold text-good">&gt; 70% Target</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">High conversion efficiency</p>
+            <p className="text-[11px] text-muted mt-1 break-words">High conversion efficiency</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -333,10 +334,37 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
               </span>
               <span className="text-xs font-mono font-bold text-watch">&gt; 5d Inactive</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Vanguard & Kinetics tenders</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Vanguard & Kinetics tenders</p>
           </div>
         </div>
       </section>
+
+      {/* 3b. Proactive Copilot Human-In-The-Loop Task Assistance */}
+      {deals.some((d) => d.needsFollowUp) && isKillSwitchActive && (
+        <AgentAssistanceBanner
+          botName="Pip"
+          catalogId="AGT-02 / SAL-02"
+          accentColor="lime"
+          taskSummary="High-Value Opportunity Ready For Outreach"
+          recommendation="Pip analyzed sales deal velocity and found Vanguard Aerospace ($45,000.00 tender) has been quiet for 6 days. Pip pre-composed an executive update email with technical specifications ready for human review and dispatch."
+          evidencePoints={[
+            "Deal: Vanguard Aerospace Titanium Machining ($45,000.00)",
+            "Stage: Discovery · 40% Win Probability",
+            "Human In The Loop: Full message editing before send",
+          ]}
+          primaryActionLabel="Review & Send Follow-Up"
+          onPrimaryAction={() => {
+            const quietDeal = deals.find((d) => d.needsFollowUp);
+            if (quietDeal) {
+              setSelectedDeal(quietDeal);
+            }
+          }}
+          secondaryActionLabel="Snooze Follow-Up (48h)"
+          onSecondaryAction={() => {
+            showToast("Outreach reminder postponed for 48 hours.", { type: "info" });
+          }}
+        />
+      )}
 
       {/* 4. Pipeline Funnel & Deals Table */}
       <section
@@ -345,11 +373,11 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-grid">
           <div>
-            <h2 className="font-display font-extrabold text-lg uppercase tracking-tight text-text leading-tight flex items-center gap-2">
+            <h2 className="font-display font-extrabold text-lg uppercase tracking-tight text-text leading-tight flex items-center gap-2 break-words">
               <Target className="w-5 h-5 text-lime" />
               <span>Commercial Pipeline Funnel & Opportunities (SAL-02)</span>
             </h2>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-xs text-muted mt-0.5 break-words">
               Review deal velocity, draft customer re-engagements, and keep active tenders moving.
             </p>
           </div>
@@ -398,7 +426,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
               {deals.map((deal) => (
                 <tr key={deal.id} className="hover:bg-page/70 transition-colors">
                   {/* Opportunity & Customer */}
-                  <td className="py-3 px-3 align-top max-w-sm">
+                  <td className="py-3 px-3 align-top max-w-sm break-words">
                     <div className="font-bold text-sm text-text leading-tight">
                       {deal.title}
                     </div>
@@ -410,7 +438,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
                   </td>
 
                   {/* Stage & Probability */}
-                  <td className="py-3 px-3 align-top">
+                  <td className="py-3 px-3 align-top break-words">
                     <span className="px-2 py-0.5 bg-page border border-line font-bold text-[11px] text-text">
                       {deal.stage}
                     </span>
@@ -420,12 +448,12 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
                   </td>
 
                   {/* Deal Value */}
-                  <td className="py-3 px-3 align-top font-mono font-bold text-right text-xs text-text">
+                  <td className="py-3 px-3 align-top font-mono font-bold text-right text-xs text-text break-words">
                     {formatMoney(deal.amount)}
                   </td>
 
                   {/* Days Quiet */}
-                  <td className="py-3 px-3 align-top text-center">
+                  <td className="py-3 px-3 align-top text-center break-words">
                     {deal.daysQuiet > 0 ? (
                       <span
                         className={`inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-bold border ${
@@ -473,10 +501,10 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
         <div className="lg:col-span-7 neo-card p-4 bg-panel border-line shadow-card">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-grid">
             <div>
-              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
                 Pip Sales Velocity Stream
               </h3>
-              <p className="text-[11px] text-muted">
+              <p className="text-[11px] text-muted break-words">
                 Audit trail of quiet deal detections and proposal follow-up alerts.
               </p>
             </div>
@@ -515,7 +543,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-text truncate">{feed.event}</p>
-                  <p className="text-[11px] text-muted mt-0.5">{feed.result}</p>
+                  <p className="text-[11px] text-muted mt-0.5 break-words">{feed.result}</p>
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -531,7 +559,7 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
         <div className="lg:col-span-5 neo-card p-4 bg-panel border-line shadow-card space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-grid">
             <ShieldCheck className="w-4 h-4 text-good" />
-            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
               Agent Guardrails (AGT-02)
             </h3>
           </div>
@@ -539,21 +567,21 @@ export const Pip: React.FC<PipProps> = ({ onNavigateBack }) => {
           <div className="space-y-2 text-xs">
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Commercial Representative Sign-off</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Pip drafts outreach messages but never communicates with prospects without sales representative review and delivery approval.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Design Token Conformance</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Pip strictly employs <code className="font-bold">var(--q-lime)</code> (lime design token) for avatar and interface accents per <code>tokens.json</code>.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Margin Floor Enforcement</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Special discounts exceeding 18% automatically require Tier 3 authorization in the Approvals Inbox before commercial quotes can be locked.
               </p>
             </div>

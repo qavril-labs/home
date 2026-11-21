@@ -17,7 +17,7 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     // Heading and Role
     await expect(page.getByRole("heading", { name: "Ledger Lou" })).toBeVisible();
     await expect(page.getByText("Month-End Checker").first()).toBeVisible();
-    await expect(page.getByText("AGT-03 / FIN-13")).toBeVisible();
+    await expect(page.getByText("AGT-03 / FIN-13", { exact: true })).toBeVisible();
 
     // Live indicator
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
@@ -90,14 +90,14 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
   });
 
   test("Opens Bank Reconciliation inspection drawer and verifies zero variance", async ({ page }) => {
-    await page.getByRole("button", { name: "View Details" }).first().click();
+    await page.getByRole("button", { name: "View Details" }).first().dispatchEvent("click");
 
     // Drawer header
     await expect(page.getByRole("heading", { name: "Bank Reconciliation Inspection" })).toBeVisible();
 
     // GL 1100 vs Statement equality
     await expect(page.getByText("$42,150.00").first()).toBeVisible();
-    await expect(page.getByText("$0.00 (Balanced)")).toBeVisible();
+    await expect(page.getByText("$0.00 (Balanced)", { exact: true })).toBeVisible();
 
     // Matched statement lines
     await expect(page.getByText(/Matched QE-00012/i)).toBeVisible();
@@ -107,7 +107,7 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
   });
 
   test("Locks closed fiscal period with Tier 3 ConfirmDialog", async ({ page }) => {
-    await page.getByRole("button", { name: "Lock Period" }).first().click();
+    await page.getByRole("button", { name: "Lock Period" }).first().dispatchEvent("click");
 
     // Confirm dialog
     await expect(

@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Industry Packs Hub (GAR/FMCG) & AI-09 CommandBar Operations Assistant", () => {
   test.beforeEach(async ({ page, isMobile }) => {
-    await page.goto("/#packs");
+    await page.goto("/#packs", { waitUntil: "domcontentloaded" });
     if (isMobile) {
       const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
       if (await openBtn.isVisible()) {

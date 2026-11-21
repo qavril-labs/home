@@ -95,7 +95,7 @@ export const DealFollowUpModal: React.FC<DealFollowUpModalProps> = ({
         {/* Message Editor */}
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 break-words">
               <Sparkles className="w-3.5 h-3.5 text-lime" />
               <span>Personalized Outreach Message</span>
             </label>
@@ -113,7 +113,7 @@ export const DealFollowUpModal: React.FC<DealFollowUpModalProps> = ({
         </div>
 
         {/* Tier 2 Supervisor Note */}
-        <p className="text-[11px] text-muted leading-relaxed">
+        <p className="text-[11px] text-muted leading-relaxed break-words">
           Pip drafts quiet deal re-engagement messages but never contacts commercial prospects without representative approval.
         </p>
 

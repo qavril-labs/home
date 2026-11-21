@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { Button } from "./Button";
 import {
   LayoutDashboard,
   Users,
@@ -21,7 +20,6 @@ import {
   ChevronDown,
   ChevronRight,
   X,
-  LogOut,
 } from "lucide-react";
 
 export interface NavItem {
@@ -101,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
   workspaceName = "Apex Production",
-  onSignOut,
+  onSignOut: _onSignOut,
 }) => {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
 
@@ -228,24 +226,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           );
         })}
       </nav>
-
-      {/* Mobile Sign out Action (available via sidebar menu on mobile) */}
-      {onSignOut && (
-        <div className="p-3 border-t border-grid bg-panel shrink-0 md:hidden">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              onCloseMobile();
-              onSignOut();
-            }}
-            className="w-full justify-center text-xs font-bold flex items-center gap-2"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Sign out</span>
-          </Button>
-        </div>
-      )}
 
       {/* Footer Info */}
       <div className="p-3 border-t-line bg-page text-[11px] font-mono text-muted shrink-0 flex items-center justify-between">

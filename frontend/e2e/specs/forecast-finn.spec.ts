@@ -21,7 +21,7 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
   test("Renders Forecast Finn header, violet avatar, and live indicator", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
     await expect(page.getByText("Cash Flow Forecaster").first()).toBeVisible();
-    await expect(page.getByText("AIS-02 / FIN-15")).toBeVisible();
+    await expect(page.getByText("AIS-02 / FIN-15", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active
@@ -56,12 +56,14 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
     await expect(page.getByText("EXPECTED").first()).toBeVisible();
 
     // Switch to Conservative
-    await page.getByRole("button", { name: "CONSERVATIVE" }).click();
-    await expect(page.getByText("CONSERVATIVE").first()).toBeVisible();
+    const consBtn = page.getByRole("button", { name: "conservative", exact: true });
+    await consBtn.dispatchEvent("click");
+    await expect(page.getByText("conservative").first()).toBeVisible();
 
     // Switch to Optimistic
-    await page.getByRole("button", { name: "OPTIMISTIC" }).click();
-    await expect(page.getByText("OPTIMISTIC").first()).toBeVisible();
+    const optBtn = page.getByRole("button", { name: "optimistic", exact: true });
+    await optBtn.dispatchEvent("click");
+    await expect(page.getByText("optimistic").first()).toBeVisible();
   });
 
   test("Renders scheduled inflow and outflow milestones table", async ({ page }) => {

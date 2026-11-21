@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
+import { AgentAssistanceBanner } from "../../components/ui/AgentAssistanceBanner";
 import { CashRiver3D } from "../../scenes/CashRiver3D";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
@@ -158,7 +159,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
 
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight break-words">
                   Forecast Finn
                 </h1>
                 <span className="px-2 py-0.5 bg-violet/20 border border-violet text-[11px] font-bold text-ink uppercase tracking-wider">
@@ -169,7 +170,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal">
+              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal break-words">
                 Continuous working capital & cash river forecaster: models scheduled receivables against recurring opex and tax obligations across 30, 60, and 90-day liquidity horizons.
               </p>
             </div>
@@ -234,10 +235,10 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-grid">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted break-words">
               Live Cash Runway & Liquidity Status
             </h2>
-            <p className="text-xs text-text font-medium mt-0.5">
+            <p className="text-xs text-text font-medium mt-0.5 break-words">
               Monitoring bank liquidity against known recurring payables and customer remittance commitments.
             </p>
           </div>
@@ -272,7 +273,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
               </span>
               <span className="text-xs font-mono font-bold text-good">+15.6%</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Expected net operating gain</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Expected net operating gain</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -285,7 +286,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
               </span>
               <span className="text-xs font-mono font-bold text-good">&gt; 12m Target</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Sufficient liquidity cushion</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Sufficient liquidity cushion</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -298,7 +299,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
               </span>
               <span className="text-xs font-mono font-bold text-violet">Solid Buffer</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Absorbs quarterly tax dip</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Absorbs quarterly tax dip</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -311,10 +312,33 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
               </span>
               <span className="text-xs font-mono font-bold text-series-out">Fixed Opex</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Rent, wages & utilities</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Rent, wages & utilities</p>
           </div>
         </div>
       </section>
+
+      {/* 3b. Proactive Copilot Human-In-The-Loop Task Assistance */}
+      {isKillSwitchActive && (
+        <AgentAssistanceBanner
+          botName="Forecast Finn"
+          catalogId="AIS-02 / FIN-15"
+          accentColor="violet"
+          taskSummary="Day 60 Corporate Tax & Supplier Net 90 Outflow Advisory"
+          recommendation="Finn has projected a $14,200.00 cash dip at Day 60 due to concurrent quarterly corporate tax obligations. Finn suggests reviewing your scenario sensitivity from Expected to Conservative to prepare credit buffers, while leaving cash movements fully under your control."
+          evidencePoints={[
+            `Runway: ${data.runwayMonths} Months`,
+            `30-Day Cash: ${formatMoney(data.cash30Day)}`,
+            `60-Day Dip: -$14,200.00 Outlay`,
+          ]}
+          primaryActionLabel="Simulate Conservative Scenario"
+          onPrimaryAction={() => {
+            setScenario("conservative");
+            showToast("Switched Cash River scenario to Conservative stress-test.", { type: "info" });
+          }}
+          secondaryActionLabel="Open Financial Statements"
+          onSecondaryAction={onNavigateToFinancials}
+        />
+      )}
 
       {/* 4. Cash River Visualization & Scenario Controls */}
       <section
@@ -323,11 +347,11 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-grid">
           <div>
-            <h2 className="font-display font-extrabold text-lg uppercase tracking-tight text-text leading-tight flex items-center gap-2">
+            <h2 className="font-display font-extrabold text-lg uppercase tracking-tight text-text leading-tight flex items-center gap-2 break-words">
               <Waves className="w-5 h-5 text-violet" />
               <span>Cash River Trajectory (30 · 60 · 90 Days)</span>
             </h2>
-            <p className="text-xs text-muted mt-0.5">
+            <p className="text-xs text-muted mt-0.5 break-words">
               Flowing cash projection ribbon showing expected bank balance bounded by sensitivity envelopes.
             </p>
           </div>
@@ -408,16 +432,16 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
             <tbody className="divide-y divide-grid">
               {points.map((pt) => (
                 <tr key={pt.day} className="hover:bg-page/70 transition-colors">
-                  <td className="py-2.5 px-3 font-mono font-bold text-text">
+                  <td className="py-2.5 px-3 font-mono font-bold text-text break-words">
                     {pt.label} ({pt.date})
                   </td>
-                  <td className="py-2.5 px-3 font-mono font-bold text-right text-series-in">
+                  <td className="py-2.5 px-3 font-mono font-bold text-right text-series-in break-words">
                     {pt.inflowScheduled === "0.00" ? "—" : `+${formatMoney(pt.inflowScheduled)}`}
                   </td>
-                  <td className="py-2.5 px-3 font-mono font-bold text-right text-series-out">
+                  <td className="py-2.5 px-3 font-mono font-bold text-right text-series-out break-words">
                     {pt.outflowScheduled === "0.00" ? "—" : `-${formatMoney(pt.outflowScheduled)}`}
                   </td>
-                  <td className="py-2.5 px-3 font-mono font-black text-right text-text text-sm">
+                  <td className="py-2.5 px-3 font-mono font-black text-right text-text text-sm break-words">
                     {formatMoney(
                       scenario === "conservative"
                         ? pt.conservativeBalance
@@ -426,7 +450,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
                         : pt.projectedBalance
                     )}
                   </td>
-                  <td className="py-2.5 px-3 text-muted text-xs">
+                  <td className="py-2.5 px-3 text-muted text-xs break-words">
                     {pt.eventMemo || "Standard working capital flow"}
                   </td>
                 </tr>
@@ -442,10 +466,10 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
         <div className="lg:col-span-7 neo-card p-4 bg-panel border-line shadow-card">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-grid">
             <div>
-              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
                 Finn Simulation Stream
               </h3>
-              <p className="text-[11px] text-muted">
+              <p className="text-[11px] text-muted break-words">
                 Audit trail of working capital projections and cash sensitivity evaluations.
               </p>
             </div>
@@ -484,7 +508,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-text truncate">{feed.event}</p>
-                  <p className="text-[11px] text-muted mt-0.5">{feed.result}</p>
+                  <p className="text-[11px] text-muted mt-0.5 break-words">{feed.result}</p>
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -500,7 +524,7 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
         <div className="lg:col-span-5 neo-card p-4 bg-panel border-line shadow-card space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-grid">
             <ShieldCheck className="w-4 h-4 text-good" />
-            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
               Agent Guardrails (AIS-02)
             </h3>
           </div>
@@ -508,21 +532,21 @@ export const ForecastFinn: React.FC<ForecastFinnProps> = ({ onNavigateBack, onNa
           <div className="space-y-2 text-xs">
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Read-Only Simulation</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Finn operates strictly at Canonical Tier 1. It projects scenarios and evaluates runway, but cannot move money or alter invoices.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Design Token Conformance</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Finn strictly employs <code className="font-bold">var(--q-violet)</code> (violet design token) for avatar and graphical highlights per <code>tokens.json</code>.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">2D & 3D Twin Equivalence</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 All data visualised in 3D is mirrored on the 2D page, ensuring full accessibility and mobile parity.
               </p>
             </div>

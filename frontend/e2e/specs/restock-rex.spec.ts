@@ -16,7 +16,7 @@ test.describe("Restock Rex (AGT-04 / INV-05) Dedicated Screen & PO Drawer", () =
   test("Renders Restock Rex header, avatar, and live indicator", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Restock Rex" })).toBeVisible();
     await expect(page.getByText("Inventory Replenisher").first()).toBeVisible();
-    await expect(page.getByText("AGT-04 / INV-05")).toBeVisible();
+    await expect(page.getByText("AGT-04 / INV-05", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active
@@ -55,7 +55,7 @@ test.describe("Restock Rex (AGT-04 / INV-05) Dedicated Screen & PO Drawer", () =
     await expect(page.getByText("Solid Carbide End Mill 8mm")).toBeVisible();
 
     // Click 2D Warehouse Bin Map
-    await page.getByRole("button", { name: /2D Warehouse Bin Map/i }).click();
+    await page.getByRole("button", { name: "2D Warehouse Bin Map", exact: true }).click();
     await expect(page.getByText("BIN-A01")).toBeVisible();
     await expect(page.getByText("BIN-B01")).toBeVisible();
   });
