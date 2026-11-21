@@ -77,9 +77,9 @@ structuredFaq.forEach(([question, answer], index) => {
 // 3. The form must send what the API accepts.
 const formBlock = html["index.html"].match(/<form id="lead-form"[\s\S]*?<\/form>/)?.[0] ?? "";
 const formNames = new Set([...formBlock.matchAll(/\sname="([^"]+)"/g)].map((match) => match[1]));
-const apiSource = read(join(root, "..", "backend", "apps", "api", "src", "app.ts"));
-const leadBody = apiSource.match(/const LeadBody = z\.object\(\{([\s\S]*?)\n\}\);/)?.[1] ?? "";
-const apiKeys = [...leadBody.matchAll(/^ {2}(\w+):/gm)].map((match) => match[1]);
+// The lead form contract is owned by the website API and mirrored here (lead-form.contract.json).
+const leadContract = JSON.parse(read(join(root, "scripts", "lead-form.contract.json")));
+const apiKeys = Object.keys(leadContract.fields);
 const clientSource = read(join(site, "main.js"));
 const requiredApiKeys = ["name", "email", "interest", "consent"];
 check(apiKeys.length > 0, "API: LeadBody schema is readable");
