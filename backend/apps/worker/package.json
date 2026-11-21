@@ -10,6 +10,7 @@
   "dependencies": {
     "@erp/db": "*",
     "@erp/events": "*",
+    "@erp/notifications": "*",
     "@erp/queue": "*"
   }
 }

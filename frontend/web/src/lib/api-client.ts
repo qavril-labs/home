@@ -6,8 +6,12 @@
 import type {
   Account,
   AccountType,
+  AgentAuditLogRecord,
+  ApprovalRequestRecord,
+  BankFeedLine,
   Bill,
   CustomerStatement,
+  GoodsReceiptNote,
   Invoice,
   InvoicesSummary,
   ItemType,
@@ -18,7 +22,10 @@ import type {
   PartyType,
   PaymentTerms,
   ProductItem,
+  PurchaseOrder,
   ReminderDraft,
+  ThreeWayMatchItem,
+  ThreeWayMatchSummary,
   WorkspaceInsights,
 } from "../types";
 import {
@@ -32,6 +39,10 @@ import {
   initialOverdueInvoices,
   initialMockInsights,
   mockCustomerStatements,
+  initialPurchaseOrders,
+  initialGoodsReceiptNotes,
+  initialThreeWayMatches,
+  initialThreeWaySummary,
 } from "./api-mock";
 
 // ---------------------------------------------------------------------------
@@ -102,7 +113,7 @@ export interface ApiResult<T> {
 // Helpers & Mappers
 // ---------------------------------------------------------------------------
 
-function getApiBaseUrl(): string {
+export function getApiBaseUrl(): string {
   if (typeof window !== "undefined") {
     const winConfig = (window as unknown as { ERP_CONFIG?: { apiBase?: string } }).ERP_CONFIG;
     if (winConfig?.apiBase) {
@@ -288,6 +299,30 @@ export function mapWireToAccount(wire: OpenApiAccountWire): Account {
 // ---------------------------------------------------------------------------
 // Contract API Client Singleton
 // ---------------------------------------------------------------------------
+
+export interface ReminderDispatchResult {
+  invoiceId: string;
+  sentAt?: string;
+  status: "draft" | "approved" | "sent";
+  notificationId?: string | null;
+}
+
+/** What to tell the user after a reminder request. Never claims a send that did not happen. */
+export function describeReminderOutcome(
+  result: ApiResult<ReminderDispatchResult>,
+  recipient: string
+): { type: "success" | "warning"; text: string } {
+  if (!result.isLive) {
+    return { type: "warning", text: "Could not reach the server. The reminder was not sent." };
+  }
+  if (result.data.status === "sent") {
+    return { type: "success", text: `Reminder queued for delivery to ${recipient}.` };
+  }
+  return {
+    type: "warning",
+    text: "Reminder saved as approved but not delivered. Email delivery is not available for this reminder.",
+  };
+}
 
 export const apiClient = {
   // ── MDM-01: Parties (Customers & Suppliers) ───────────────────────────────
@@ -614,20 +649,19 @@ export const apiClient = {
   async sendPaymentReminder(
     invoiceId: string,
     draft: ReminderDraft
-  ): Promise<ApiResult<{ invoiceId: string; sentAt: string }>> {
+  ): Promise<ApiResult<ReminderDispatchResult>> {
     const endpoint = "/v1/invoicing/reminders";
     try {
-      const res = await requestJson<{ invoiceId: string; sentAt: string }>(
-        endpoint,
-        {
-          method: "POST",
-          body: JSON.stringify({ ...draft, invoiceId }),
-        }
-      );
+      // status "sent" asks the server to dispatch. The server answers "sent" only when the message
+      // was queued for delivery, and "approved" when it could not be delivered.
+      const res = await requestJson<ReminderDispatchResult>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ ...draft, invoiceId, status: "sent" }),
+      });
       return { data: res, isLive: true, endpoint };
     } catch {
       return {
-        data: { invoiceId, sentAt: new Date().toISOString() },
+        data: { invoiceId, sentAt: new Date().toISOString(), status: "draft", notificationId: null },
         isLive: false,
         endpoint,
       };
@@ -834,22 +868,265 @@ export const apiClient = {
     }
   },
 
+  // ── PLT-07 & AGT-01: Approvals Inbox & Agent Governance ──────────────
+  async listApprovals(params?: { status?: string; botId?: string }): Promise<ApiResult<ApprovalRequestRecord[]>> {
+    const query = new URLSearchParams();
+    if (params?.status) query.set("status", params.status);
+    if (params?.botId) query.set("botId", params.botId);
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const endpoint = `/v1/approval-requests${qs}`;
+    try {
+      const res = await requestJson<{ requests: ApprovalRequestRecord[] }>(endpoint);
+      return { data: res.requests, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async createApproval(request: {
+    botId: string;
+    botName: string;
+    actionType: string;
+    title: string;
+    summary: string;
+    amount?: string | null;
+    currency?: string;
+    riskLevel?: "low" | "medium" | "high" | "critical";
+    payload?: Record<string, unknown>;
+    confidenceScore?: number;
+  }): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = "/v1/approval-requests";
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify(request),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async approveRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = `/v1/approval-requests/${encodeURIComponent(id)}/approve`;
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async rejectRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
+    const endpoint = `/v1/approval-requests/${encodeURIComponent(id)}/reject`;
+    const res = await requestJson<ApprovalRequestRecord>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async listAgentAuditLogs(params?: { botId?: string; limit?: number }): Promise<ApiResult<AgentAuditLogRecord[]>> {
+    const query = new URLSearchParams();
+    if (params?.botId) query.set("botId", params.botId);
+    if (params?.limit) query.set("limit", String(params.limit));
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    const endpoint = `/v1/approval-requests/audit-logs${qs}`;
+    try {
+      const res = await requestJson<{ logs: AgentAuditLogRecord[] }>(endpoint);
+      return { data: res.logs, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  // ── FIN-04: Banking & Reconciliation ──────────────────────────────────
+  async listBankLines(status?: "ALL" | "Unmatched" | "Suggested" | "Reconciled"): Promise<ApiResult<BankFeedLine[]>> {
+    const qs = status && status !== "ALL" ? `?status=${status}` : "";
+    const endpoint = `/v1/banking/lines${qs}`;
+    try {
+      const res = await requestJson<{ ok: boolean; lines: BankFeedLine[] }>(endpoint);
+      return { data: res.lines, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async importBankStatement(lines: Array<Omit<BankFeedLine, "id" | "status">>): Promise<ApiResult<BankFeedLine[]>> {
+    const endpoint = "/v1/banking/statements/import";
+    try {
+      const res = await requestJson<{ ok: boolean; imported: number; lines: BankFeedLine[] }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lines }),
+      });
+      return { data: res.lines, isLive: true, endpoint };
+    } catch {
+      return { data: [], isLive: false, endpoint };
+    }
+  },
+
+  async reconcileBankLine(lineId: string, matchedRef: string): Promise<ApiResult<{ lineId: string; matchedRef: string }>> {
+    const endpoint = "/v1/banking/reconcile";
+    try {
+      const res = await requestJson<{ ok: boolean; lineId: string; matchedRef: string }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lineId, matchedRef }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { lineId, matchedRef }, isLive: false, endpoint };
+    }
+  },
+
+  async unreconcileBankLine(lineId: string): Promise<ApiResult<{ lineId: string }>> {
+    const endpoint = "/v1/banking/unreconcile";
+    try {
+      const res = await requestJson<{ ok: boolean; lineId: string }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ lineId }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { lineId }, isLive: false, endpoint };
+    }
+  },
+
+  // ── PLT-01: Password Reset ───────────────────────────────────────────
+  async forgotPassword(tenantSlug: string, email: string): Promise<ApiResult<{ ok: boolean; message: string }>> {
+    const endpoint = "/v1/auth/forgot-password";
+    const res = await requestJson<{ ok: boolean; message: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ tenantSlug, email }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  async resetPassword(token: string, newPassword: string): Promise<ApiResult<{ ok: boolean; message: string }>> {
+    const endpoint = "/v1/auth/reset-password";
+    const res = await requestJson<{ ok: boolean; message: string }>(endpoint, {
+      method: "POST",
+      body: JSON.stringify({ token, newPassword }),
+    });
+    return { data: res, isLive: true, endpoint };
+  },
+
+  // ── PRC-01 to PRC-04: Purchasing & 3-Way Matching ────────────────────────
+  async listPurchaseOrders(status?: string): Promise<ApiResult<PurchaseOrder[]>> {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/orders${query}`;
+    try {
+      const res = await requestJson<{ ok: boolean; orders: PurchaseOrder[] }>(endpoint);
+      return { data: res.orders, isLive: true, endpoint };
+    } catch {
+      return { data: initialPurchaseOrders, isLive: false, endpoint };
+    }
+  },
+
+  async createPurchaseOrder(po: PurchaseOrder): Promise<ApiResult<PurchaseOrder>> {
+    const endpoint = "/v1/procurement/orders";
+    try {
+      const res = await requestJson<{ ok: boolean; order: PurchaseOrder }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(po),
+      });
+      return { data: res.order, isLive: true, endpoint };
+    } catch {
+      return { data: po, isLive: false, endpoint };
+    }
+  },
+
+  async updatePurchaseOrderStatus(
+    id: string,
+    status: PurchaseOrder["status"]
+  ): Promise<ApiResult<{ id: string; status: string }>> {
+    const endpoint = `/v1/procurement/orders/${encodeURIComponent(id)}/status`;
+    try {
+      const res = await requestJson<{ ok: boolean; id: string; status: string }>(endpoint, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+      return { data: res, isLive: true, endpoint };
+    } catch {
+      return { data: { id, status }, isLive: false, endpoint };
+    }
+  },
+
+  async listGoodsReceipts(status?: string): Promise<ApiResult<GoodsReceiptNote[]>> {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/receipts${query}`;
+    try {
+      const res = await requestJson<{ ok: boolean; receipts: GoodsReceiptNote[] }>(endpoint);
+      return { data: res.receipts, isLive: true, endpoint };
+    } catch {
+      return { data: initialGoodsReceiptNotes, isLive: false, endpoint };
+    }
+  },
+
+  async createGoodsReceipt(grn: GoodsReceiptNote): Promise<ApiResult<GoodsReceiptNote>> {
+    const endpoint = "/v1/procurement/receipts";
+    try {
+      const res = await requestJson<{ ok: boolean; receipt: GoodsReceiptNote }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify(grn),
+      });
+      return { data: res.receipt, isLive: true, endpoint };
+    } catch {
+      return { data: grn, isLive: false, endpoint };
+    }
+  },
+
+  async listThreeWayMatches(status?: string): Promise<
+    ApiResult<{ matches: ThreeWayMatchItem[]; summary: ThreeWayMatchSummary }>
+  > {
+    const query = status && status !== "ALL" ? `?status=${encodeURIComponent(status)}` : "";
+    const endpoint = `/v1/procurement/matches${query}`;
+    try {
+      const res = await requestJson<{
+        ok: boolean;
+        matches: ThreeWayMatchItem[];
+        summary: ThreeWayMatchSummary;
+      }>(endpoint);
+      return { data: { matches: res.matches, summary: res.summary }, isLive: true, endpoint };
+    } catch {
+      return {
+        data: { matches: initialThreeWayMatches, summary: initialThreeWaySummary },
+        isLive: false,
+        endpoint,
+      };
+    }
+  },
+
+  async overrideThreeWayMatch(
+    id: string,
+    note: string
+  ): Promise<ApiResult<{ id: string; note: string; overrideApproved: boolean }>> {
+    const endpoint = `/v1/procurement/matches/${encodeURIComponent(id)}/override`;
+    try {
+      const res = await requestJson<{
+        ok: boolean;
+        match: { id: string; note: string; overrideApproved: boolean };
+      }>(endpoint, {
+        method: "POST",
+        body: JSON.stringify({ note }),
+      });
+      return { data: res.match, isLive: true, endpoint };
+    } catch {
+      return { data: { id, note, overrideApproved: true }, isLive: false, endpoint };
+    }
+  },
+
   subscribeToEvents(
     onEvent: (event: { type: string; tenantId: string; occurredAt: string; payload: any }) => void,
     onStatusChange?: (status: "connected" | "connecting" | "disconnected") => void,
   ): () => void {
     if (typeof window === "undefined") return () => {};
 
-    const token = getApiSessionToken() || "tok_demo";
-    const url = `${getApiBaseUrl()}/v1/events/stream?token=${encodeURIComponent(token)}`;
     let eventSource: EventSource | null = null;
     let isCancelled = false;
 
-    function connect() {
+    async function connect() {
       if (isCancelled) return;
       onStatusChange?.("connecting");
       try {
-        eventSource = new EventSource(url);
+        // A fresh single-use ticket for every connection, so the session token never appears in a URL.
+        const { ticket } = await requestJson<{ ticket: string }>("/v1/events/tickets", { method: "POST" });
+        if (isCancelled) return;
+        eventSource = new EventSource(`${getApiBaseUrl()}/v1/events/stream?ticket=${encodeURIComponent(ticket)}`);
         eventSource.onopen = () => {
           onStatusChange?.("connected");
         };
@@ -873,6 +1150,7 @@ export const apiClient = {
         };
       } catch {
         onStatusChange?.("disconnected");
+        if (!isCancelled) setTimeout(connect, 3000);
       }
     }
 

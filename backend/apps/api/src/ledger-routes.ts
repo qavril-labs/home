@@ -4,6 +4,7 @@ import { hasPermission, type Principal } from "@erp/identity";
 import { Ledger } from "@erp/ledger";
 import { Money } from "@erp/money";
 import { DomainError, type Clock } from "@erp/kernel";
+import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
 import { assertEntitled, type Company } from "@erp/tenancy";
 import {
   PgLedgerStore,
@@ -62,6 +63,11 @@ const TrialBalanceQuery = z.object({
   asOf: z.string(),
 });
 
+const JournalListQuery = z.object({
+  companyId: z.uuid(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+});
+
 const EntryParams = z.object({ id: z.uuid() });
 
 export interface LedgerRouteDeps {
@@ -81,6 +87,7 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
     permission: string,
     companyId: string,
     work: (ledger: Ledger, company: Company) => Promise<T>,
+    idempotent?: { scope: string; payload: unknown },
   ): Promise<T> {
     const principal = await deps.authenticate(request);
     if (!hasPermission(principal.permissions, permission)) {
@@ -98,7 +105,14 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
         company.baseCurrency,
         deps.clock,
       );
-      return work(ledger, company);
+      if (!idempotent) return work(ledger, company);
+      // Posting twice would double the books, so a retry with the same key gets the first result.
+      const result = await runIdempotent(
+        tx,
+        { tenantId: principal.tenantId, scope: idempotent.scope, key: idempotencyKeyFrom(request), payload: idempotent.payload },
+        async () => ({ status: 201, body: await work(ledger, company) }),
+      );
+      return result.body as T;
     });
   }
 
@@ -146,6 +160,7 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
           memo: line.memo ?? null,
         })),
       }),
+      { scope: "ledger.journal.post", payload: body },
     );
     return reply.status(201).send(entry);
   });
@@ -155,8 +170,14 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
     const body = ReverseBody.parse(request.body);
     const entry = await withLedger(request, "fin.journal.post", body.companyId, (ledger) =>
       ledger.reverse(id, { reference: body.reference, date: body.date }),
+      { scope: "ledger.journal.reverse", payload: { id, ...body } },
     );
     return reply.status(201).send(entry);
+  });
+
+  app.get("/v1/ledger/journal-entries", async (request) => {
+    const query = JournalListQuery.parse(request.query);
+    return withLedger(request, "fin.report.read", query.companyId, (ledger) => ledger.listEntries(query.limit));
   });
 
   app.get("/v1/ledger/trial-balance", async (request) => {

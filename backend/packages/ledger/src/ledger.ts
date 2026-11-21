@@ -155,6 +155,14 @@ export class Ledger {
     );
   }
 
+  /** Posted entries, newest first. Reads only; posted entries are never changed. */
+  async listEntries(limit: number): Promise<PostedEntry[]> {
+    const entries = await this.store.listEntries(this.companyId);
+    return [...entries]
+      .sort((a, b) => (a.date === b.date ? b.postedAt.localeCompare(a.postedAt) : b.date.localeCompare(a.date)))
+      .slice(0, limit);
+  }
+
   async trialBalance(asOf: string): Promise<TrialBalance> {
     assertIsoDate(asOf);
     const names = new Map((await this.store.listAccounts(this.companyId)).map((account) => [account.code, account.name]));

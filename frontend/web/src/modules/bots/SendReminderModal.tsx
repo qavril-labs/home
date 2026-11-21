@@ -105,7 +105,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
       description="Chase Chloe prepared this collection draft based on customer terms and past payment velocity."
       maxWidth="max-w-xl"
     >
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Invoice Summary Banner */}
         <div className="p-3 bg-panel border-line shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
           <div>
@@ -136,7 +136,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Channel Selector */}
           <div>
-            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5 break-words">
               Delivery Channel
             </label>
             <div className="grid grid-cols-2 gap-2">
@@ -170,7 +170,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
 
           {/* Tone Selector */}
           <div>
-            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1.5 break-words">
               Tone Style
             </label>
             <div className="grid grid-cols-3 gap-1.5">
@@ -194,7 +194,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
 
         {/* Recipient Address */}
         <div>
-          <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1">
+          <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1 break-words">
             {channel === "whatsapp" ? "WhatsApp Number" : "Recipient Email"}
           </label>
           <div className="relative">
@@ -211,7 +211,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
         {/* Email Subject Field (Email only) */}
         {channel === "email" && (
           <div>
-            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1">
+            <label className="block text-xs font-bold text-muted uppercase tracking-wider mb-1 break-words">
               Subject Line
             </label>
             <input
@@ -226,7 +226,7 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
         {/* Message Editor */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5">
+            <label className="text-xs font-bold text-muted uppercase tracking-wider flex items-center gap-1.5 break-words">
               <Sparkles className="w-3.5 h-3.5 text-yellow" />
               <span>Draft Message Preview</span>
             </label>
@@ -244,26 +244,26 @@ export const SendReminderModal: React.FC<SendReminderModalProps> = ({
         </div>
 
         {/* Tier 2 Human Review Notice */}
-        <div className="p-2.5 bg-cream border-line flex items-start gap-2 text-[11px] text-ink">
-          <AlertCircle className="w-4 h-4 text-watch flex-shrink-0 mt-0.5" />
-          <span>
+        <div className="p-2.5 bg-cream border-line flex items-start gap-2 text-[11px] text-ink min-w-0">
+          <AlertCircle className="w-4 h-4 text-watch shrink-0 mt-0.5" />
+          <span className="break-words">
             <strong>Tier 2 Supervisor Action:</strong> Chloe drafts reminders but never contacts clients without your explicit approval. Approving dispatches the communication and logs an audit record.
           </span>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-grid">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-grid">
+          <Button variant="ghost" size="sm" onClick={onClose} className="shrink-0">
             Cancel
           </Button>
           <Button
             variant="yellow"
             size="sm"
             onClick={handleSend}
-            className="flex items-center gap-1.5"
+            className="flex items-center gap-1.5 shrink-0"
           >
-            <Send className="w-3.5 h-3.5" />
-            <span>Approve & Deliver Reminder</span>
+            <Send className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Approve & Deliver Reminder</span>
           </Button>
         </div>
       </div>

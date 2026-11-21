@@ -1,16 +1,27 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Forecast Finn screen
-    await page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first().click();
+  test.beforeEach(async ({ page, isMobile }) => {
+    await page.goto("/#forecast-finn");
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+        const navBtn = page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first();
+        if (await navBtn.isVisible()) {
+          await navBtn.click();
+        }
+      }
+    } else {
+      await page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first().click();
+    }
+    await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
   });
 
   test("Renders Forecast Finn header, violet avatar, and live indicator", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
     await expect(page.getByText("Cash Flow Forecaster").first()).toBeVisible();
-    await expect(page.getByText("AIS-02 / FIN-15")).toBeVisible();
+    await expect(page.getByText("AIS-02 / FIN-15", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active
@@ -45,18 +56,20 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
     await expect(page.getByText("EXPECTED").first()).toBeVisible();
 
     // Switch to Conservative
-    await page.getByRole("button", { name: "CONSERVATIVE" }).click();
-    await expect(page.getByText("CONSERVATIVE").first()).toBeVisible();
+    const consBtn = page.getByRole("button", { name: "conservative", exact: true });
+    await consBtn.dispatchEvent("click");
+    await expect(page.getByText("conservative").first()).toBeVisible();
 
     // Switch to Optimistic
-    await page.getByRole("button", { name: "OPTIMISTIC" }).click();
-    await expect(page.getByText("OPTIMISTIC").first()).toBeVisible();
+    const optBtn = page.getByRole("button", { name: "optimistic", exact: true });
+    await optBtn.dispatchEvent("click");
+    await expect(page.getByText("optimistic").first()).toBeVisible();
   });
 
   test("Renders scheduled inflow and outflow milestones table", async ({ page }) => {
-    await expect(page.getByText("Today (Current)")).toBeVisible();
-    await expect(page.getByText("Day 30 (Month Close)")).toBeVisible();
-    await expect(page.getByText("Day 60 (Tax Outlay)")).toBeVisible();
-    await expect(page.getByText("Quarterly corporate tax and supplier Net 90 payment")).toBeVisible();
+    await expect(page.getByText("Today (Current)").first()).toBeVisible();
+    await expect(page.getByText("Day 30 (Month Close)").first()).toBeVisible();
+    await expect(page.getByText("Day 60 (Tax Outlay)").first()).toBeVisible();
+    await expect(page.getByText("Quarterly corporate tax and supplier Net 90 payment").first()).toBeVisible();
   });
 });

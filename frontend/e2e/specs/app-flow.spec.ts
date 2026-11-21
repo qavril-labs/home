@@ -92,11 +92,11 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
 
     // 4. Verify toast notification with Undo action
     const toast = page.locator('.fixed[aria-live="polite"]');
-    await expect(toast).toContainText("Sale of $1250.00 posted straight to your books.");
+    await expect(toast).toContainText(/Sale of \$1250\.00 (posted straight to your books|recorded)/);
     await expect(toast).toContainText("Undo");
 
     // 5. Verify Recent Entries DataTable has new item
-    const latestEntriesCard = page.locator("section, div").filter({ hasText: "Latest Entries" });
+    const latestEntriesCard = page.locator("#main section, #main div").filter({ hasText: "Latest Entries" });
     await expect(latestEntriesCard.getByText("Batch #42 CNC Titanium Machining").first()).toBeVisible();
     await expect(latestEntriesCard.getByText("$1,250.00").first()).toBeVisible();
     await expect(latestEntriesCard.getByText("Sale").first()).toBeVisible();
@@ -120,10 +120,10 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
 
     // 4. Verify toast
     const toast = page.locator('.fixed[aria-live="polite"]');
-    await expect(toast).toContainText("Expense of $450.00 posted straight to your books.");
+    await expect(toast).toContainText(/Expense of \$450\.00 (posted straight to your books|recorded)/);
 
     // 5. Verify Latest Entries table
-    const latestEntriesCard = page.locator("section, div").filter({ hasText: "Latest Entries" });
+    const latestEntriesCard = page.locator("#main section, #main div").filter({ hasText: "Latest Entries" });
     await expect(latestEntriesCard.getByText("Cutting Fluids & Carbide Endmills").first()).toBeVisible();
     await expect(latestEntriesCard.getByText("-$450.00").first()).toBeVisible();
     await expect(latestEntriesCard.getByText("Expense").first()).toBeVisible();
@@ -160,32 +160,41 @@ test.describe("QAVRIL LABS Frontend Lane E2E Tests", () => {
   });
 
   test("Navigates between Master Data, Invoicing, CSV Import, and Component Gallery", async ({ page }) => {
+    const clickNav = async (name: RegExp) => {
+      await page.locator("header").waitFor({ state: "visible" });
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+      }
+      await page.getByRole("button", { name }).first().click();
+    };
+
     // Navigate to Parties (MDM-01)
-    await page.getByRole("button", { name: /Parties/i }).first().click();
+    await clickNav(/Parties/i);
     await expect(page.getByRole("heading", { name: "Customers & Suppliers" })).toBeVisible();
 
     // Navigate to Items (MDM-02)
-    await page.getByRole("button", { name: /Items/i }).first().click();
+    await clickNav(/Items/i);
     await expect(page.getByRole("heading", { name: "Item Master & Products" })).toBeVisible();
 
     // Navigate to Accounts (MDM-03)
-    await page.getByRole("button", { name: /Accounts/i }).first().click();
+    await clickNav(/Accounts/i);
     await expect(page.getByRole("heading", { name: "Chart of Accounts" })).toBeVisible();
 
     // Navigate to Invoices (SAL-04)
-    await page.getByRole("button", { name: /Invoices/i }).first().click();
+    await clickNav(/Invoices/i);
     await expect(page.getByRole("heading", { name: "Sales Invoices & Receivables" })).toBeVisible();
 
     // Navigate to Bills (FIN-03)
-    await page.getByRole("button", { name: /Bills/i }).first().click();
+    await clickNav(/Bills/i);
     await expect(page.getByRole("heading", { name: "Accounts Payable (AP) & Bills" })).toBeVisible();
 
     // Navigate to Import (PLT-14)
-    await page.getByRole("button", { name: /CSV Import/i }).first().click();
+    await clickNav(/CSV Import/i);
     await expect(page.getByRole("heading", { name: "CSV & Migration Import" })).toBeVisible();
 
     // Navigate to Gallery
-    await page.getByRole("button", { name: /Component Gallery/i }).first().click();
+    await clickNav(/Component Gallery/i);
     await expect(page.getByText("Quality Assurance & Token Conformance")).toBeVisible();
   });
 });

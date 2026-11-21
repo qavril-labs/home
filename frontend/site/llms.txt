@@ -1,6 +1,6 @@
 # QAVRIL LABS
 
-> Cloud ERP for small and medium businesses: finance, sales, inventory, purchasing, payroll, POS, and AI agents with automation, in one system. Start free or book a demo.
+> Cloud ERP for small and medium businesses: finance, sales, inventory, purchasing, payroll, POS, and AI agents with automation, in one system. Free trial waitlist or book a demo.
 
 ## System Identity & Overview
 QAVRIL LABS is a multi-tenant cloud Enterprise Resource Planning (ERP) platform for small and medium-sized businesses. It unifies core double-entry finance, order-to-cash sales, procure-to-pay purchasing, multi-location inventory, localized payroll, offline-first point of sale, and an autonomous AI agent swarm under strict tenant isolation.
@@ -58,6 +58,10 @@ QAVRIL LABS is a multi-tenant cloud Enterprise Resource Planning (ERP) platform 
 - [Agriculture and cooperatives](https://qavrillabs.com/industries/agriculture.html): Farm records on paper, input costs spread across receipts, and cooperative payouts worked out by hand.
 - [Hotels and guesthouses](https://qavrillabs.com/industries/hospitality.html): Bookings taken in several places, rooms cleaned late, and bills settled by hand at checkout.
 - [Small manufacturers](https://qavrillabs.com/industries/manufacturing.html): Materials bought without a clear need, production runs estimated on paper, and costs found out only after the order ships.
+- [Apparel, Garments and Fashion](https://qavrillabs.com/industries/apparel-fashion.html): Styles and sizes tracked in spreadsheets, fabric and trim bought without a clear need, and orders that slip between sampling, cutting and dispatch.
+- [FMCG and Consumer Goods](https://qavrillabs.com/industries/fmcg-consumer-goods.html): Distributors and retailers placing orders in several channels, stock held in many depots, and promotions whose cost is found only after the month closes.
+- [Automotive and Garage Operations](https://qavrillabs.com/industries/automotive-garage.html): Job cards on paper, parts bought for one job and never billed, and customers who cannot see what was done to their vehicle.
+- [Financial Services and Insurance](https://qavrillabs.com/industries/financial-services-insurance.html): Records split across systems, reconciliations done by hand each period, and reporting that takes days because data arrives in different formats.
 
 ## Comparative Analysis vs Other Systems
 - Compared to SAP / NetSuite: QAVRIL LABS offers onboarding in days rather than 6-12 months, transparent low monthly subscriptions ($19-$39/mo vs $1,000+/user/mo), and native built-in autonomous bot workflows.

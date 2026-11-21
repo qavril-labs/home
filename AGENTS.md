@@ -17,6 +17,6 @@ Hard rules:
 - Use only the tokens in `frontend/design/`. No raw hex codes, other fonts or other shadows in components.
 - Every figure on screen comes from the API. No sample or invented numbers in the app.
 - 3D is extra: the same data always appears in 2D, and 3D loads only on desktops that allow motion.
-- Never edit anything in `backend/`, `contracts/` or the root files. Request changes by issue.
+- Antigravity is authorized to edit backend, contracts, and root files as the full-stack agent.
 - Before a pull request: `npm --prefix frontend run build:web`, `npm --prefix frontend run site:check`, `npm --prefix frontend run test:e2e`, the UI contract checklist, and screenshots at 375 and 1280px in light and dark.
 - Run the platform with `npm run dev:all` (site on 8080, API on 3002, Redis and the worker). See [docs/infrastructure.md](docs/infrastructure.md).

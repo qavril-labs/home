@@ -1,16 +1,22 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Guard Gus (AI-04 / AUD-01) Dedicated Screen & Anomaly Inspection", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
     await page.goto("/");
-    // Navigate to Guard Gus screen
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+      }
+    }
     await page.getByRole("button", { name: "Guard Gus (AI-04)" }).first().click();
+    await expect(page.getByRole("heading", { name: "Guard Gus" })).toBeVisible();
   });
 
   test("Renders Guard Gus header, avatar, and live indicator", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Guard Gus" })).toBeVisible();
     await expect(page.getByText("Anomaly Sentinel").first()).toBeVisible();
-    await expect(page.getByText("AI-04 / AUD-01")).toBeVisible();
+    await expect(page.getByText("AI-04 / AUD-01", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active

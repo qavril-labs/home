@@ -400,7 +400,7 @@ export interface JournalEntry {
 // ==========================================
 
 export type CanonicalTier = 1 | 2 | 3 | 4 | 5;
-export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "EXPIRED";
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "FAILED" | "EXPIRED";
 
 export interface ApprovalItem {
   id: string;
@@ -424,6 +424,7 @@ export interface ApprovalItem {
   approvedBy?: string;
   approvedAt?: string;
   rejectionReason?: string;
+  canDecide?: boolean; // From the API: false for the person who proposed the action.
 }
 
 export interface AgentRegistryItem {
@@ -437,6 +438,43 @@ export interface AgentRegistryItem {
   toolsGranted: string[];
   maxTier: CanonicalTier;
   lastActive: string;
+}
+
+export interface ApprovalRequestRecord {
+  id: string;
+  tenantId: string;
+  companyId: string;
+  botId: string;
+  botName: string;
+  actionType: string;
+  title: string;
+  summary: string;
+  amount?: string | null;
+  currency: string;
+  riskLevel: "low" | "medium" | "high" | "critical";
+  status: "pending" | "approved" | "rejected" | "executed" | "cancelled";
+  payload: Record<string, unknown>;
+  confidenceScore: number;
+  requestedAt: string;
+  decidedAt?: string | null;
+  decidedBy?: string | null;
+  decisionReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AgentAuditLogRecord {
+  id: string;
+  tenantId: string;
+  companyId: string;
+  botId: string;
+  eventType: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: Record<string, unknown>;
+  hashChain?: string | null;
+  createdAt: string;
 }
 
 export interface StockReplenishmentItem {

@@ -73,6 +73,7 @@ class FakeCoreSaas:
         self.requests: list[httpx.Request] = []
         self.fail_with: int | None = None
         self.malformed_output = False
+        self.trial_balance: dict[str, Any] | None = None  # Override the ledger's answer in tests.
 
     def _error(self, status: int, code: str) -> httpx.Response:
         return httpx.Response(status, json={"error": {"code": code, "message": "secret internals"}})
@@ -103,6 +104,8 @@ class FakeCoreSaas:
                 return self._error(403, "FORBIDDEN")
             if self.malformed_output:
                 return httpx.Response(200, json={"rows": "nope"})
+            if self.trial_balance is not None:
+                return httpx.Response(200, json=self.trial_balance)
             return httpx.Response(
                 200,
                 json={

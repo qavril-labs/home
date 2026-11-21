@@ -1,17 +1,23 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
     await page.goto("/");
-    // Navigate to Ledger Lou dedicated screen via top navigation
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+      }
+    }
     await page.getByRole("button", { name: "Ledger Lou (AGT-03)" }).first().click();
+    await expect(page.getByRole("heading", { name: "Ledger Lou" })).toBeVisible();
   });
 
   test("Renders Ledger Lou bot header, Lou avatar, and Live indicator", async ({ page }) => {
     // Heading and Role
     await expect(page.getByRole("heading", { name: "Ledger Lou" })).toBeVisible();
     await expect(page.getByText("Month-End Checker").first()).toBeVisible();
-    await expect(page.getByText("AGT-03 / FIN-13")).toBeVisible();
+    await expect(page.getByText("AGT-03 / FIN-13", { exact: true })).toBeVisible();
 
     // Live indicator
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
@@ -55,8 +61,8 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     // Side-by-side debit/credit table entries
     await expect(page.getByText("DEP-2026-11")).toBeVisible();
     await expect(page.getByText("ACCR-2026-11")).toBeVisible();
-    await expect(page.getByText("6900")).toBeVisible();
-    await expect(page.getByText("Depreciation expense")).toBeVisible();
+    await expect(page.getByText("6900", { exact: true })).toBeVisible();
+    await expect(page.getByText("Depreciation expense", { exact: true })).toBeVisible();
 
     // Grand total & Invariant check
     await expect(page.getByText("$1,250.00").first()).toBeVisible();
@@ -69,7 +75,7 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
     await expect(
       page.getByRole("heading", { name: "Approve & Post Journal Entries" })
     ).toBeVisible();
-    await expect(page.getByText(/irreversible/i)).toBeVisible();
+    await expect(page.getByText(/Tier 3 action/i)).toBeVisible();
 
     // Confirm action
     await page.getByRole("button", { name: "Post $1,250.00" }).click();
@@ -84,24 +90,24 @@ test.describe("Ledger Lou (AGT-03 / FIN-13) Dedicated Screen & Review Drawers", 
   });
 
   test("Opens Bank Reconciliation inspection drawer and verifies zero variance", async ({ page }) => {
-    await page.getByRole("button", { name: "View Details" }).first().click();
+    await page.getByRole("button", { name: "View Details" }).first().dispatchEvent("click");
 
     // Drawer header
     await expect(page.getByRole("heading", { name: "Bank Reconciliation Inspection" })).toBeVisible();
 
     // GL 1100 vs Statement equality
     await expect(page.getByText("$42,150.00").first()).toBeVisible();
-    await expect(page.getByText("$0.00 (Balanced)")).toBeVisible();
+    await expect(page.getByText("$0.00 (Balanced)", { exact: true })).toBeVisible();
 
     // Matched statement lines
     await expect(page.getByText(/Matched QE-00012/i)).toBeVisible();
 
     // Close drawer
-    await page.getByRole("button", { name: "Close" }).click();
+    await page.getByRole("button", { name: "Close", exact: true }).click();
   });
 
   test("Locks closed fiscal period with Tier 3 ConfirmDialog", async ({ page }) => {
-    await page.getByRole("button", { name: "Lock Period" }).first().click();
+    await page.getByRole("button", { name: "Lock Period" }).first().dispatchEvent("click");
 
     // Confirm dialog
     await expect(

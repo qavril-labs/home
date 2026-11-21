@@ -80,8 +80,8 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
             {entries.length === 0 ? (
               <div className="p-8 text-center bg-page border-line">
                 <CheckCircle2 className="w-8 h-8 text-good mx-auto mb-2" />
-                <p className="text-sm font-bold text-text">No unposted draft entries</p>
-                <p className="text-xs text-muted mt-1">
+                <p className="text-sm font-bold text-text break-words">No unposted draft entries</p>
+                <p className="text-xs text-muted mt-1 break-words">
                   All draft depreciation and accrual schedules are posted.
                 </p>
               </div>
@@ -100,7 +100,7 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
                         </span>
                         <span className="text-xs font-bold text-text">{entry.memo}</span>
                       </div>
-                      <p className="text-[11px] text-muted mt-0.5 font-medium">
+                      <p className="text-[11px] text-muted mt-0.5 font-medium break-words">
                         Source: {entry.source} · Effective {entry.date}
                       </p>
                     </div>
@@ -125,20 +125,20 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
                       <tbody className="divide-y divide-grid">
                         {entry.lines.map((line, idx) => (
                           <tr key={idx} className="hover:bg-panel/60 transition-colors">
-                            <td className="py-1.5 px-2">
+                            <td className="py-1.5 px-2 break-words">
                               <span className="font-mono font-bold text-text mr-1.5">
                                 {line.accountCode}
                               </span>
                               <span className="text-text">{line.accountName}</span>
                             </td>
-                            <td className="py-1.5 px-2 text-right font-mono font-bold">
+                            <td className="py-1.5 px-2 text-right font-mono font-bold break-words">
                               {line.side === "DEBIT" ? (
                                 <span className="text-text">{formatMoney(line.amount, currencySymbol)}</span>
                               ) : (
                                 <span className="text-muted">—</span>
                               )}
                             </td>
-                            <td className="py-1.5 px-2 text-right font-mono font-bold">
+                            <td className="py-1.5 px-2 text-right font-mono font-bold break-words">
                               {line.side === "CREDIT" ? (
                                 <span className="text-text">{formatMoney(line.amount, currencySymbol)}</span>
                               ) : (
@@ -150,13 +150,13 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
                       </tbody>
                       <tfoot>
                         <tr className="border-t-2 border-line bg-panel font-bold text-xs">
-                          <td className="py-1.5 px-2 font-display uppercase tracking-wider text-[11px]">
+                          <td className="py-1.5 px-2 font-display uppercase tracking-wider text-[11px] break-words">
                             Entry Balance Verification
                           </td>
-                          <td className="py-1.5 px-2 text-right font-mono text-ink">
+                          <td className="py-1.5 px-2 text-right font-mono text-ink break-words">
                             {formatMoney(entry.debitTotal, currencySymbol)}
                           </td>
-                          <td className="py-1.5 px-2 text-right font-mono text-ink">
+                          <td className="py-1.5 px-2 text-right font-mono text-ink break-words">
                             {formatMoney(entry.creditTotal, currencySymbol)}
                           </td>
                         </tr>
@@ -175,7 +175,7 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
                 <ShieldCheck className="w-4 h-4 text-good" />
                 <span>Double-Entry Invariant Guard</span>
               </div>
-              <p className="text-[11px] leading-relaxed">
+              <p className="text-[11px] leading-relaxed break-words">
                 Ledger Lou verifies that Σ debits equal Σ credits across all accounts before submission.
               </p>
             </div>
@@ -195,12 +195,12 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
           </div>
 
           {/* Action Footer */}
-          <div className="pt-3 border-t border-grid flex items-center justify-between gap-3">
+          <div className="pt-3 border-t border-grid flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <span className="text-xs text-muted">
               Requires Tier 3 administrator authorization.
             </span>
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="md" onClick={onClose} disabled={isSubmitting}>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <Button variant="ghost" size="md" onClick={onClose} disabled={isSubmitting} className="shrink-0">
                 Cancel
               </Button>
               <Button
@@ -208,10 +208,10 @@ export const UnpostedEntriesModal: React.FC<UnpostedEntriesModalProps> = ({
                 size="md"
                 onClick={handlePrimaryClick}
                 disabled={isSubmitting || entries.length === 0}
-                className="flex items-center gap-1.5 font-bold"
+                className="flex items-center gap-1.5 font-bold shrink-0"
               >
                 <span>Approve & Post</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4 shrink-0" />
               </Button>
             </div>
           </div>

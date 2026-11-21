@@ -1,31 +1,17 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import { AppHeader } from "./components/ui/AppHeader";
 import { Sidebar } from "./components/ui/Sidebar";
-import { CommandBar } from "./components/ui/CommandBar";
 import { ToastContainer } from "./components/ui/Toast";
+const CommandBar = lazy(() =>
+  import("./components/ui/CommandBar").then((m) => ({ default: m.CommandBar }))
+);
+const ThreeWayMatchModal = lazy(() =>
+  import("./modules/purchasing/ThreeWayMatchModal").then((m) => ({ default: m.ThreeWayMatchModal }))
+);
+const BankRecRulesModal = lazy(() =>
+  import("./modules/finance/BankRecRulesModal").then((m) => ({ default: m.BankRecRulesModal }))
+);
 import { Gate } from "./components/ui/Gate";
-import { Dashboard } from "./pages/Dashboard";
-import { ItemsPage } from "./pages/ItemsPage";
-import { ContactsPage } from "./pages/ContactsPage";
-import { AccountsPage } from "./pages/AccountsPage";
-import { InvoicesPage } from "./pages/InvoicesPage";
-import { PayablesManager } from "./modules/invoicing/PayablesManager";
-import { LedgerPage } from "./pages/LedgerPage";
-import { InventoryPage } from "./pages/InventoryPage";
-import { CrmPipelinePage } from "./pages/CrmPipelinePage";
-import { BankReconciliationPage } from "./pages/BankReconciliationPage";
-import { FinancialStatementsPage } from "./pages/FinancialStatementsPage";
-import { PurchasingPage } from "./pages/PurchasingPage";
-import { ImportPage } from "./pages/ImportPage";
-import { GalleryPage } from "./pages/GalleryPage";
-import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
-import { LedgerLou } from "./modules/bots/LedgerLou";
-import { ChaseChloe } from "./modules/bots/ChaseChloe";
-import { RestockRex } from "./modules/bots/RestockRex";
-import { GuardGus } from "./modules/bots/GuardGus";
-import { ForecastFinn } from "./modules/bots/ForecastFinn";
-import { Pip } from "./modules/bots/Pip";
-import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
   initialMockAccounts,
@@ -76,7 +62,32 @@ function getTabFromLocation(): string {
   return "dashboard";
 }
 
+const SignInForm = lazy(() => import("./modules/auth/SignInForm").then((m) => ({ default: m.SignInForm })));
+const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
+const ItemsPage = lazy(() => import("./pages/ItemsPage").then((m) => ({ default: m.ItemsPage })));
+const ContactsPage = lazy(() => import("./pages/ContactsPage").then((m) => ({ default: m.ContactsPage })));
+const AccountsPage = lazy(() => import("./pages/AccountsPage").then((m) => ({ default: m.AccountsPage })));
+const InvoicesPage = lazy(() => import("./pages/InvoicesPage").then((m) => ({ default: m.InvoicesPage })));
+const PayablesManager = lazy(() => import("./modules/invoicing/PayablesManager").then((m) => ({ default: m.PayablesManager })));
+const LedgerPage = lazy(() => import("./pages/LedgerPage").then((m) => ({ default: m.LedgerPage })));
+const InventoryPage = lazy(() => import("./pages/InventoryPage").then((m) => ({ default: m.InventoryPage })));
+const CrmPipelinePage = lazy(() => import("./pages/CrmPipelinePage").then((m) => ({ default: m.CrmPipelinePage })));
+const BankReconciliationPage = lazy(() => import("./pages/BankReconciliationPage").then((m) => ({ default: m.BankReconciliationPage })));
+const FinancialStatementsPage = lazy(() => import("./pages/FinancialStatementsPage").then((m) => ({ default: m.FinancialStatementsPage })));
+const PurchasingPage = lazy(() => import("./pages/PurchasingPage").then((m) => ({ default: m.PurchasingPage })));
+const ImportPage = lazy(() => import("./pages/ImportPage").then((m) => ({ default: m.ImportPage })));
+const GalleryPage = lazy(() => import("./pages/GalleryPage").then((m) => ({ default: m.GalleryPage })));
+const IndustryPacksHub = lazy(() => import("./modules/packs/IndustryPacksHub").then((m) => ({ default: m.IndustryPacksHub })));
+const LedgerLou = lazy(() => import("./modules/bots/LedgerLou").then((m) => ({ default: m.LedgerLou })));
+const ChaseChloe = lazy(() => import("./modules/bots/ChaseChloe").then((m) => ({ default: m.ChaseChloe })));
+const RestockRex = lazy(() => import("./modules/bots/RestockRex").then((m) => ({ default: m.RestockRex })));
+const GuardGus = lazy(() => import("./modules/bots/GuardGus").then((m) => ({ default: m.GuardGus })));
+const ForecastFinn = lazy(() => import("./modules/bots/ForecastFinn").then((m) => ({ default: m.ForecastFinn })));
+const Pip = lazy(() => import("./modules/bots/Pip").then((m) => ({ default: m.Pip })));
+const ApprovalsInbox = lazy(() => import("./modules/approvals/ApprovalsInbox").then((m) => ({ default: m.ApprovalsInbox })));
+
 export const App: React.FC = () => {
+  const [showSignIn, setShowSignIn] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     if (typeof window !== "undefined" && window.location.hash.includes("signed-out")) return false;
     return true;
@@ -85,6 +96,8 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>(() => getTabFromLocation());
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
+  const [isThreeWayMatchOpen, setIsThreeWayMatchOpen] = useState<boolean>(false);
+  const [isBankRecRulesOpen, setIsBankRecRulesOpen] = useState<boolean>(false);
 
   const [items, setItems] = useState<ProductItem[]>(initialMockItems);
   const [parties, setParties] = useState<Party[]>(initialMockParties);
@@ -147,7 +160,7 @@ export const App: React.FC = () => {
   const syncAllMasterData = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
-      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes, billsRes] =
+      const [partiesRes, itemsRes, accountsRes, invoicesRes, journalsRes, billsRes, poRes, grnRes, matchRes] =
         await Promise.all([
           apiClient.listParties(),
           apiClient.listItems(),
@@ -155,6 +168,9 @@ export const App: React.FC = () => {
           apiClient.listInvoices(),
           apiClient.listJournalEntries(),
           apiClient.listBills(),
+          apiClient.listPurchaseOrders(),
+          apiClient.listGoodsReceipts(),
+          apiClient.listThreeWayMatches(),
         ]);
 
       setParties(partiesRes.data);
@@ -164,8 +180,11 @@ export const App: React.FC = () => {
       setInvoicesSummary(invoicesRes.data.summary);
       setJournals(journalsRes.data);
       setBills(billsRes.data);
+      setPurchaseOrders(poRes.data);
+      setGoodsReceipts(grnRes.data);
+      setThreeWayMatches(matchRes.data.matches);
       setIsLiveApi(
-        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive || invoicesRes.isLive
+        partiesRes.isLive || itemsRes.isLive || accountsRes.isLive || invoicesRes.isLive || poRes.isLive
       );
     } catch (err) {
       console.warn("Real-time DB sync warning:", err);
@@ -201,6 +220,20 @@ export const App: React.FC = () => {
           void apiClient.listBills().then((res) => {
             if (res.isLive) setBills(res.data);
           });
+        } else if (event.type.startsWith("procurement.order.")) {
+          void apiClient.listPurchaseOrders().then((res) => {
+            if (res.isLive) setPurchaseOrders(res.data);
+          });
+        } else if (event.type.startsWith("procurement.receipt.")) {
+          void apiClient.listGoodsReceipts().then((res) => {
+            if (res.isLive) setGoodsReceipts(res.data);
+          });
+        } else if (event.type.startsWith("procurement.match.")) {
+          void apiClient.listThreeWayMatches().then((res) => {
+            if (res.isLive) setThreeWayMatches(res.data.matches);
+          });
+        } else if (event.type.startsWith("approvals.request.")) {
+          console.log("[Realtime Approvals Event]", event.type, event.payload);
         }
       },
       (status) => {
@@ -365,6 +398,13 @@ export const App: React.FC = () => {
   // Purchasing & 3-Way Matching actions (PRC-01 to PRC-04)
   const handleAddPurchaseOrder = (po: PurchaseOrder) => {
     setPurchaseOrders((prev) => [po, ...prev]);
+    void apiClient.createPurchaseOrder(po).then((res) => {
+      if (res.isLive) {
+        setPurchaseOrders((prev) =>
+          prev.map((existing) => (existing.id === po.id ? res.data : existing))
+        );
+      }
+    });
   };
 
   const handleUpdatePurchaseOrderStatus = (
@@ -374,10 +414,18 @@ export const App: React.FC = () => {
     setPurchaseOrders((prev) =>
       prev.map((po) => (po.id === id ? { ...po, status } : po))
     );
+    void apiClient.updatePurchaseOrderStatus(id, status);
   };
 
   const handleAddGoodsReceipt = (grn: GoodsReceiptNote) => {
     setGoodsReceipts((prev) => [grn, ...prev]);
+    void apiClient.createGoodsReceipt(grn).then((res) => {
+      if (res.isLive) {
+        setGoodsReceipts((prev) =>
+          prev.map((existing) => (existing.id === grn.id ? res.data : existing))
+        );
+      }
+    });
   };
 
   const handleApproveMatchOverride = (matchId: string, note: string) => {
@@ -388,6 +436,17 @@ export const App: React.FC = () => {
           : m
       )
     );
+    void apiClient.overrideThreeWayMatch(matchId, note);
+  };
+
+  // The studio only marks a line approved after the server saved the override.
+  const handleStudioOverride = async (matchId: string, note: string): Promise<boolean> => {
+    const res = await apiClient.overrideThreeWayMatch(matchId, note);
+    if (!res.isLive) return false;
+    setThreeWayMatches((prev) =>
+      prev.map((m) => (m.id === matchId ? { ...m, overrideApproved: true, overrideNote: note, toleranceOk: true } : m))
+    );
+    return true;
   };
 
   // Item Master actions (MDM-02 -> /v1/master-data/items)
@@ -521,6 +580,11 @@ export const App: React.FC = () => {
           isOpenMobile={isSidebarOpenMobile}
           onCloseMobile={() => setIsSidebarOpenMobile(false)}
           workspaceName="Apex Production"
+          onSignOut={() => {
+            setApiSessionToken(null);
+            setIsAuthenticated(false);
+            navigateToTab("signed-out");
+          }}
         />
       )}
 
@@ -532,6 +596,8 @@ export const App: React.FC = () => {
           activeTab={activeTab}
           syncStatus={syncStatus}
           onOpenCommandBar={() => setIsCommandBarOpen(true)}
+          onOpenThreeWayMatch={() => setIsThreeWayMatchOpen(true)}
+          onOpenBankRecRules={() => setIsBankRecRulesOpen(true)}
           onToggleSidebar={() => setIsSidebarOpenMobile((prev) => !prev)}
           onSignOut={() => {
             setApiSessionToken(null);
@@ -541,8 +607,18 @@ export const App: React.FC = () => {
         />
 
         {/* Main Content Area */}
+        <Suspense fallback={<div className="p-8 text-center text-sm text-muted">Loading…</div>}>
         <main className="flex-1 pb-16 px-3 sm:px-6 md:px-8 max-w-[1400px] w-full mx-auto" id="main">
-        {!isAuthenticated ? (
+        {!isAuthenticated && showSignIn ? (
+          <SignInForm
+            onCancel={() => setShowSignIn(false)}
+            onSignedIn={() => {
+              setShowSignIn(false);
+              setIsAuthenticated(true);
+              navigateToTab("dashboard");
+            }}
+          />
+        ) : !isAuthenticated ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-12">
             <Gate
               type="signed-out"
@@ -557,6 +633,15 @@ export const App: React.FC = () => {
                 navigateToTab("dashboard");
               }}
             />
+            <p className="text-center mt-4">
+              <button
+                type="button"
+                className="underline font-bold"
+                onClick={() => setShowSignIn(true)}
+              >
+                Sign in with your workspace account
+              </button>
+            </p>
           </div>
         ) : activeTab === "dashboard" ? (
           <Dashboard onNavigateToBot={handleNavigateBot} />
@@ -770,16 +855,44 @@ export const App: React.FC = () => {
           </div>
         )}
       </main>
+        </Suspense>
 
       {/* Global CommandBar (Ctrl+K) */}
-      <CommandBar
-        isOpen={isCommandBarOpen}
-        onClose={() => setIsCommandBarOpen(false)}
-        onNavigate={navigateToTab}
-        onOpenQuickEntry={() => navigateToTab("dashboard")}
-        onOpenContactDrawer={() => navigateToTab("contacts")}
-        onOpenItemDrawer={() => navigateToTab("items")}
-      />
+      {isCommandBarOpen && (
+        <Suspense fallback={null}>
+          <CommandBar
+            isOpen={isCommandBarOpen}
+            onClose={() => setIsCommandBarOpen(false)}
+            onNavigate={navigateToTab}
+            onOpenQuickEntry={() => navigateToTab("dashboard")}
+            onOpenContactDrawer={() => navigateToTab("contacts")}
+            onOpenItemDrawer={() => navigateToTab("items")}
+          />
+        </Suspense>
+      )}
+
+      {/* PRC-04: Automated 3-Way Match Verification Modal */}
+      {isThreeWayMatchOpen && (
+        <Suspense fallback={null}>
+          <ThreeWayMatchModal
+            isOpen={isThreeWayMatchOpen}
+            onClose={() => setIsThreeWayMatchOpen(false)}
+            matches={threeWayMatches}
+            isLive={isLiveApi}
+            onOverride={handleStudioOverride}
+          />
+        </Suspense>
+      )}
+
+      {/* FIN-04: Automated Bank Reconciliation Rules Modal */}
+      {isBankRecRulesOpen && (
+        <Suspense fallback={null}>
+          <BankRecRulesModal
+            isOpen={isBankRecRulesOpen}
+            onClose={() => setIsBankRecRulesOpen(false)}
+          />
+        </Suspense>
+      )}
 
       {/* Global Toast Container */}
       <ToastContainer />

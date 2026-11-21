@@ -12,10 +12,10 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-04 | Tax & Country Rules Engine | Partial | Tax codes with effective-dated rates, exclusive and inclusive pricing, reverse charge, overlap validation | Country rule packs, compound taxes, withholding, document-level rounding |
 | PLT-05 | Multi-currency & FX | Partial | Exact money arithmetic, zero-decimal and three-decimal currencies, effective-dated rates, inverse rates | Realized and unrealized gain/loss posting, revaluation, rate import |
 | PLT-06 | Events, Posting & Jobs | Partial | Domain events, transactional outbox (Postgres), dispatcher with leases, retries, dead-lettering, idempotent consumers | Worker process, dead-letter tooling, per-aggregate ordering, scheduler |
-| PLT-07 | Workflow & Approvals | Not started | | Approval chains, thresholds, delegation |
+| PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
-| PLT-10 | Notifications | Not started | | Email, SMS, WhatsApp, push, templates |
+| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send); Chase Chloe email reminders (`POST /v1/invoicing/reminders`) queue real mail; delivery state at `GET /v1/notifications` and `/{id}` (no bodies) | Bounce handling (SES notifications through SNS, with signature checks), SMS, WhatsApp, push, template management |
 | PLT-11 | Documents & Files | Not started | | Storage, versions, retention, e-signature |
 | PLT-12 | Print & PDF | Not started | | Templates, PDF output, labels |
 | PLT-13 | Reporting & BI | Not started | | Report builder, dashboards |
@@ -65,10 +65,22 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 ## Counts
 
 - Implemented: 0
-- Partial: 11
-- Not started: 12
+- Partial: 13
+- Not started: 10
+
+## Update 2026-11-21
+
+- Procurement slice (PRC-01 to PRC-03): purchase orders, goods receipts and three-way matches with an override are served under `/v1/procurement/orders`, `/receipts` and `/matches`, and are now in `contracts/openapi.yaml`. The match summary total is computed in integer minor units (it used floats before).
+- Bank feeds (FIN-04): lines, statement import, reconcile and unreconcile are in the contract.
+- UAAP: Ticket Tess and Onboard Ola agents added with tests. Python suite: 274 passed, 5 skipped (the skipped ones need `UAAP_TEST_DATABASE_URL`). It needs `pytest-asyncio` installed.
+- Checks run: backend typecheck, contract drift test, web build, 41 web unit tests and the site check (5,772) all pass. The Postgres integration tests and the Playwright suite were not run in this pass.
+- PLT-10 email slice (`@erp/notifications`, migration 0013, `PgNotificationStore`) with Amazon SES. Full backend run with Postgres: 235 passed, 4 skipped. `@aws-sdk/client-sesv2` was added as the SES client.
+- The contract-undocumented list shrank by seven procurement routes. Six `/v1/approvals` routes remain.
 
 ## Known gaps in the Phase 0 build
+
+- Approvals: the API's in-app approval requests moved to `/v1/approval-requests` (documented in the contract), leaving `/v1/approvals` to the UAAP bot service. The contract-undocumented list is now empty.
+- **Three-way match studio** now reads `/v1/procurement/matches` through the app and saves overrides through `/v1/procurement/matches/{id}/override`; it shows no money maths of its own and marks a line approved only after the server saved it. **Bank rules studio** is still sample data (labelled): custom rules need a backend first (a tenant-scoped rules table, API routes in the contract, a deterministic match engine with tests, audit entries), then bind the modal to it.
 
 - Only the ledger routes enforce entitlements. The other modules do not exist yet, so there is nothing else to enforce.
 - No outbox worker runs in production. The dispatcher exists and is tested; a process that calls it on a timer has not been added.
@@ -83,3 +95,7 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 - **Money as integers** in minor units, arithmetic in `bigint`, and decimal strings on the wire.
 - **Tenant-prefixed session tokens** so the server selects the tenant before any query runs.
 - **Transactional outbox** for events, so no event is published for a rolled-back change.
+
+- `POST /v1/invoicing/reminders` used to record every reminder as sent without sending anything. It now queues email, and records WhatsApp, or email with no queue, as approved. The invoices page and the Chase Chloe screen now ask the server to dispatch, and say "queued for delivery", "saved as approved but not delivered", or "was not sent" from the real result. The Chase Chloe e2e spec covers the not-sent path only (the e2e run has no live API).
+
+- Still waiting on you: AWS deploy targets, a verified SES sender with an AWS role and production access, and a decision on a general email-send route for Pip and Restock Rex (it would be an open relay without limits and approval, so it was not added).

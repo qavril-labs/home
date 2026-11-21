@@ -6,6 +6,7 @@ window.addEventListener("DOMContentLoaded", function () {
   try { session = JSON.parse(sessionStorage.getItem("qavril-session") || "null"); } catch (e) { session = null; }
   var data = null;
   var kind = "sale";
+  var pendingEntryKey = null;
 
   function $(sel, root) { return (root || document).querySelector(sel); }
   function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
@@ -18,10 +19,10 @@ window.addEventListener("DOMContentLoaded", function () {
     $$('[data-bind="' + name + '"]').forEach(function (el) { el.textContent = text; });
   }
 
-  function call(method, path, body) {
+  function call(method, path, body, extraHeaders) {
     return fetch(api + path, {
       method: method,
-      headers: Object.assign({ authorization: "Bearer " + session.token }, body ? { "content-type": "application/json" } : {}),
+      headers: Object.assign({ authorization: "Bearer " + session.token }, body ? { "content-type": "application/json" } : {}, extraHeaders || {}),
       body: body ? JSON.stringify(body) : undefined,
     }).then(function (response) {
       return response.text().then(function (text) {
@@ -502,10 +503,14 @@ window.addEventListener("DOMContentLoaded", function () {
     button.disabled = true;
     status.textContent = "Posting to your books…";
     status.className = "status full";
-    call("POST", "/v1/workspace/quick-entries", body)
+    // One key per submission: a double-click or a retry after a network error posts once. The key is
+    // kept until the entry is saved, so a failed attempt can be retried safely.
+    if (!pendingEntryKey) pendingEntryKey = "entry-" + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now() + "-" + Math.random().toString(36).slice(2));
+    call("POST", "/v1/workspace/quick-entries", body, { "idempotency-key": pendingEntryKey })
       .then(function (result) {
         form.elements.amount.value = "";
         form.elements.memo.value = "";
+        pendingEntryKey = null;
         status.textContent = "Posted as " + result.reference + ". Updating your figures…";
         return call("GET", "/v1/workspace/overview").then(function (overview) {
           data = overview;

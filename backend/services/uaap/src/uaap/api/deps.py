@@ -11,8 +11,13 @@ from typing import Annotated, Any, cast
 from fastapi import Depends, Header, Request
 from pydantic import SecretStr
 
+from uaap.agents.approval import ApprovalAgent
+from uaap.agents.approval_reminder import ApprovalReminder
 from uaap.agents.base import AgentCatalog
 from uaap.agents.finance import UniversalFinanceAgent
+from uaap.agents.ledger_invariants import LedgerInvariantChecker
+from uaap.agents.onboard_ola import OnboardOla
+from uaap.agents.ticket_tess import TicketTess
 from uaap.approvals.inbox import ApprovalInbox
 from uaap.config import Settings
 from uaap.db.durable import (
@@ -119,6 +124,51 @@ _MODEL_CLIENT = GatewayModelClient(
 _CATALOG = AgentCatalog(_AGENTS, _TOOLS)
 _CATALOG.add(
     UniversalFinanceAgent(
+        _MODEL_CLIENT,
+        _RUNNER,
+        metrics=_METRICS,
+        audit_sink=_AUDIT,
+        max_input_chars=_SETTINGS.agent_max_input_chars,
+    )
+)
+_CATALOG.add(
+    LedgerInvariantChecker(
+        _RUNNER,
+        metrics=_METRICS,
+        audit_sink=_AUDIT,
+        max_input_chars=_SETTINGS.agent_max_input_chars,
+    )
+)
+_CATALOG.add(
+    ApprovalReminder(
+        _RUNNER,
+        _INBOX,
+        metrics=_METRICS,
+        audit_sink=_AUDIT,
+        max_input_chars=_SETTINGS.agent_max_input_chars,
+    )
+)
+_CATALOG.add(
+    ApprovalAgent(
+        _MODEL_CLIENT,
+        _RUNNER,
+        _INBOX,
+        metrics=_METRICS,
+        audit_sink=_AUDIT,
+        max_input_chars=_SETTINGS.agent_max_input_chars,
+    )
+)
+_CATALOG.add(
+    TicketTess(
+        _MODEL_CLIENT,
+        _RUNNER,
+        metrics=_METRICS,
+        audit_sink=_AUDIT,
+        max_input_chars=_SETTINGS.agent_max_input_chars,
+    )
+)
+_CATALOG.add(
+    OnboardOla(
         _MODEL_CLIENT,
         _RUNNER,
         metrics=_METRICS,

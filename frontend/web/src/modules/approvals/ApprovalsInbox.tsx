@@ -1,14 +1,20 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Button } from "../../components/ui/Button";
 import { ApprovalDetailModal } from "./ApprovalDetailModal";
 import { PayloadHashModal } from "./PayloadHashModal";
 import { AgentKillSwitchCard } from "./AgentKillSwitchCard";
+import { AgentCards } from "./AgentCards";
 import { useToast } from "../../context/ToastContext";
 import { formatMoney } from "../../lib/currency";
 import {
-  initialApprovals,
-  initialAgentRegistry,
-} from "../../lib/api-mock";
+  approveProposal,
+  listAgents,
+  listApprovals,
+  rejectProposal,
+  UaapError,
+  type UaapAgent,
+  type UaapApproval,
+} from "../../lib/uaap-client";
 import type {
   ApprovalItem,
   ApprovalStatus,
@@ -28,147 +34,142 @@ export interface ApprovalsInboxProps {
   onNavigateBack?: () => void;
 }
 
+/** Maps a UAAP proposal to the inbox item. Tier 3 is the approval tier by definition (AGT-06). */
+function toItem(a: UaapApproval, agentNames: Map<string, string>): ApprovalItem {
+  return {
+    id: a.approval_id,
+    runId: a.run_id,
+    agentId: a.agent_id,
+    agentName: agentNames.get(a.agent_id) ?? a.agent_id,
+    agentColor: "var(--q-cyan)",
+    toolName: a.action,
+    tier: 3,
+    title: a.summary.split("\n")[0] || a.action,
+    summary: a.summary,
+    initiator: a.initiator_id,
+    initiatorPrincipal: `user:${a.initiator_id}`,
+    requiresDualControl: true,
+    payload: a.payload,
+    payloadHash: a.payload_hash,
+    status: a.status,
+    createdAt: a.created_at,
+    expiresAt: a.expires_at,
+    approvedBy: a.decided_by ?? undefined,
+    approvedAt: a.decided_at ?? undefined,
+    rejectionReason: a.status === "REJECTED" ? (a.outcome ?? undefined) : undefined,
+    canDecide: a.can_decide,
+  };
+}
+
+function toAgentItem(a: UaapAgent, proposals: UaapApproval[]): AgentRegistryItem {
+  return {
+    id: a.agent_id,
+    name: a.name,
+    role: a.purpose,
+    color: "var(--q-cyan)",
+    catalogId: a.agent_id,
+    enabled: a.enabled,
+    pendingApprovals: proposals.filter((p) => p.agent_id === a.agent_id && p.status === "PENDING").length,
+    toolsGranted: [],
+    maxTier: 3,
+    lastActive: "",
+  };
+}
+
 export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }) => {
   const { showToast } = useToast();
 
-  // State
-  const [approvals, setApprovals] = useState<ApprovalItem[]>(initialApprovals);
-  const [agents, setAgents] = useState<AgentRegistryItem[]>(initialAgentRegistry);
+  // Data comes only from the UAAP API (docs/ui-contract.md section 5). Nothing is invented.
+  const [raw, setRaw] = useState<UaapApproval[]>([]);
+  const [agents, setAgents] = useState<AgentRegistryItem[]>([]);
+  const [uaapAgents, setUaapAgents] = useState<UaapAgent[]>([]);
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "ALL">("PENDING");
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [agentFilter, setAgentFilter] = useState<string>("all");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isLiveApi, setIsLiveApi] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [lastRefreshed, setLastRefreshed] = useState<string>("");
 
   // Modals
   const [selectedApproval, setSelectedApproval] = useState<ApprovalItem | null>(null);
   const [hashModalApproval, setHashModalApproval] = useState<ApprovalItem | null>(null);
 
-  // Sync / Refresh
+  const agentNames = useMemo(() => new Map(agents.map((a) => [a.catalogId, a.name])), [agents]);
+  const approvals = useMemo(() => raw.map((a) => toItem(a, agentNames)), [raw, agentNames]);
+
   const fetchApprovals = useCallback(async () => {
     setIsLoading(true);
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-
     try {
-      const apiBase = (window as any).ERP_CONFIG?.apiBase || "http://localhost:3002";
-      const res = await fetch(`${apiBase}/v1/workspace/insights`, {
-        headers: { "Content-Type": "application/json" },
-      }).catch(() => null);
-
-      if (res && res.ok) {
-        setIsLiveApi(true);
-      } else {
-        setIsLiveApi(false);
-      }
-    } catch {
+      const [items, agentList] = await Promise.all([listApprovals(), listAgents()]);
+      setRaw(items);
+      setAgents(agentList.map((a) => toAgentItem(a, items)));
+      setUaapAgents(agentList);
+      setIsLiveApi(true);
+      setLoadError(null);
+    } catch (err) {
       setIsLiveApi(false);
+      setLoadError(err instanceof UaapError ? err.message : "The approvals service could not be reached.");
     } finally {
       setIsLoading(false);
-      setLastRefreshed(timeStr);
+      setLastRefreshed(
+        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+      );
     }
   }, []);
 
   useEffect(() => {
-    fetchApprovals();
+    void fetchApprovals();
   }, [fetchApprovals]);
 
-  // Approval Handler
-  const handleApprove = (id: string) => {
-    setApprovals((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            status: "APPROVED",
-            approvedBy: "user:supervisor_controller",
-            approvedAt: new Date().toISOString(),
-          };
-        }
-        return item;
-      })
-    );
-
-    // Decrement agent pending counter
-    const approvedItem = approvals.find((a) => a.id === id);
-    if (approvedItem) {
-      setAgents((prev) =>
-        prev.map((ag) =>
-          ag.id === approvedItem.agentId
-            ? { ...ag, pendingApprovals: Math.max(0, ag.pendingApprovals - 1) }
-            : ag
-        )
-      );
+  // An action is shown as done only after the API returns it.
+  const handleApprove = async (id: string) => {
+    const item = approvals.find((a) => a.id === id);
+    if (!item || busyId) return;
+    setBusyId(id);
+    try {
+      const result = await approveProposal(id, item.payloadHash);
+      setRaw((prev) => prev.map((a) => (a.approval_id === id ? result.approval : a)));
+      setSelectedApproval(null);
+      if (result.approval.status === "APPROVED") {
+        showToast(result.reply.text.split("\n")[0] || "Approved.", { type: "success" });
+      } else {
+        showToast(`The approval did not complete: ${result.approval.outcome ?? "see the inbox"}.`, {
+          type: "warning",
+        });
+      }
+    } catch (err) {
+      showToast(err instanceof UaapError ? err.message : "Approval failed. Nothing was changed.", {
+        type: "warning",
+      });
+      void fetchApprovals();
+    } finally {
+      setBusyId(null);
     }
-
-    setSelectedApproval(null);
-
-    showToast(`Approval ${id} signed off. Action dispatched to execution boundary.`, {
-      type: "success",
-      undoAction: () => {
-        setApprovals((prev) =>
-          prev.map((item) => (item.id === id ? { ...item, status: "PENDING" } : item))
-        );
-        showToast(`Reversed approval sign-off for ${id}.`, { type: "info" });
-      },
-    });
   };
 
-  // Rejection Handler
-  const handleReject = (id: string, reason: string) => {
-    setApprovals((prev) =>
-      prev.map((item) => {
-        if (item.id === id) {
-          return {
-            ...item,
-            status: "REJECTED",
-            rejectionReason: reason,
-          };
-        }
-        return item;
-      })
-    );
-
-    const rejectedItem = approvals.find((a) => a.id === id);
-    if (rejectedItem) {
-      setAgents((prev) =>
-        prev.map((ag) =>
-          ag.id === rejectedItem.agentId
-            ? { ...ag, pendingApprovals: Math.max(0, ag.pendingApprovals - 1) }
-            : ag
-        )
-      );
+  const handleReject = async (id: string, reason: string) => {
+    if (busyId) return;
+    setBusyId(id);
+    try {
+      const result = await rejectProposal(id, reason);
+      setRaw((prev) => prev.map((a) => (a.approval_id === id ? result.approval : a)));
+      setSelectedApproval(null);
+      showToast(`Proposal ${id} rejected. Nothing was posted.`, { type: "warning" });
+    } catch (err) {
+      showToast(err instanceof UaapError ? err.message : "Rejection failed. Nothing was changed.", {
+        type: "warning",
+      });
+      void fetchApprovals();
+    } finally {
+      setBusyId(null);
     }
-
-    setSelectedApproval(null);
-
-    showToast(`Proposal ${id} rejected. Reason logged to audit trail.`, {
-      type: "warning",
-    });
   };
 
-  // Agent Kill Switch Toggle
-  const handleToggleAgent = (agentId: string) => {
-    setAgents((prev) =>
-      prev.map((ag) => {
-        if (ag.id === agentId) {
-          const next = !ag.enabled;
-          showToast(
-            next
-              ? `${ag.name} execution enabled: Granted tools active.`
-              : `${ag.name} suspended (kill switch engaged): Tool executor blocked.`,
-            { type: next ? "success" : "warning" }
-          );
-          return { ...ag, enabled: next };
-        }
-        return ag;
-      })
-    );
+  // Turning a bot on or off is an administrator action in the admin console, not in this inbox.
+  const handleToggleAgent = (_agentId: string) => {
+    showToast("Switching a bot on or off needs an administrator in the admin console.", { type: "info" });
   };
 
   // Filter logic
@@ -185,8 +186,8 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* 1. Breadcrumbs */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
           {onNavigateBack && (
             <button
               type="button"
@@ -197,23 +198,23 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
             </button>
           )}
           <span className="text-muted text-xs">/</span>
-          <span className="text-xs font-mono font-bold text-muted uppercase">
+          <span className="hidden sm:inline text-xs font-mono font-bold text-muted uppercase">
             Security & Governance
           </span>
-          <span className="text-muted text-xs">/</span>
-          <span className="text-xs font-bold text-text">Approvals Platform (PLT-07)</span>
+          <span className="hidden sm:inline text-muted text-xs">/</span>
+          <span className="text-xs font-bold text-text truncate">Approvals Platform (PLT-07)</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <span
             className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border-line ${
               isLiveApi ? "bg-lime text-ink" : "bg-cream text-ink"
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${isLiveApi ? "bg-good" : "bg-watch"}`} />
-            {isLiveApi ? "API Connected" : "Mock Fixture"}
+            {isLiveApi ? "API Connected" : "Not connected"}
           </span>
-          <span className="text-xs font-mono font-bold text-muted">
+          <span className="hidden sm:inline text-xs font-mono font-bold text-muted">
             PLT-07 · AGT-01 · AGT-06
           </span>
         </div>
@@ -221,21 +222,21 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
 
       {/* 2. Platform Header */}
       <section
-        className="neo-card p-6 bg-panel border-line shadow-card"
+        className="neo-card p-4 sm:p-6 bg-panel border-line shadow-card"
         aria-label="Approvals Platform Header"
       >
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-16 h-16 bg-pink text-white border-line shadow-[3px_3px_0_var(--q-ink)] flex items-center justify-center select-none flex-shrink-0">
-              <ShieldCheck className="w-10 h-10" />
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-6">
+          <div className="flex items-start sm:items-center gap-3 sm:gap-4">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-pink text-white border-line shadow-[3px_3px_0_var(--q-ink)] flex items-center justify-center select-none flex-shrink-0">
+              <ShieldCheck className="w-7 h-7 sm:w-10 sm:h-10" />
             </div>
 
-            <div>
-              <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                <h1 className="font-display font-extrabold text-xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
                   Approvals Inbox
                 </h1>
-                <span className="px-2 py-0.5 bg-pink/20 border border-pink text-[11px] font-bold text-ink uppercase tracking-wider">
+                <span className="px-2 py-0.5 bg-pink/20 border border-pink text-[10px] sm:text-[11px] font-bold text-ink uppercase tracking-wider">
                   Human-in-the-Loop Engine
                 </span>
                 <span className="px-1.5 py-0.5 bg-page border border-grid text-[10px] font-mono text-muted">
@@ -249,9 +250,9 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-2 bg-page px-3 py-1.5 border-line shadow-sm">
-              <span className="w-2 h-2 rounded-full bg-good animate-ping" />
+              <span className="w-2 h-2 rounded-full bg-good animate-ping shrink-0" />
               <span className="text-xs font-bold text-text">
                 Live · updated {lastRefreshed || "just now"}
               </span>
@@ -393,8 +394,8 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
         </div>
 
         {/* Approvals Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+        <div className="neo-table-wrapper overflow-x-auto max-w-full">
+          <table className="w-full min-w-[640px] text-left text-xs border-collapse">
             <thead>
               <tr className="border-b-2 border-line bg-page text-muted uppercase text-[10px] tracking-wider font-bold">
                 <th className="py-2.5 px-3">Proposal & Proposer</th>
@@ -499,10 +500,11 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
                         <span>{item.status === "PENDING" ? "Review" : "View"}</span>
                       </Button>
 
-                      {item.status === "PENDING" && (
+                      {item.status === "PENDING" && item.canDecide !== false && (
                         <Button
                           size="sm"
                           variant="lime"
+                          disabled={busyId === item.id}
                           onClick={() => handleApprove(item.id)}
                           className="text-xs py-1 px-2.5 font-bold"
                         >
@@ -517,6 +519,18 @@ export const ApprovalsInbox: React.FC<ApprovalsInboxProps> = ({ onNavigateBack }
           </table>
         </div>
       </section>
+
+      {loadError && (
+        <p role="alert" className="mb-3 p-3 bg-act/10 border-line border-act text-act text-xs font-bold">
+          {loadError} Nothing shown here is a sample; retry when the service is back.
+        </p>
+      )}
+
+      {/* 4a. Your bots: one card per bot the API lists, with counts from the inbox */}
+      <AgentCards
+        agents={uaapAgents}
+        pendingFor={(id) => raw.filter((p) => p.agent_id === id && p.status === "PENDING").length}
+      />
 
       {/* 5. Agent Governance & Kill Switches Card */}
       <AgentKillSwitchCard agents={agents} onToggleAgent={handleToggleAgent} />

@@ -64,7 +64,7 @@ export const CustomerStatementDrawer: React.FC<CustomerStatementDrawerProps> = (
         {/* Transaction History */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted">
+            <h4 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted break-words">
               Recent Transactions
             </h4>
             <span className="text-[10px] font-mono font-bold text-muted">
@@ -88,11 +88,11 @@ export const CustomerStatementDrawer: React.FC<CustomerStatementDrawerProps> = (
                     <td className="py-2.5 px-2.5 font-mono text-muted text-[11px] whitespace-nowrap">
                       {tx.date}
                     </td>
-                    <td className="py-2.5 px-2.5">
+                    <td className="py-2.5 px-2.5 break-words">
                       <div className="font-bold text-text">{tx.reference}</div>
                       <span className="text-[10px] text-muted uppercase">{tx.type}</span>
                     </td>
-                    <td className="py-2.5 px-2.5 font-mono font-bold text-right">
+                    <td className="py-2.5 px-2.5 font-mono font-bold text-right break-words">
                       <span
                         className={
                           tx.amount.startsWith("-")
@@ -103,7 +103,7 @@ export const CustomerStatementDrawer: React.FC<CustomerStatementDrawerProps> = (
                         {formatMoney(tx.amount)}
                       </span>
                     </td>
-                    <td className="py-2.5 px-2.5 font-mono font-bold text-right text-text">
+                    <td className="py-2.5 px-2.5 font-mono font-bold text-right text-text break-words">
                       {formatMoney(tx.balance)}
                     </td>
                   </tr>

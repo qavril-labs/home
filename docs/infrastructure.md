@@ -50,6 +50,8 @@ How an event travels: the API writes a document and its event in one transaction
 
 Production Redis: a managed Redis such as Upstash or Redis Cloud, with TLS (`rediss://`) and `noeviction` memory policy, which BullMQ requires.
 
+The API also uses Redis when `REDIS_URL` is set, for two things that must work across instances: single-use live-event stream tickets (`backend/apps/api/src/stream-tickets.ts`, consumed atomically with `GETDEL`) and fan-out of live events to clients connected to any instance (`backend/apps/api/src/realtime-bus.ts`, a pub/sub channel). Without `REDIS_URL` the API runs on one instance with in-memory tickets and local events.
+
 ## 4. Running locally
 
 ```bash

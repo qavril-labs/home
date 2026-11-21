@@ -14,6 +14,13 @@ import { BOT_CONTROLS } from "./site-bot-controls.mjs";
 import { INFO_PAGES } from "./site-info-pages.mjs";
 import { LEGAL_PAGES } from "./site-legal-pages.mjs";
 import { BLOG_POSTS } from "./site-blog.mjs";
+import { EXPERT_PAGES, NEW_INDUSTRIES, SERVICE_PAGES, STUDIO_PAGES } from "./site-company-pages.mjs";
+
+// New industries join the shared list, so the pages, the homepage grid and the request form all match.
+for (const industry of NEW_INDUSTRIES) {
+  INDUSTRIES.push({ slug: industry.slug, name: industry.name, pains: industry.pains, first: industry.first });
+  INDUSTRY_DETAIL[industry.slug] = { example: industry.example };
+}
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const site = join(root, "site");
@@ -24,7 +31,7 @@ function writeLlmsTxt() {
   const lines = [
     "# QAVRIL LABS",
     "",
-    "> Cloud ERP for small and medium businesses: finance, sales, inventory, purchasing, payroll, POS, and AI agents with automation, in one system. Start free or book a demo.",
+    "> Cloud ERP for small and medium businesses: finance, sales, inventory, purchasing, payroll, POS, and AI agents with automation, in one system. Free trial waitlist or book a demo.",
     "",
     "## System Identity & Overview",
     "QAVRIL LABS is a multi-tenant cloud Enterprise Resource Planning (ERP) platform for small and medium-sized businesses. It unifies core double-entry finance, order-to-cash sales, procure-to-pay purchasing, multi-location inventory, localized payroll, offline-first point of sale, and an autonomous AI agent swarm under strict tenant isolation.",
@@ -204,15 +211,18 @@ function header(prefix) {
         <a href="${prefix}products.html">Products</a>
         <a href="${prefix}case-studies.html">Case studies</a>
         <a href="${prefix}projects.html">Projects</a>
+        <a href="${prefix}services.html">Services</a>
+        <a href="${prefix}studios.html">Studios</a>
         <a href="${prefix}industries.html">Industries</a>
+        <a href="${prefix}expert-network.html">Expert Network</a>
         <a href="${prefix}pricing.html">Pricing</a>
         <a href="${prefix}blog.html">Blog</a>
         <a href="${prefix}faq.html">FAQ</a>
         <a href="${prefix}signin.html">Sign in</a>
-        <a class="menu-cta" href="${prefix}signup.html">Start free</a>
+        <a class="menu-cta" href="${prefix}book.html?interest=trial">Request a trial</a>
       </nav>
       <button class="theme-toggle" type="button" aria-label="Switch to dark theme" aria-pressed="false" data-theme-toggle><span aria-hidden="true">◐</span></button>
-      <a class="btn btn-sm btn-lime" href="${prefix}signup.html">Start free</a>
+      <a class="btn btn-sm btn-lime" href="${prefix}book.html?interest=trial">Request a trial</a>
     </div>
   </header>`;
 }
@@ -248,7 +258,7 @@ ${header(prefix)}
     <span class="kicker">${esc(kicker)}</span>
     <h1>${esc(name)}</h1>
     <p class="lead">${esc(summary)}</p>
-    <p class="cta-row"><a class="btn btn-lime" href="${prefix}signup.html">Start free</a> <a class="btn btn-ghost" href="${prefix}book.html?interest=demo" data-modal="demo">See it in a live demo</a></p>
+    <p class="cta-row"><a class="btn btn-lime" href="${prefix}book.html?interest=trial">Request a trial</a> <a class="btn btn-ghost" href="${prefix}book.html?interest=demo" data-modal="demo">See it in a live demo</a></p>
 ${body}
 ${extra}
 ${ctaBlock(prefix)}
@@ -287,6 +297,8 @@ ${footer(prefix)}`;
 
 // Plain pages: a heading, a lead, then titled sections of paragraphs and lists.
 function infoPage({ path, title, description, kicker, h1, lead, sections }) {
+  // Pages in a folder reach the site root with "../", so their links and assets resolve.
+  const prefix = path.includes("/") ? "../" : "";
   const body = sections
     .map((s) => {
       const paras = (s.paras || []).map((p) => `    <p>${esc(p)}</p>`).join("\n");
@@ -294,18 +306,18 @@ function infoPage({ path, title, description, kicker, h1, lead, sections }) {
       return `    <section class="detail-block">\n      <h2>${esc(s.h)}</h2>\n${paras}\n${items}\n    </section>`;
     })
     .join("\n");
-  return `${head("", title, description, path)}
-${header("")}
+  return `${head(prefix, title, description, path)}
+${header(prefix)}
 
   <main>
     <span class="kicker">${esc(kicker)}</span>
     <h1>${esc(h1)}</h1>
     <p class="lead">${esc(lead)}</p>
 ${body}
-${ctaBlock("")}
+${ctaBlock(prefix)}
   </main>
 
-${footer("")}`;
+${footer(prefix)}`;
 }
 
 function bookPage() {
@@ -561,11 +573,11 @@ for (const i of INDUSTRIES) {
 }
 
 write("book.html", bookPage());
-write("signup.html", `${head("", "Start free", "Create your free QAVRIL LABS workspace in two minutes: books, sales and stock in one place, with AI bots that ask before they act.", "signup.html")}
+write("signup.html", `${head("", "Request a free trial", "Request a free trial of QAVRIL LABS. Trial access is not open yet, so we will email you when your workspace is ready.", "signup.html")}
 ${header("")}
 ${signupBody()}
 ${footer("")}`);
-write("signin.html", `${head("", "Sign in", "Sign in to your QAVRIL LABS workspace with your workspace address, email and password.", "signin.html")}
+write("signin.html", `${head("", "Sign in", "Customer sign-in opens with onboarding. Book a setup call or join the trial waitlist.", "signin.html")}
 ${header("")}
 ${signinBody()}
 ${footer("")}`);
@@ -574,7 +586,7 @@ ${footer("")}`);
 const planCards = PLANS.map((plan) => {
   const price = plan.monthly === "Custom" ? "Custom" : `$${plan.monthly}<span> / month</span>`;
   const setup = plan.setup === "None" ? "No setup fee" : plan.setup === "Custom" ? "Setup agreed in writing" : `One-time setup: $${plan.setup}`;
-  const action = plan.name === "Free" ? "Start free" : plan.name === "Enterprise" ? "Talk to us" : "Request this plan";
+  const action = plan.name === "Free" ? "Request a trial" : plan.name === "Enterprise" ? "Talk to us" : "Request this plan";
   const interest = plan.name === "Free" ? "trial" : "demo";
   return `      <article class="plan-card${plan.featured ? " plan-featured" : ""} reveal">
         ${plan.featured ? '<span class="tag tag-agents">Most chosen</span>' : ""}
@@ -621,6 +633,57 @@ ${ctaBlock("")}
   </main>
 
 ${footer("")}`);
+
+// Expert Network pages.
+for (const page of EXPERT_PAGES) {
+  write(page.path, infoPage({ ...page, sections: [...page.sections] }));
+}
+
+// Studios: an overview and one page per studio.
+write("studios.html", indexPage({
+  title: "Studios", description: "The eleven QAVRIL LABS studios: what each one builds, and the services it delivers.",
+  canonicalPath: "studios.html", kicker: "Studios", h1: "Eleven specialist studios",
+  lead: "Each studio is a specialist team inside QAVRIL LABS. Studios work together on projects, and each one publishes what it delivers.",
+  cards: STUDIO_PAGES.map((studio) => ({ name: studio.name, summary: studio.role, href: `studios/${studio.slug}.html` })),
+}));
+for (const studio of STUDIO_PAGES) {
+  write(`studios/${studio.slug}.html`, infoPage({
+    path: `studios/${studio.slug}.html`,
+    title: studio.name,
+    description: `${studio.name} works in ${studio.role.toLowerCase()}. See its services, commercial divisions and how a project starts.`,
+    kicker: "Studio",
+    h1: studio.name,
+    lead: studio.does,
+    sections: [
+      { h: "Focus", paras: [studio.role + "."] },
+      { h: "Services", items: studio.services },
+      { h: "Commercial divisions", items: studio.divisions },
+    ],
+  }).replace('<a href="../', '<a href="../'));
+}
+
+// Services: an overview and one page per core service.
+write("services.html", indexPage({
+  title: "Services", description: "QAVRIL LABS services: software engineering, AI, automation, data, product design and expert-powered AI work.",
+  canonicalPath: "services.html", kicker: "Services", h1: "Services delivered by our studios",
+  lead: "These are the core services we deliver today through our studios. Each is an engagement with a written scope, not a self-service product.",
+  cards: SERVICE_PAGES.map((service) => ({ name: service.name, summary: service.summary, href: `services/${service.slug}.html` })),
+}));
+for (const service of SERVICE_PAGES) {
+  write(`services/${service.slug}.html`, infoPage({
+    path: `services/${service.slug}.html`,
+    title: service.name,
+    description: service.summary,
+    kicker: "Service",
+    h1: service.name,
+    lead: service.summary,
+    sections: [
+      { h: "What we deliver", items: service.delivers },
+      { h: "Typical uses", items: service.uses },
+      { h: "Delivered by", paras: [`The ${STUDIO_PAGES.find((studio) => studio.slug === service.studio).name} studio, with the QAVRIL LABS team.`] },
+    ],
+  }));
+}
 
 // Blog: one page per article, with its own URL, dates and structured data.
 const BLOG_DATE = "2026-11-02";
@@ -855,6 +918,7 @@ for (const page of [...INFO_PAGES, ...LEGAL_PAGES]) {
 const paths = [
   "", "products.html", "case-studies.html", "projects.html", "industries.html", "book.html", "signup.html", "signin.html", "pricing.html", "faq.html", "bots.html", ...BOTS.map((b) => `bots/${b.slug}.html`), "requirements.html", "availability.html", "blog.html", "privacy.html",
   ...INFO_PAGES.map((p) => p.path),
+  "services.html", "studios.html", ...SERVICE_PAGES.map((p) => `services/${p.slug}.html`), ...STUDIO_PAGES.map((p) => `studios/${p.slug}.html`), ...EXPERT_PAGES.map((p) => p.path),
   ...LEGAL_PAGES.map((p) => p.path),
   ...BLOG_POSTS.map((p) => `blog/${p.slug}.html`),
   ...PRODUCTS.map((p) => `products/${p.slug}.html`),

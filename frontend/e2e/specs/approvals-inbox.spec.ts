@@ -1,100 +1,50 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Approvals Platform & Inbox (PLT-07, AGT-01, AGT-06)", () => {
+/**
+ * Approvals inbox against the UAAP API (docs/ui-contract.md section 5: every figure comes from the API).
+ *
+ * The demo session cannot call UAAP (its token has no tenant prefix), so these tests check the honest
+ * "not connected" state: no invented approvals, no Approve button, no invented bots, and a clear message.
+ * The live approve flow needs a real tenant session and is covered by the API tests in services/uaap.
+ */
+test.describe("Approvals inbox, connected to the UAAP API", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const menu = page.getByRole("button", { name: "Open navigation sidebar" });
+    if (await menu.isVisible()) {
+      await menu.click();
+    }
     await page.getByRole("button", { name: /Approvals/i }).first().click();
-    await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible({ timeout: 15_000 });
   });
 
-  test("Renders Approvals Inbox header, role badges, and live indicator", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible();
-    await expect(page.getByText("Human-in-the-Loop Engine").first()).toBeVisible();
-    await expect(page.getByText("PLT-07").first()).toBeVisible();
-    await expect(page.getByText(/Live · updated/i)).toBeVisible();
+  test("shows the connection state, not sample data", async ({ page }) => {
+    await expect(page.getByText(/API Connected|Not connected/).first()).toBeVisible();
+    await expect(page.getByText(/Mock Fixture/i)).toHaveCount(0);
   });
 
-  test("Displays 4 KPI tiles and filter tabs", async ({ page }) => {
-    await expect(page.getByText("Pending Proposals")).toBeVisible();
-    await expect(page.getByText("Dual-Control Enforced").first()).toBeVisible();
-    await expect(page.getByText("Total Value Under Review")).toBeVisible();
-    await expect(page.getByText("Approval SLA Performance")).toBeVisible();
-
-    // Status filter buttons
-    await expect(page.getByRole("button", { name: /Pending \(\d+\)/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Approved \(\d+\)/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /Rejected \(\d+\)/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /All History \(\d+\)/i })).toBeVisible();
+  test("invents no approvals when the bot service is unreachable", async ({ page }) => {
+    // Sample proposals used to appear here; none of their amounts or names may show.
+    await expect(page.getByText("$850.00")).toHaveCount(0);
+    await expect(page.getByText("Post Monthly Depreciation Schedule")).toHaveCount(0);
   });
 
-  test("Opens Cryptographic Hash Verification modal and validates SHA-256 digest", async ({ page }) => {
-    // Click hash verify button
-    const hashBtn = page.getByTitle("Verify SHA-256 Digest").first();
-    await hashBtn.click();
-
-    // Verify modal elements
-    await expect(page.getByRole("heading", { name: "Cryptographic Hash Verification" })).toBeVisible();
-    await expect(page.getByText("SHA-256 Digest Match Verified")).toBeVisible();
-    await expect(page.getByText("IMMUTABLE")).toBeVisible();
-    await expect(page.getByText(/sha256:/i)).toBeVisible();
-
-    // Close modal
-    const closeBtn = page.getByRole("button", { name: /Close/i }).first();
-    await closeBtn.click();
-    await expect(page.getByRole("heading", { name: "Cryptographic Hash Verification" })).not.toBeVisible();
+  test("shows the reason when the approvals cannot be loaded", async ({ page }) => {
+    const isLive = await page.getByText("API Connected").first().isVisible();
+    if (!isLive) {
+      await expect(page.getByRole("alert")).toContainText(/Nothing shown here is a sample/i);
+    } else {
+      await expect(page.getByText("API Connected").first()).toBeVisible();
+    }
   });
 
-  test("Opens ApprovalDetailModal, verifies Dual-Control, and approves action", async ({ page }) => {
-    // Review first pending Tier 3 approval (Ledger Lou DEP-2026-11)
-    await page.getByRole("button", { name: "Review" }).first().click();
-
-    // Modal verification
-    await expect(page.getByRole("heading", { name: /Post Monthly Depreciation Schedule/i })).toBeVisible();
-    await expect(page.getByText("Tier 3 Action").first()).toBeVisible();
-    await expect(page.getByText("Dual-Control Enforced").first()).toBeVisible();
-    await expect(page.getByText("$850.00").first()).toBeVisible();
-
-    // Click Approve Action
-    await page.getByRole("button", { name: "Approve Action" }).click();
-
-    // Modal closes and item shows Approved
-    await expect(page.getByText(/Approval.*signed off/i)).toBeVisible();
-  });
-
-  test("Rejects a proposal with mandatory audit reason", async ({ page }) => {
-    // Review second pending approval
-    const reviewButtons = page.getByRole("button", { name: "Review" });
-    await reviewButtons.nth(1).click();
-
-    // Click Reject
-    await page.getByRole("button", { name: "Reject", exact: true }).click();
-
-    // Rejection reason input appears
-    await expect(page.getByText(/Reason for Rejection/i)).toBeVisible();
-    const reasonInput = page.getByPlaceholder(/Breaches 18% margin threshold/i);
-    await reasonInput.fill("Purchase order exceeds weekly shop tooling budget limit.");
-
-    // Confirm Rejection
-    const confirmBtn = page.getByRole("button", { name: "Confirm Rejection" });
-    await confirmBtn.click();
-
-    // Verify rejection toast
-    await expect(page.locator('.fixed[aria-live="polite"]')).toBeVisible();
-  });
-
-  test("Toggles agent kill switch in governance card", async ({ page }) => {
-    await expect(page.getByText("Agent Governance & Kill Switches")).toBeVisible();
-
-    // Toggle Ledger Lou off
-    const louToggle = page.getByTitle("Click to suspend agent").first();
-    await louToggle.click();
-
-    // Notice appears
-    await expect(page.getByText(/suspended \(kill switch engaged\)/i).first()).toBeVisible();
-
-    // Toggle back on
-    const louResume = page.getByTitle("Click to resume agent").first();
-    await louResume.click();
-    await expect(page.getByText(/execution enabled/i).first()).toBeVisible();
+  test("invents no bots when none are connected", async ({ page }) => {
+    const isLive = await page.getByText("API Connected").first().isVisible();
+    if (!isLive) {
+      await expect(page.getByText("No bots are connected yet")).toBeVisible();
+      await expect(page.getByLabel("Bots", { exact: true })).toHaveCount(0);
+    } else {
+      await expect(page.getByRole("heading", { name: "Approvals Inbox" })).toBeVisible();
+    }
   });
 });

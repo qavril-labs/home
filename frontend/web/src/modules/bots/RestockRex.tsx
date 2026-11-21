@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { StatusChip } from "../../components/ui/StatusChip";
 import { Button } from "../../components/ui/Button";
+import { AgentAssistanceBanner } from "../../components/ui/AgentAssistanceBanner";
 import { CreatePODrawer } from "./CreatePODrawer";
 import { Warehouse3D } from "../../scenes/Warehouse3D";
 import { useToast } from "../../context/ToastContext";
@@ -185,7 +186,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
 
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-1">
-                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight">
+                <h1 className="font-display font-extrabold text-2xl sm:text-3xl uppercase tracking-tight text-text leading-tight break-words">
                   Restock Rex
                 </h1>
                 <span className="px-2 py-0.5 bg-orange/20 border border-orange text-[11px] font-bold text-ink uppercase tracking-wider">
@@ -196,7 +197,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                 </span>
               </div>
 
-              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal">
+              <p className="text-xs sm:text-sm text-muted max-w-2xl leading-normal break-words">
                 Continuous replenishment sentinel: calculates dynamic reorder points, tracks supplier lead time variances, automates multi-line PO drafting, and prevents factory production stockouts.
               </p>
             </div>
@@ -263,10 +264,10 @@ export const RestockRex: React.FC<RestockRexProps> = ({
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 pb-2 border-b border-grid">
           <div>
-            <h2 className="text-xs font-bold uppercase tracking-wider text-muted">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted break-words">
               Live Replenishment & Stock Levels
             </h2>
-            <p className="text-xs text-text font-medium mt-0.5">
+            <p className="text-xs text-text font-medium mt-0.5 break-words">
               Monitoring shop floor raw materials and standard cutting tool inventories.
             </p>
           </div>
@@ -313,7 +314,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
               </span>
               <span className="text-xs font-mono font-bold text-watch">Action Required</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Aluminum, coolant & fasteners</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Aluminum, coolant & fasteners</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -326,7 +327,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
               </span>
               <span className="text-xs font-mono font-bold text-act">Zero Units</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Titanium Grade 5 Billet</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Titanium Grade 5 Billet</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -339,7 +340,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
               </span>
               <span className="text-xs font-mono font-bold text-orange">3 Lines Queued</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">PO-2026-004 to Industrial Supply</p>
+            <p className="text-[11px] text-muted mt-1 break-words">PO-2026-004 to Industrial Supply</p>
           </div>
 
           <div className="bg-panel p-3 border-line shadow-sm">
@@ -352,10 +353,31 @@ export const RestockRex: React.FC<RestockRexProps> = ({
               </span>
               <span className="text-xs font-mono font-bold text-good">Within Buffer</span>
             </div>
-            <p className="text-[11px] text-muted mt-1">Express supplier delivery verified</p>
+            <p className="text-[11px] text-muted mt-1 break-words">Express supplier delivery verified</p>
           </div>
         </div>
       </section>
+
+      {/* 3b. Proactive Copilot Human-In-The-Loop Task Assistance */}
+      {draftPO && isKillSwitchActive && (
+        <AgentAssistanceBanner
+          botName="Restock Rex"
+          catalogId="AGT-04 / INV-05"
+          accentColor="orange"
+          taskSummary={`Automated Purchase Order Prepared (${formatMoney(draftPO.totalAmount)})`}
+          recommendation="Rex aggregated 3 SKUs below safety thresholds and drafted PO-2026-004 to Apex Industrial Supply. Reviewing and dispatching now prevents stockouts on factory assembly lines while leaving procurement sign-off with your team."
+          evidencePoints={[
+            `Vendor: ${draftPO.vendorName}`,
+            `Lines: ${draftPO.lines.length} replenishment SKUs`,
+            `Total: ${formatMoney(draftPO.totalAmount)}`,
+            "Safety: Requires user approval before routing to supplier",
+          ]}
+          primaryActionLabel="Review & Dispatch PO Draft"
+          onPrimaryAction={() => setIsPODrawerOpen(true)}
+          secondaryActionLabel="Open 2D Warehouse Bin Map"
+          onSecondaryAction={() => setActiveTab("warehouse")}
+        />
+      )}
 
       {/* 4. Sub-Tabs & Inventory Replenishment Table */}
       <section
@@ -436,7 +458,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                 {displayedItems.map((item) => (
                   <tr key={item.id} className="hover:bg-page/70 transition-colors">
                     {/* Item Name & SKU */}
-                    <td className="py-3 px-3 align-top">
+                    <td className="py-3 px-3 align-top break-words">
                       <div className="font-bold text-sm text-text leading-tight">
                         {item.name}
                       </div>
@@ -446,14 +468,14 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                     </td>
 
                     {/* Category */}
-                    <td className="py-3 px-3 align-top font-semibold text-text">
+                    <td className="py-3 px-3 align-top font-semibold text-text break-words">
                       <span className="px-2 py-0.5 bg-page border border-grid text-[11px]">
                         {item.category}
                       </span>
                     </td>
 
                     {/* Stock vs Reorder Bar */}
-                    <td className="py-3 px-3 align-top">
+                    <td className="py-3 px-3 align-top break-words">
                       <div className="flex items-center justify-between text-xs mb-1">
                         <span className="font-mono font-bold text-text">
                           {item.currentStock} {item.unit}
@@ -476,7 +498,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                     </td>
 
                     {/* Suggested PO Qty */}
-                    <td className="py-3 px-3 align-top text-center">
+                    <td className="py-3 px-3 align-top text-center break-words">
                       {item.suggestedReorder > 0 ? (
                         <span className="px-2 py-0.5 bg-orange/20 border border-orange font-mono font-bold text-xs text-ink">
                           +{item.suggestedReorder} {item.unit}
@@ -487,7 +509,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                     </td>
 
                     {/* Unit Cost */}
-                    <td className="py-3 px-3 align-top font-mono font-bold text-right text-xs text-text">
+                    <td className="py-3 px-3 align-top font-mono font-bold text-right text-xs text-text break-words">
                       {formatMoney(item.unitCost)}
                     </td>
 
@@ -556,8 +578,8 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                       }`}
                     />
                   </div>
-                  <h4 className="font-bold text-xs text-text">{bin.item}</h4>
-                  <p className="font-mono text-[11px] text-muted mt-1">{bin.stock}</p>
+                  <h4 className="font-bold text-xs text-text break-words">{bin.item}</h4>
+                  <p className="font-mono text-[11px] text-muted mt-1 break-words">{bin.stock}</p>
                 </div>
               ))}
             </div>
@@ -571,10 +593,10 @@ export const RestockRex: React.FC<RestockRexProps> = ({
         <div className="lg:col-span-7 neo-card p-4 bg-panel border-line shadow-card">
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-grid">
             <div>
-              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+              <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
                 Rex Stock Activity Stream
               </h3>
-              <p className="text-[11px] text-muted">
+              <p className="text-[11px] text-muted break-words">
                 Audit trail of inventory consumption events and safety reorder trigger evaluations.
               </p>
             </div>
@@ -613,7 +635,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
                 </span>
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-text truncate">{feed.event}</p>
-                  <p className="text-[11px] text-muted mt-0.5">{feed.result}</p>
+                  <p className="text-[11px] text-muted mt-0.5 break-words">{feed.result}</p>
                 </div>
                 <span
                   className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${
@@ -629,7 +651,7 @@ export const RestockRex: React.FC<RestockRexProps> = ({
         <div className="lg:col-span-5 neo-card p-4 bg-panel border-line shadow-card space-y-3">
           <div className="flex items-center gap-2 pb-2 border-b border-grid">
             <ShieldCheck className="w-4 h-4 text-good" />
-            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text">
+            <h3 className="font-display font-extrabold text-sm uppercase tracking-tight text-text break-words">
               Agent Guardrails (AGT-04)
             </h3>
           </div>
@@ -637,21 +659,21 @@ export const RestockRex: React.FC<RestockRexProps> = ({
           <div className="space-y-2 text-xs">
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Non-Autonomous PO Dispatch</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Rex drafts purchase orders but cannot place them directly with suppliers. Orders require Tier 3 supervisor sign-off in the Approvals Inbox.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Design Token Conformance</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Rex strictly uses <code className="font-bold">var(--q-orange)</code> (orange design token) for avatar and interface accents per <code>tokens.json</code>.
               </p>
             </div>
 
             <div className="p-2.5 bg-page border-line">
               <span className="font-bold text-text block mb-0.5">Lead-Time Safety Buffering</span>
-              <p className="text-[11px] text-muted leading-relaxed">
+              <p className="text-[11px] text-muted leading-relaxed break-words">
                 Reorder calculations incorporate standard deviation buffer days to absorb carrier freight delays.
               </p>
             </div>

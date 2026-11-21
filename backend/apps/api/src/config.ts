@@ -6,6 +6,7 @@ export interface AppConfig {
   readonly corsOrigins: readonly string[];
   readonly trustProxy: boolean;
   readonly leadWebhookUrl?: string;
+  readonly redisUrl?: string;
 }
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
@@ -32,5 +33,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
       .filter((origin) => origin.length > 0),
     trustProxy: env.TRUST_PROXY === "true",
     leadWebhookUrl: env.LEAD_WEBHOOK_URL || undefined,
+    redisUrl: env.REDIS_URL || undefined,
   };
 }

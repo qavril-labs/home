@@ -61,7 +61,7 @@ export const CreatePODrawer: React.FC<CreatePODrawerProps> = ({
         {/* Line Items Table */}
         <div>
           <div className="flex items-center justify-between mb-2">
-            <h4 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <h4 className="font-display font-extrabold text-xs uppercase tracking-wider text-muted flex items-center gap-1.5 break-words">
               <ShoppingCart className="w-3.5 h-3.5 text-orange" />
               <span>Order Lines ({draftPO.lines.length})</span>
             </h4>
@@ -81,17 +81,17 @@ export const CreatePODrawer: React.FC<CreatePODrawerProps> = ({
               <tbody className="divide-y divide-grid">
                 {draftPO.lines.map((line, idx) => (
                   <tr key={idx} className="hover:bg-page/60 transition-colors">
-                    <td className="py-2.5 px-2.5 max-w-[180px]">
+                    <td className="py-2.5 px-2.5 max-w-[180px] break-words">
                       <div className="font-bold text-text leading-tight">{line.name}</div>
                       <span className="font-mono text-[10px] text-muted">{line.sku}</span>
                     </td>
-                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-text">
+                    <td className="py-2.5 px-2.5 text-center font-mono font-bold text-text break-words">
                       {line.qty}
                     </td>
-                    <td className="py-2.5 px-2.5 text-right font-mono text-muted text-[11px]">
+                    <td className="py-2.5 px-2.5 text-right font-mono text-muted text-[11px] break-words">
                       {formatMoney(line.unitPrice)}
                     </td>
-                    <td className="py-2.5 px-2.5 text-right font-mono font-bold text-text">
+                    <td className="py-2.5 px-2.5 text-right font-mono font-bold text-text break-words">
                       {formatMoney(line.total)}
                     </td>
                   </tr>

@@ -1,16 +1,22 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, isMobile }) => {
     await page.goto("/");
-    // Navigate to Pip screen
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible()) {
+        await openBtn.click();
+      }
+    }
     await page.getByRole("button", { name: "Pip (AGT-02)" }).first().click();
+    await expect(page.getByRole("heading", { name: "Pip", exact: true })).toBeVisible();
   });
 
   test("Renders Pip header, lime avatar, and live indicator", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Pip" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Pip", exact: true })).toBeVisible();
     await expect(page.getByText("Deal Closer").first()).toBeVisible();
-    await expect(page.getByText("AGT-02 / SAL-02")).toBeVisible();
+    await expect(page.getByText("AGT-02 / SAL-02", { exact: true })).toBeVisible();
     await expect(page.getByText(/Live · updated/i)).toBeVisible();
 
     // Kill switch active
@@ -41,13 +47,14 @@ test.describe("Pip (AGT-02 / SAL-02) Dedicated Screen & Follow-Up Modal", () => 
   test("Renders pipeline funnel stages and active opportunities", async ({ page }) => {
     await expect(page.getByText("Vanguard Aerospace Titanium Machining Tender")).toBeVisible();
     await expect(page.getByText("Kinetics Robotics Joint Actuator Brackets")).toBeVisible();
-    await expect(page.getByText("Discovery")).toBeVisible();
-    await expect(page.getByText("Negotiation")).toBeVisible();
+    await expect(page.getByText("Discovery").first()).toBeVisible();
+    await expect(page.getByText("Negotiation").first()).toBeVisible();
   });
 
   test("Opens DealFollowUpModal and sends follow-up outreach message", async ({ page }) => {
     // Click Draft Follow-Up on first quiet deal
-    await page.getByRole("button", { name: "Draft Follow-Up" }).first().click();
+    const draftBtn = page.getByRole("button", { name: "Draft Follow-Up" }).first();
+    await draftBtn.dispatchEvent("click");
 
     // Modal elements
     await expect(page.getByRole("heading", { name: "Review Sales Follow-Up Draft" })).toBeVisible();

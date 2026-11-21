@@ -31,6 +31,7 @@ export interface PayablesManagerProps {
   onPayBill: (id: string) => void;
   onDeleteBill: (id: string) => void;
   onNavigateToPurchasing?: () => void;
+  onOpenOcrInspector?: () => void;
 }
 
 export const PayablesManager: React.FC<PayablesManagerProps> = ({
@@ -42,6 +43,7 @@ export const PayablesManager: React.FC<PayablesManagerProps> = ({
   onPayBill,
   onDeleteBill,
   onNavigateToPurchasing,
+  onOpenOcrInspector,
 }) => {
   const { showToast } = useToast();
   const [filter, setFilter] = useState<"all" | "pending_approval" | "approved" | "overdue" | "paid">("all");
@@ -254,6 +256,12 @@ export const PayablesManager: React.FC<PayablesManagerProps> = ({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {onOpenOcrInspector && (
+            <Button variant="cyan" size="md" onClick={onOpenOcrInspector}>
+              <FileCheck className="w-4 h-4 mr-1 text-ink" />
+              OCR Document Intelligence
+            </Button>
+          )}
           {onNavigateToPurchasing && (
             <Button variant="yellow" size="md" onClick={onNavigateToPurchasing}>
               <ShieldCheck className="w-4 h-4 mr-1 text-ink" />

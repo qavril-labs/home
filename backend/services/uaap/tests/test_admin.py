@@ -64,8 +64,7 @@ async def test_checks_report_unreachable_database_and_agents(client: httpx.Async
 
 async def test_agents_endpoint_shows_card_and_metrics(client: httpx.AsyncClient) -> None:
     res = await client.get("/v1/admin/agents", headers={"X-Admin-Key": KEY})
-    agent = res.json()["agents"][0]
-    assert agent["agent_id"] == "universal-finance-agent"
+    agent = next(a for a in res.json()["agents"] if a["agent_id"] == "universal-finance-agent")
     assert agent["card"]["edge_cases"] and agent["card"]["case_stories"] and agent["card"]["kpis"]
     assert "GROUNDED_REPLY" in res.json()["mandatory_guardrails"]
 
