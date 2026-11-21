@@ -15,7 +15,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
-| PLT-10 | Notifications | Not started | | Email, SMS, WhatsApp, push, templates |
+| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security | API routes, worker job that sends queued mail, bounce handling, SMS, WhatsApp, push, template management |
 | PLT-11 | Documents & Files | Not started | | Storage, versions, retention, e-signature |
 | PLT-12 | Print & PDF | Not started | | Templates, PDF output, labels |
 | PLT-13 | Reporting & BI | Not started | | Report builder, dashboards |
@@ -65,8 +65,8 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 ## Counts
 
 - Implemented: 0
-- Partial: 12
-- Not started: 11
+- Partial: 13
+- Not started: 10
 
 ## Update 2026-11-21
 
@@ -74,6 +74,7 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 - Bank feeds (FIN-04): lines, statement import, reconcile and unreconcile are in the contract.
 - UAAP: Ticket Tess and Onboard Ola agents added with tests. Python suite: 274 passed, 5 skipped (the skipped ones need `UAAP_TEST_DATABASE_URL`). It needs `pytest-asyncio` installed.
 - Checks run: backend typecheck, contract drift test, web build, 41 web unit tests and the site check (5,772) all pass. The Postgres integration tests and the Playwright suite were not run in this pass.
+- PLT-10 email slice (`@erp/notifications`, migration 0013, `PgNotificationStore`) with Amazon SES. Full backend run with Postgres: 235 passed, 4 skipped. `@aws-sdk/client-sesv2` was added as the SES client.
 - The contract-undocumented list shrank by seven procurement routes. Six `/v1/approvals` routes remain.
 
 ## Known gaps in the Phase 0 build

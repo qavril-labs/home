@@ -18,6 +18,7 @@
     "@erp/kernel": "*",
     "@erp/ledger": "*",
     "@erp/money": "*",
+    "@erp/notifications": "*",
     "@erp/numbering": "*",
     "@erp/tenancy": "*",
     "pg": "^8.23.1"
