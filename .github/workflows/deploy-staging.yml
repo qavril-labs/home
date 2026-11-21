@@ -104,7 +104,7 @@ jobs:
           arn=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
           container=$(jq -r '.containerDefinitions[0].name' td-new.json)
           task=$(aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE --task-definition "$arn" \
-            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=DISABLED}" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=ENABLED}" \
             --overrides "{\"containerOverrides\":[{\"name\":\"$container\",\"command\":[\"npm\",\"run\",\"migrate\",\"-w\",\"@erp/db\"]}]}" \
             --query 'tasks[0].taskArn' --output text)
           aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$task"

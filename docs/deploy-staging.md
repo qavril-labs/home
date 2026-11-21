@@ -2,7 +2,7 @@
 
 Status: the images and the manual workflow `.github/workflows/deploy-staging.yml` are written but **have not been run**. Nothing deploys until the pieces below exist. The workflow checks for each one and stops with a plain error naming what is missing.
 
-Known so far: AWS account `929219061572`, region `ap-south-1` (Mumbai), ECS clusters `qavril-staging` and `qavril-prod` with no services yet. Production is not wired to any workflow.
+Known so far: AWS account `929219061572`, region `ap-south-1` (Mumbai), ECS clusters `qavril-staging` and `qavril-prod` with no services yet, ECR repositories `qavril/api` and `qavril/uaap` created, the GitHub OIDC provider already present, and only the default VPC `vpc-0be4ef9a3a7fad815` with three public subnets (no NAT). Staging therefore runs tasks in the public subnets with public IPs; protect them with security groups that allow only the load balancer in. Production is not wired to any workflow.
 
 ## What to create in AWS (staging)
 
