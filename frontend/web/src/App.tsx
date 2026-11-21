@@ -439,6 +439,16 @@ export const App: React.FC = () => {
     void apiClient.overrideThreeWayMatch(matchId, note);
   };
 
+  // The studio only marks a line approved after the server saved the override.
+  const handleStudioOverride = async (matchId: string, note: string): Promise<boolean> => {
+    const res = await apiClient.overrideThreeWayMatch(matchId, note);
+    if (!res.isLive) return false;
+    setThreeWayMatches((prev) =>
+      prev.map((m) => (m.id === matchId ? { ...m, overrideApproved: true, overrideNote: note, toleranceOk: true } : m))
+    );
+    return true;
+  };
+
   // Item Master actions (MDM-02 -> /v1/master-data/items)
   const handleAddItem = (item: ProductItem) => {
     setItems((prev) => [item, ...prev]);
@@ -867,6 +877,9 @@ export const App: React.FC = () => {
           <ThreeWayMatchModal
             isOpen={isThreeWayMatchOpen}
             onClose={() => setIsThreeWayMatchOpen(false)}
+            matches={threeWayMatches}
+            isLive={isLiveApi}
+            onOverride={handleStudioOverride}
           />
         </Suspense>
       )}

@@ -85,4 +85,15 @@ export class PgNotificationStore implements NotificationStore {
       return toRecord(rows[0]!);
     });
   }
+
+  /** Newest first. Used by the delivery-state endpoints. */
+  list(tenantId: string, opts: { status?: NotificationRecord["status"]; limit?: number } = {}): Promise<NotificationRecord[]> {
+    const limit = Math.min(Math.max(opts.limit ?? 50, 1), 200);
+    return withTenantTransaction(this.pool, tenantId, async (tx) => {
+      const { rows } = opts.status
+        ? await tx.query<Row>(`SELECT ${COLUMNS} FROM notifications WHERE status = $1 ORDER BY created_at DESC LIMIT $2`, [opts.status, limit])
+        : await tx.query<Row>(`SELECT ${COLUMNS} FROM notifications ORDER BY created_at DESC LIMIT $1`, [limit]);
+      return rows.map(toRecord);
+    });
+  }
 }

@@ -2148,6 +2148,201 @@ paths:
         "400": {$ref: "#/components/responses/ValidationError"}
         "401": {$ref: "#/components/responses/UnauthenticatedError"}
 
+  # ---- Approval requests served by the API (PLT-07, AGT-01) ----
+  # Not the same as /v1/approvals, which the bot service (UAAP) serves with payload-hash review.
+  /v1/approval-requests:
+    get:
+      summary: List approval requests in the inbox (PLT-07)
+      operationId: listApprovalRequests
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: status, in: query, required: false, schema: {type: string, enum: [all, pending, approved, rejected, executed, cancelled]}}
+        - {name: botId, in: query, required: false, schema: {type: string}}
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200}}
+      responses:
+        "200":
+          description: Requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [requests]
+                properties:
+                  requests:
+                    type: array
+                    items: {$ref: "#/components/schemas/ApprovalRequest"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+    post:
+      summary: Create an approval request (AGT-01)
+      operationId: createApprovalRequest
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateApprovalRequestBody"}
+      responses:
+        "201":
+          description: The request, waiting for a decision
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ApprovalRequest"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+
+  /v1/approval-requests/audit-logs:
+    get:
+      summary: List the agent audit log (AGT-06)
+      operationId: listAgentAuditLogs
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: botId, in: query, required: false, schema: {type: string}}
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200}}
+      responses:
+        "200":
+          description: Audit entries, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logs]
+                properties:
+                  logs:
+                    type: array
+                    items: {$ref: "#/components/schemas/AgentAuditLog"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+
+  /v1/approval-requests/{id}:
+    get:
+      summary: Read one approval request (PLT-07)
+      operationId: getApprovalRequest
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: The request
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ApprovalRequest"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "404":
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
+  /v1/approval-requests/{id}/approve:
+    post:
+      summary: Approve a request (PLT-07)
+      operationId: approveApprovalRequest
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ApprovalDecisionBody"}
+      responses:
+        "200":
+          description: The decided request. An audit entry is written.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ApprovalRequest"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "404":
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
+  /v1/approval-requests/{id}/reject:
+    post:
+      summary: Reject a request (PLT-07)
+      operationId: rejectApprovalRequest
+      tags: ["Approvals"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/ApprovalDecisionBody"}
+      responses:
+        "200":
+          description: The decided request. An audit entry is written.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ApprovalRequest"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "404":
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
+  # ---- Notifications: delivery state (PLT-10) ----
+  /v1/notifications:
+    get:
+      summary: List outgoing messages and their delivery state (PLT-10)
+      operationId: listNotifications
+      tags: ["Notifications"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: status, in: query, required: false, schema: {type: string, enum: [queued, sent, failed]}}
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: Newest first. Message bodies are not returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [notifications]
+                properties:
+                  notifications:
+                    type: array
+                    items: {$ref: "#/components/schemas/NotificationStatus"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+
+  /v1/notifications/{id}:
+    get:
+      summary: Read the delivery state of one message (PLT-10)
+      operationId: getNotification
+      tags: ["Notifications"]
+      description: Use the notificationId returned when a reminder was sent.
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: The message state
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/NotificationStatus"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "404":
+          description: No such message in this tenant
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
 components:
   securitySchemes:
     BearerAuth:
@@ -3744,3 +3939,74 @@ components:
         varianceCount: {type: integer}
         unmatchedCount: {type: integer}
         totalValueUnderReview: {type: string, description: "Decimal string; bills not yet matched or inside tolerance."}
+
+    ApprovalRequest:
+      type: object
+      required: [id, botId, botName, actionType, title, summary, currency, riskLevel, status, payload, confidenceScore, requestedAt]
+      properties:
+        id: {type: string}
+        botId: {type: string}
+        botName: {type: string}
+        actionType: {type: string}
+        title: {type: string}
+        summary: {type: string}
+        amount: {type: string, nullable: true, description: "Decimal string."}
+        currency: {type: string}
+        riskLevel: {type: string, enum: [low, medium, high, critical]}
+        status: {type: string, enum: [pending, approved, rejected, executed, cancelled]}
+        payload: {type: object, additionalProperties: true}
+        confidenceScore: {type: number}
+        requestedAt: {type: string, format: date-time}
+        decidedAt: {type: string, format: date-time, nullable: true}
+        decidedBy: {type: string, nullable: true}
+        decisionReason: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+    CreateApprovalRequestBody:
+      type: object
+      required: [botId, botName, actionType, title, summary]
+      properties:
+        id: {type: string}
+        botId: {type: string}
+        botName: {type: string}
+        actionType: {type: string}
+        title: {type: string}
+        summary: {type: string}
+        amount: {type: string, nullable: true}
+        currency: {type: string}
+        riskLevel: {type: string, enum: [low, medium, high, critical]}
+        payload: {type: object, additionalProperties: true}
+        confidenceScore: {type: number}
+    ApprovalDecisionBody:
+      type: object
+      properties:
+        reason: {type: string}
+    AgentAuditLog:
+      type: object
+      required: [id, botId, eventType, action, entityType, entityId, details, createdAt]
+      properties:
+        id: {type: string}
+        botId: {type: string}
+        eventType: {type: string}
+        action: {type: string}
+        entityType: {type: string}
+        entityId: {type: string}
+        details: {type: object, additionalProperties: true}
+        hashChain: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+
+    NotificationStatus:
+      type: object
+      required: [id, channel, templateKey, toAddress, subject, status, attempts]
+      properties:
+        id: {type: string}
+        channel: {type: string, enum: [email]}
+        templateKey: {type: string}
+        toAddress: {type: string}
+        subject: {type: string}
+        status: {type: string, enum: [queued, sent, failed], description: "sent means the provider accepted it. Bounces are not tracked yet."}
+        attempts: {type: integer}
+        providerMessageId: {type: string, nullable: true}
+        error: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+        sentAt: {type: string, format: date-time, nullable: true}

@@ -23,6 +23,7 @@ import { registerCmsRoutes } from "./cms-routes";
 import type { EmailJobQueue } from "@erp/notifications";
 import { registerBankingRoutes } from "./banking-routes";
 import { registerPurchasingRoutes } from "./purchasing-routes";
+import { registerNotificationRoutes } from "./notifications-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -352,8 +353,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
       request.url.startsWith("/v1/invoicing/") ||
       request.url.startsWith("/v1/events/") ||
       request.url.startsWith("/v1/approvals") ||
+      request.url.startsWith("/v1/approval-requests") ||
       request.url.startsWith("/v1/procurement/") ||
       request.url.startsWith("/v1/banking/") ||
+      request.url.startsWith("/v1/notifications") ||
       request.url === "/v1/me"
     ) {
       allowBrowserOrigin(request, reply);
@@ -485,6 +488,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerApprovalsRoutes(app, { pool, clock, authenticateRequest: authenticate });
   registerBankingRoutes(app, { pool, clock, authenticate });
   registerPurchasingRoutes(app, { pool, clock, authenticate });
+  registerNotificationRoutes(app, { pool, authenticate });
   registerCmsRoutes(app, pool, platformKey);
 
   return app;

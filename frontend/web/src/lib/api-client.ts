@@ -874,7 +874,7 @@ export const apiClient = {
     if (params?.status) query.set("status", params.status);
     if (params?.botId) query.set("botId", params.botId);
     const qs = query.toString() ? `?${query.toString()}` : "";
-    const endpoint = `/v1/approvals${qs}`;
+    const endpoint = `/v1/approval-requests${qs}`;
     try {
       const res = await requestJson<{ requests: ApprovalRequestRecord[] }>(endpoint);
       return { data: res.requests, isLive: true, endpoint };
@@ -895,7 +895,7 @@ export const apiClient = {
     payload?: Record<string, unknown>;
     confidenceScore?: number;
   }): Promise<ApiResult<ApprovalRequestRecord>> {
-    const endpoint = "/v1/approvals";
+    const endpoint = "/v1/approval-requests";
     const res = await requestJson<ApprovalRequestRecord>(endpoint, {
       method: "POST",
       body: JSON.stringify(request),
@@ -904,7 +904,7 @@ export const apiClient = {
   },
 
   async approveRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
-    const endpoint = `/v1/approvals/${encodeURIComponent(id)}/approve`;
+    const endpoint = `/v1/approval-requests/${encodeURIComponent(id)}/approve`;
     const res = await requestJson<ApprovalRequestRecord>(endpoint, {
       method: "POST",
       body: JSON.stringify({ reason }),
@@ -913,7 +913,7 @@ export const apiClient = {
   },
 
   async rejectRequest(id: string, reason?: string): Promise<ApiResult<ApprovalRequestRecord>> {
-    const endpoint = `/v1/approvals/${encodeURIComponent(id)}/reject`;
+    const endpoint = `/v1/approval-requests/${encodeURIComponent(id)}/reject`;
     const res = await requestJson<ApprovalRequestRecord>(endpoint, {
       method: "POST",
       body: JSON.stringify({ reason }),
@@ -926,7 +926,7 @@ export const apiClient = {
     if (params?.botId) query.set("botId", params.botId);
     if (params?.limit) query.set("limit", String(params.limit));
     const qs = query.toString() ? `?${query.toString()}` : "";
-    const endpoint = `/v1/approvals/audit-logs${qs}`;
+    const endpoint = `/v1/approval-requests/audit-logs${qs}`;
     try {
       const res = await requestJson<{ logs: AgentAuditLogRecord[] }>(endpoint);
       return { data: res.logs, isLive: true, endpoint };

@@ -15,7 +15,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
-| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send); Chase Chloe email reminders (`POST /v1/invoicing/reminders`) queue real mail | Bounce handling and a delivery-state endpoint, SMS, WhatsApp, push, template management |
+| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send); Chase Chloe email reminders (`POST /v1/invoicing/reminders`) queue real mail; delivery state at `GET /v1/notifications` and `/{id}` (no bodies) | Bounce handling (SES notifications through SNS, with signature checks), SMS, WhatsApp, push, template management |
 | PLT-11 | Documents & Files | Not started | | Storage, versions, retention, e-signature |
 | PLT-12 | Print & PDF | Not started | | Templates, PDF output, labels |
 | PLT-13 | Reporting & BI | Not started | | Report builder, dashboards |
@@ -79,8 +79,8 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 
 ## Known gaps in the Phase 0 build
 
-- The Fastify approvals routes and the UAAP service both use `/v1/approvals`, with different shapes (`requests` and `status` versus `approvals` and a payload hash). The contract documents only the UAAP one. Decide which service owns the path, or move the Fastify one to a different prefix, before documenting it.
-- **Sample-data studios (kept on purpose).** The header buttons open `ThreeWayMatchModal` and `BankRecRulesModal`, which run on seed data in `lib/three-way-match.ts` and `lib/bank-reconciliation-rules.ts`; both now say "Sample data". The real features live elsewhere: three-way match on the Purchasing page (`/v1/procurement/matches`) and bank matching on the Bank Reconciliation page (`/v1/banking/*`). To make the studios real later: (1) three-way match, bind the modal to `listThreeWayMatches` and `overrideThreeWayMatch` and delete the browser-side `evaluateThreeWayMatch`; (2) bank rules, build the backend first (a tenant-scoped rules table, API routes in the contract, a deterministic match engine with tests, audit entries), then bind the modal to it. The unused `procurement-mock.ts` was deleted (still in git history).
+- Approvals: the API's in-app approval requests moved to `/v1/approval-requests` (documented in the contract), leaving `/v1/approvals` to the UAAP bot service. The contract-undocumented list is now empty.
+- **Three-way match studio** now reads `/v1/procurement/matches` through the app and saves overrides through `/v1/procurement/matches/{id}/override`; it shows no money maths of its own and marks a line approved only after the server saved it. **Bank rules studio** is still sample data (labelled): custom rules need a backend first (a tenant-scoped rules table, API routes in the contract, a deterministic match engine with tests, audit entries), then bind the modal to it.
 
 - Only the ledger routes enforce entitlements. The other modules do not exist yet, so there is nothing else to enforce.
 - No outbox worker runs in production. The dispatcher exists and is tested; a process that calls it on a timer has not been added.
@@ -97,3 +97,5 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 - **Transactional outbox** for events, so no event is published for a rolled-back change.
 
 - `POST /v1/invoicing/reminders` used to record every reminder as sent without sending anything. It now queues email, and records WhatsApp, or email with no queue, as approved. The invoices page and the Chase Chloe screen now ask the server to dispatch, and say "queued for delivery", "saved as approved but not delivered", or "was not sent" from the real result. The Chase Chloe e2e spec covers the not-sent path only (the e2e run has no live API).
+
+- Still waiting on you: AWS deploy targets, a verified SES sender with an AWS role and production access, and a decision on a general email-send route for Pip and Restock Rex (it would be an open relay without limits and approval, so it was not added).

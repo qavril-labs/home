@@ -66,6 +66,20 @@ describe("Chase Chloe reminders send through the notifications queue (FIN-14, PL
     expect(JSON.stringify(jobs[0]!.data)).not.toContain("ap@acme.example");
   });
 
+  it("shows the delivery state of the queued message, to its own tenant only", async () => {
+    const id = jobs[0]!.data.notificationId;
+    const one = await withQueue.inject({ method: "GET", url: `/v1/notifications/${id}`, headers: auth() });
+    expect(one.statusCode).toBe(200);
+    expect(one.json()).toMatchObject({ id, status: "queued", toAddress: "ap@acme.example", attempts: 0 });
+    expect(one.json().bodyText).toBeUndefined();
+    const list = await withQueue.inject({ method: "GET", url: "/v1/notifications?status=queued", headers: auth() });
+    expect(list.json().notifications.map((n: { id: string }) => n.id)).toContain(id);
+    const bad = await withQueue.inject({ method: "GET", url: "/v1/notifications?status=nope", headers: auth() });
+    expect(bad.statusCode).toBe(400);
+    const anon = await withQueue.inject({ method: "GET", url: `/v1/notifications/${id}` });
+    expect(anon.statusCode).toBe(401);
+  });
+
   it("records approved, not sent, when no queue can deliver the email", async () => {
     const res = await withoutQueue.inject({ method: "POST", url: "/v1/invoicing/reminders", headers: auth(), payload: reminder() });
     expect(res.statusCode).toBe(201);

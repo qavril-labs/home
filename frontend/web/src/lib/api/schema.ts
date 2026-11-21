@@ -338,6 +338,19 @@ export type ApprovalDecisionResponse = {
   reply: AgentReply;
 };
 
+export type BankFeedLine = {
+  id: string;
+  postedDate: string;
+  reference: string;
+  description: string;
+  amount: string;
+  direction: "IN" | "OUT";
+  status: "Unmatched" | "Suggested" | "Reconciled";
+  matchedRef?: string;
+  matchedLabel?: string;
+  confidence?: number;
+};
+
 export type CmsAuthVerifyInput = {
   key: string;
 };
@@ -623,6 +636,7 @@ export type PaymentReminder = {
   status: "draft" | "approved" | "sent";
   sentAt?: string;
   createdAt?: string;
+  notificationId?: string;
 };
 
 /** One line of a bill, as stored. Fields follow BillLineInput. */
@@ -685,6 +699,190 @@ export type StreamTicket = {
   expiresInSeconds: 60;
 };
 
+export type PurchaseOrderStatus = "draft" | "issued" | "partially_received" | "received" | "billed" | "closed" | "cancelled";
+
+export type PurchaseOrderLine = {
+  id?: string;
+  itemId?: string;
+  sku: string;
+  description: string;
+  quantityOrdered: number;
+  unitPrice: string;
+  lineTotal?: string;
+};
+
+export type PurchaseOrder = {
+  id: string;
+  supplierId: string;
+  supplierName: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
+  status: PurchaseOrderStatus;
+  currency: string;
+  total: string;
+  notes?: string;
+  approvedBy?: string;
+  lines: PurchaseOrderLine[];
+};
+
+export type CreatePurchaseOrderRequest = {
+  id?: string;
+  supplierId: string;
+  supplierName: string;
+  orderDate: string;
+  expectedDeliveryDate: string;
+  status?: PurchaseOrderStatus;
+  currency?: string;
+  total?: string;
+  notes?: string;
+  approvedBy?: string;
+  lines: PurchaseOrderLine[];
+};
+
+export type GoodsReceiptLine = {
+  id?: string;
+  poLineId?: string;
+  sku: string;
+  description: string;
+  quantityReceived: number;
+  quantityRejected?: number;
+  batchLotNumber?: string;
+  warehouseId: string;
+  warehouseName: string;
+};
+
+export type GoodsReceiptNote = {
+  id: string;
+  poId: string;
+  poRef: string;
+  supplierId: string;
+  supplierName: string;
+  receiptDate?: string;
+  receivedBy: string;
+  status: "received" | "inspected" | "quarantined";
+  carrier?: string;
+  trackingNumber?: string;
+  notes?: string;
+  lines: GoodsReceiptLine[];
+};
+
+export type CreateGoodsReceiptRequest = {
+  id?: string;
+  poId: string;
+  poRef: string;
+  supplierId: string;
+  supplierName: string;
+  receiptDate?: string;
+  receivedBy: string;
+  status?: "received" | "inspected" | "quarantined";
+  carrier?: string;
+  trackingNumber?: string;
+  notes?: string;
+  lines: GoodsReceiptLine[];
+};
+
+export type ThreeWayMatchStatus = "MATCHED" | "PRICE_VARIANCE" | "QUANTITY_VARIANCE" | "UNMATCHED_GRN" | "UNMATCHED_BILL";
+
+export type ThreeWayMatch = {
+  id: string;
+  poId: string;
+  poRef: string;
+  grnId: string;
+  grnRef: string;
+  billId: string;
+  billRef: string;
+  supplierName: string;
+  sku: string;
+  description?: string;
+  orderedQty: number;
+  receivedQty: number;
+  billedQty: number;
+  agreedUnitPrice: string;
+  billedUnitPrice: string;
+  poTotal: string;
+  billTotal: string;
+  qtyVariance: number;
+  priceVariance: string;
+  status: ThreeWayMatchStatus;
+  toleranceOk: boolean;
+  overrideApproved: boolean;
+  overrideNote?: string;
+  overrideBy?: string;
+};
+
+export type ThreeWayMatchSummary = {
+  totalItems: number;
+  matchedCount: number;
+  varianceCount: number;
+  unmatchedCount: number;
+  totalValueUnderReview: string;
+};
+
+export type ApprovalRequest = {
+  id: string;
+  botId: string;
+  botName: string;
+  actionType: string;
+  title: string;
+  summary: string;
+  amount?: string;
+  currency: string;
+  riskLevel: "low" | "medium" | "high" | "critical";
+  status: "pending" | "approved" | "rejected" | "executed" | "cancelled";
+  payload: Record<string, unknown>;
+  confidenceScore: number;
+  requestedAt: string;
+  decidedAt?: string;
+  decidedBy?: string;
+  decisionReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreateApprovalRequestBody = {
+  id?: string;
+  botId: string;
+  botName: string;
+  actionType: string;
+  title: string;
+  summary: string;
+  amount?: string;
+  currency?: string;
+  riskLevel?: "low" | "medium" | "high" | "critical";
+  payload?: Record<string, unknown>;
+  confidenceScore?: number;
+};
+
+export type ApprovalDecisionBody = {
+  reason?: string;
+};
+
+export type AgentAuditLog = {
+  id: string;
+  botId: string;
+  eventType: string;
+  action: string;
+  entityType: string;
+  entityId: string;
+  details: Record<string, unknown>;
+  hashChain?: string;
+  createdAt: string;
+};
+
+export type NotificationStatus = {
+  id: string;
+  channel: "email";
+  templateKey: string;
+  toAddress: string;
+  subject: string;
+  status: "queued" | "sent" | "failed";
+  attempts: number;
+  providerMessageId?: string;
+  error?: string;
+  createdAt?: string;
+  sentAt?: string;
+};
+
 // -------------------------------------------------------------
 // Operations Map
 // -------------------------------------------------------------
@@ -722,6 +920,30 @@ export interface Operations {
     path: "/v1/auth/logout";
     requestBody?: unknown;
     response?: unknown;
+  };
+  "forgotPassword": {
+    method: "POST";
+    path: "/v1/auth/forgot-password";
+    requestBody: {
+      tenantSlug: string;
+      email: string;
+    };
+    response: {
+      ok: boolean;
+      message: string;
+    };
+  };
+  "resetPassword": {
+    method: "POST";
+    path: "/v1/auth/reset-password";
+    requestBody: {
+      token: string;
+      newPassword: string;
+    };
+    response: {
+      ok: boolean;
+      message: string;
+    };
   };
   "getMe": {
     method: "GET";
@@ -869,6 +1091,59 @@ export interface Operations {
     path: "/v1/ledger/trial-balance";
     requestBody?: unknown;
     response: TrialBalance;
+  };
+  "getBankLines": {
+    method: "GET";
+    path: "/v1/banking/lines";
+    requestBody?: unknown;
+    response: {
+      ok: boolean;
+      lines: BankFeedLine[];
+    };
+  };
+  "importBankStatement": {
+    method: "POST";
+    path: "/v1/banking/statements/import";
+    requestBody: {
+      lines: ({
+        postedDate: string;
+        reference: string;
+        description: string;
+        amount: string;
+        direction: "IN" | "OUT";
+      })[];
+    };
+    response: {
+      ok: boolean;
+      imported: number;
+      lines: BankFeedLine[];
+    };
+  };
+  "reconcileBankLine": {
+    method: "POST";
+    path: "/v1/banking/reconcile";
+    requestBody: {
+      lineId: string;
+      matchedRef: string;
+    };
+    response: {
+      ok: boolean;
+      lineId: string;
+      matchedRef: string;
+      status: string;
+    };
+  };
+  "unreconcileBankLine": {
+    method: "POST";
+    path: "/v1/banking/unreconcile";
+    requestBody: {
+      lineId: string;
+    };
+    response: {
+      ok: boolean;
+      lineId: string;
+      status: string;
+    };
   };
   "listAgents": {
     method: "GET";
@@ -1123,5 +1398,133 @@ export interface Operations {
     path: "/v1/public/cms/settings";
     requestBody?: unknown;
     response: CmsSettings;
+  };
+  "listPurchaseOrders": {
+    method: "GET";
+    path: "/v1/procurement/orders";
+    requestBody?: unknown;
+    response: {
+      ok: boolean;
+      orders: PurchaseOrder[];
+    };
+  };
+  "createPurchaseOrder": {
+    method: "POST";
+    path: "/v1/procurement/orders";
+    requestBody: CreatePurchaseOrderRequest;
+    response: {
+      ok: boolean;
+      order: PurchaseOrder;
+    };
+  };
+  "updatePurchaseOrderStatus": {
+    method: "PATCH";
+    path: "/v1/procurement/orders/{id}/status";
+    requestBody: {
+      status: PurchaseOrderStatus;
+    };
+    response: {
+      ok: boolean;
+      id: string;
+      status: PurchaseOrderStatus;
+    };
+  };
+  "listGoodsReceipts": {
+    method: "GET";
+    path: "/v1/procurement/receipts";
+    requestBody?: unknown;
+    response: {
+      ok: boolean;
+      receipts: GoodsReceiptNote[];
+    };
+  };
+  "createGoodsReceipt": {
+    method: "POST";
+    path: "/v1/procurement/receipts";
+    requestBody: CreateGoodsReceiptRequest;
+    response: {
+      ok: boolean;
+      receipt: GoodsReceiptNote;
+    };
+  };
+  "listThreeWayMatches": {
+    method: "GET";
+    path: "/v1/procurement/matches";
+    requestBody?: unknown;
+    response: {
+      ok: boolean;
+      matches: ThreeWayMatch[];
+      summary: ThreeWayMatchSummary;
+    };
+  };
+  "overrideThreeWayMatch": {
+    method: "POST";
+    path: "/v1/procurement/matches/{id}/override";
+    requestBody: {
+      note: string;
+    };
+    response: {
+      ok: boolean;
+      match: {
+        id: string;
+        note: string;
+        overrideApproved: boolean;
+        toleranceOk: boolean;
+      };
+    };
+  };
+  "listApprovalRequests": {
+    method: "GET";
+    path: "/v1/approval-requests";
+    requestBody?: unknown;
+    response: {
+      requests: ApprovalRequest[];
+    };
+  };
+  "createApprovalRequest": {
+    method: "POST";
+    path: "/v1/approval-requests";
+    requestBody: CreateApprovalRequestBody;
+    response: ApprovalRequest;
+  };
+  "listAgentAuditLogs": {
+    method: "GET";
+    path: "/v1/approval-requests/audit-logs";
+    requestBody?: unknown;
+    response: {
+      logs: AgentAuditLog[];
+    };
+  };
+  "getApprovalRequest": {
+    method: "GET";
+    path: "/v1/approval-requests/{id}";
+    requestBody?: unknown;
+    response: ApprovalRequest;
+  };
+  "approveApprovalRequest": {
+    method: "POST";
+    path: "/v1/approval-requests/{id}/approve";
+    requestBody: ApprovalDecisionBody;
+    response: ApprovalRequest;
+  };
+  "rejectApprovalRequest": {
+    method: "POST";
+    path: "/v1/approval-requests/{id}/reject";
+    requestBody: ApprovalDecisionBody;
+    response: ApprovalRequest;
+  };
+  "listNotifications": {
+    method: "GET";
+    path: "/v1/notifications";
+    requestBody?: unknown;
+    response: {
+      notifications: NotificationStatus[];
+    };
+  };
+  "getNotification": {
+    method: "GET";
+    path: "/v1/notifications/{id}";
+    requestBody?: unknown;
+    response: NotificationStatus;
   };
 }

@@ -80,9 +80,9 @@ export function registerApprovalsRoutes(
   }
 
   // -------------------------------------------------------------------------
-  // GET /v1/approvals: List approval requests
+  // GET /v1/approval-requests: List approval requests
   // -------------------------------------------------------------------------
-  app.get("/v1/approvals", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.get("/v1/approval-requests", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal } = await resolvePrincipalAndCompany(req);
 
     const query = req.query as {
@@ -107,9 +107,9 @@ export function registerApprovalsRoutes(
   });
 
   // -------------------------------------------------------------------------
-  // GET /v1/approvals/:id: Get a specific approval request
+  // GET /v1/approval-requests/:id: Get a specific approval request
   // -------------------------------------------------------------------------
-  app.get("/v1/approvals/:id", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.get("/v1/approval-requests/:id", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal } = await resolvePrincipalAndCompany(req);
     const { id } = req.params as { id: string };
 
@@ -129,9 +129,9 @@ export function registerApprovalsRoutes(
   });
 
   // -------------------------------------------------------------------------
-  // POST /v1/approvals: Create an approval request
+  // POST /v1/approval-requests: Create an approval request
   // -------------------------------------------------------------------------
-  app.post("/v1/approvals", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.post("/v1/approval-requests", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal, company } = await resolvePrincipalAndCompany(req);
     const body = CreateApprovalSchema.parse(req.body);
 
@@ -153,9 +153,9 @@ export function registerApprovalsRoutes(
   });
 
   // -------------------------------------------------------------------------
-  // POST /v1/approvals/:id/approve: Approve an action
+  // POST /v1/approval-requests/:id/approve: Approve an action
   // -------------------------------------------------------------------------
-  app.post("/v1/approvals/:id/approve", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.post("/v1/approval-requests/:id/approve", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal, company } = await resolvePrincipalAndCompany(req);
     const { id } = req.params as { id: string };
     const body = DecideApprovalSchema.parse(req.body || {});
@@ -198,9 +198,9 @@ export function registerApprovalsRoutes(
   });
 
   // -------------------------------------------------------------------------
-  // POST /v1/approvals/:id/reject: Decline an action
+  // POST /v1/approval-requests/:id/reject: Decline an action
   // -------------------------------------------------------------------------
-  app.post("/v1/approvals/:id/reject", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.post("/v1/approval-requests/:id/reject", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal, company } = await resolvePrincipalAndCompany(req);
     const { id } = req.params as { id: string };
     const body = DecideApprovalSchema.parse(req.body || {});
@@ -243,9 +243,9 @@ export function registerApprovalsRoutes(
   });
 
   // -------------------------------------------------------------------------
-  // GET /v1/approvals/audit-logs: List agent audit logs
+  // GET /v1/approval-requests/audit-logs: List agent audit logs
   // -------------------------------------------------------------------------
-  app.get("/v1/approvals/audit-logs", async (req: FastifyRequest, reply: FastifyReply) => {
+  app.get("/v1/approval-requests/audit-logs", async (req: FastifyRequest, reply: FastifyReply) => {
     const { principal } = await resolvePrincipalAndCompany(req);
     const query = req.query as { botId?: string; limit?: string };
 
