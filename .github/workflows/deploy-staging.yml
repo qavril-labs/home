@@ -1,0 +1,136 @@
+name: Deploy staging
+
+# Manual only. Builds the API/worker and agent images, pushes them to ECR and rolls the ECS services in
+# the qavril-staging cluster. Needs the setup in docs/deploy-staging.md; it stops with a clear message
+# if a piece is missing. The web app and site are not deployed here yet (hosting is undecided).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  CLUSTER: qavril-staging
+  ECR_API_REPO: qavril/api
+  ECR_UAAP_REPO: qavril/uaap
+
+jobs:
+  checks:
+    name: Checks must pass first
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/postgres
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  deploy:
+    name: Build, push and roll services
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Preflight, so a missing piece fails with a plain message
+        run: |
+          missing=0
+          for repo in "$ECR_API_REPO" "$ECR_UAAP_REPO"; do
+            aws ecr describe-repositories --repository-names "$repo" >/dev/null 2>&1 || { echo "::error::ECR repository $repo does not exist"; missing=1; }
+          done
+          for svc in qavril-staging-api qavril-staging-worker qavril-staging-uaap; do
+            status=$(aws ecs describe-services --cluster "$CLUSTER" --services "$svc" --query 'services[0].status' --output text 2>/dev/null || echo NONE)
+            [ "$status" = "ACTIVE" ] || { echo "::error::ECS service $svc is not ACTIVE in $CLUSTER (got $status)"; missing=1; }
+          done
+          exit $missing
+
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push images
+        id: build
+        env:
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$REGISTRY/$ECR_API_REPO:$TAG" backend
+          docker build -t "$REGISTRY/$ECR_UAAP_REPO:$TAG" backend/services/uaap
+          docker push "$REGISTRY/$ECR_API_REPO:$TAG"
+          docker push "$REGISTRY/$ECR_UAAP_REPO:$TAG"
+          echo "api_image=$REGISTRY/$ECR_API_REPO:$TAG" >> "$GITHUB_OUTPUT"
+          echo "uaap_image=$REGISTRY/$ECR_UAAP_REPO:$TAG" >> "$GITHUB_OUTPUT"
+
+      # Migrations run first, as a one-off task of the API task definition with a command override.
+      - name: Run database migrations
+        env:
+          API_IMAGE: ${{ steps.build.outputs.api_image }}
+          SUBNETS: ${{ vars.STAGING_SUBNET_IDS }}
+          SECURITY_GROUPS: ${{ vars.STAGING_SECURITY_GROUP_IDS }}
+        run: |
+          # Register a task definition revision of the API family with the new image, then run migrate once.
+          aws ecs describe-task-definition --task-definition qavril-staging-api --query taskDefinition > td.json
+          jq --arg img "$API_IMAGE" 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image=$img' td.json > td-new.json
+          arn=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
+          container=$(jq -r '.containerDefinitions[0].name' td-new.json)
+          task=$(aws ecs run-task --cluster "$CLUSTER" --launch-type FARGATE --task-definition "$arn" \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNETS],securityGroups=[$SECURITY_GROUPS],assignPublicIp=DISABLED}" \
+            --overrides "{\"containerOverrides\":[{\"name\":\"$container\",\"command\":[\"npm\",\"run\",\"migrate\",\"-w\",\"@erp/db\"]}]}" \
+            --query 'tasks[0].taskArn' --output text)
+          aws ecs wait tasks-stopped --cluster "$CLUSTER" --tasks "$task"
+          code=$(aws ecs describe-tasks --cluster "$CLUSTER" --tasks "$task" --query 'tasks[0].containers[0].exitCode' --output text)
+          [ "$code" = "0" ] || { echo "::error::Migration task exited with $code"; exit 1; }
+
+      - name: Roll the API
+        run: |
+          aws ecs describe-task-definition --task-definition qavril-staging-api --query taskDefinition > td.json
+          jq --arg img "${{ steps.build.outputs.api_image }}" 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image=$img' td.json > td-new.json
+          arn=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
+          aws ecs update-service --cluster "$CLUSTER" --service qavril-staging-api --task-definition "$arn" >/dev/null
+
+      - name: Roll the worker (same image, worker command is set in its task definition)
+        run: |
+          aws ecs describe-task-definition --task-definition qavril-staging-worker --query taskDefinition > td.json
+          jq --arg img "${{ steps.build.outputs.api_image }}" 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image=$img' td.json > td-new.json
+          arn=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
+          aws ecs update-service --cluster "$CLUSTER" --service qavril-staging-worker --task-definition "$arn" >/dev/null
+
+      - name: Roll the agent service
+        run: |
+          aws ecs describe-task-definition --task-definition qavril-staging-uaap --query taskDefinition > td.json
+          jq --arg img "${{ steps.build.outputs.uaap_image }}" 'del(.taskDefinitionArn,.revision,.status,.requiresAttributes,.compatibilities,.registeredAt,.registeredBy) | .containerDefinitions[0].image=$img' td.json > td-new.json
+          arn=$(aws ecs register-task-definition --cli-input-json file://td-new.json --query taskDefinition.taskDefinitionArn --output text)
+          aws ecs update-service --cluster "$CLUSTER" --service qavril-staging-uaap --task-definition "$arn" >/dev/null
+
+      - name: Wait for the services to settle
+        run: aws ecs wait services-stable --cluster "$CLUSTER" --services qavril-staging-api qavril-staging-worker qavril-staging-uaap
