@@ -8,9 +8,9 @@
   'use strict';
 
   // Determine API base URL
-  const API_BASE = (window.__CONFIG__ && window.__CONFIG__.apiBase) ||
+  const API_BASE = (window.__CONFIG__ && (window.__CONFIG__.contentApiBase || window.__CONFIG__.apiBase)) ||
                    (window.__API_BASE__) ||
-                   (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3002' : '');
+                   (location.hostname === 'localhost' || location.hostname === '127.0.0.1' ? 'http://localhost:3003' : '');
 
   const STORAGE_KEY = 'qavril_cms_admin_key';
   const THEME_KEY = 'qavril_theme';
