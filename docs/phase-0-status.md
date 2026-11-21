@@ -15,7 +15,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
-| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send) | API routes, bounce handling, SMS, WhatsApp, push, template management |
+| PLT-10 | Notifications | Partial | Email only: placeholder templates (missing values refused, HTML escaped), queue then send with retry and no double send, Amazon SES provider, dev console provider, `notifications` table with row-level security, `email.send` worker job on the `notifications` queue (retries with backoff, no double send); Chase Chloe email reminders (`POST /v1/invoicing/reminders`) queue real mail | Bounce handling and a delivery-state endpoint, SMS, WhatsApp, push, template management |
 | PLT-11 | Documents & Files | Not started | | Storage, versions, retention, e-signature |
 | PLT-12 | Print & PDF | Not started | | Templates, PDF output, labels |
 | PLT-13 | Reporting & BI | Not started | | Report builder, dashboards |
@@ -95,3 +95,5 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 - **Money as integers** in minor units, arithmetic in `bigint`, and decimal strings on the wire.
 - **Tenant-prefixed session tokens** so the server selects the tenant before any query runs.
 - **Transactional outbox** for events, so no event is published for a rolled-back change.
+
+- `POST /v1/invoicing/reminders` used to record every reminder as sent without sending anything. It now queues email, and records WhatsApp, or email with no queue, as approved. The web app should show `approved` as not yet delivered.

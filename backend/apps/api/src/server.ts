@@ -1,5 +1,5 @@
 import { createPool } from "@erp/db";
-import { redisConnection } from "@erp/queue";
+import { QUEUES, createQueue, redisConnection } from "@erp/queue";
 import { RedisTicketStore } from "./stream-tickets";
 import { RedisRealtimeBus } from "./realtime-bus";
 import { realtimeEvents } from "./invoicing-routes";
@@ -20,6 +20,8 @@ const app = buildApp({
   leadWebhookUrl: config.leadWebhookUrl,
   // Tickets are shared through Redis when it is configured, so any instance can accept one.
   ticketStore: config.redisUrl ? new RedisTicketStore(redisConnection(config.redisUrl)) : undefined,
+  // Email goes through the notifications queue, which the worker drains. Needs Redis.
+  emailQueue: config.redisUrl ? createQueue(QUEUES.notifications, redisConnection(config.redisUrl)) : undefined,
   logger: true,
 });
 

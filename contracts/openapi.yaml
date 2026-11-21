@@ -1694,7 +1694,11 @@ paths:
           $ref: "#/components/responses/UnauthenticatedError"
   /v1/invoicing/reminders:
     post:
-      summary: Create or run invoicing reminders
+      summary: Record a payment reminder and send it (FIN-14, PLT-10)
+      description: >
+        An email reminder with status sent (the default) is queued for delivery through the notifications
+        queue, and the reply carries the notificationId. If nothing can deliver it (WhatsApp, or no queue
+        configured), it is recorded as approved instead, never as sent. A draft is recorded and not sent.
       tags: ["Invoicing"]
       operationId: postInvoicingReminders
       security:
@@ -3518,6 +3522,7 @@ components:
         status: {type: string, enum: [draft, approved, sent]}
         sentAt: {type: string, format: date-time}
         createdAt: {type: string, format: date-time}
+        notificationId: {type: string, nullable: true, description: "Set when an email was queued; look it up in the notifications record for delivery state."}
     BillLine:
       type: object
       additionalProperties: true

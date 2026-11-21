@@ -16,6 +16,7 @@
     "@erp/kernel": "*",
     "@erp/ledger": "*",
     "@erp/money": "*",
+    "@erp/notifications": "*",
     "@erp/numbering": "*",
     "@erp/queue": "*",
     "@erp/tenancy": "*",

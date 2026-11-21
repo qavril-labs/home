@@ -9,8 +9,10 @@ import { hasPermission, type Principal } from "@erp/identity";
 import { DomainError, type Clock } from "@erp/kernel";
 import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
 import type { Company } from "@erp/tenancy";
+import { enqueueEmail, type EmailJobQueue } from "@erp/notifications";
 import {
   PgInvoicingStore,
+  PgNotificationStore,
   PgTenantRepository,
   withTenantTransaction,
   type Pool,
@@ -165,6 +167,11 @@ export interface InvoicingRouteDeps {
   readonly clock: Clock;
   readonly authenticate: (request: FastifyRequest) => Promise<Principal>;
   readonly tickets: TicketStore;
+  /**
+   * Where email sends are queued (the `notifications` queue). Without it, email reminders are
+   * recorded as approved but not sent, because nothing could deliver them.
+   */
+  readonly emailQueue?: EmailJobQueue;
 }
 
 export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRouteDeps): void {
@@ -326,14 +333,35 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   app.post("/v1/invoicing/reminders", async (request, reply) => {
     const principal = await signedIn(request);
     const body = RecordReminderBody.parse(request.body);
+    // "sent" means handed to delivery. Only email can be delivered today, and only when a queue is
+    // configured; anything else is recorded as approved so the books never claim a send that did not happen.
+    let status = body.status ?? "sent";
+    let notificationId: string | null = null;
+    if (status === "sent") {
+      if (body.channel === "email" && deps.emailQueue) {
+        const subject = body.subject?.trim() || `Payment reminder from your supplier`;
+        if (/[\r\n]/.test(subject)) {
+          throw new DomainError("VALIDATION", "Subject must be a single line");
+        }
+        const queued = await enqueueEmail(new PgNotificationStore(deps.pool), deps.emailQueue, {
+          tenantId: principal.tenantId,
+          templateKey: "invoice.reminder",
+          to: body.recipient,
+          email: { subject, text: body.message },
+        });
+        notificationId = queued.id;
+      } else {
+        status = "approved";
+      }
+    }
     const recorded = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-      return store.recordPaymentReminder(company.id, body);
+      return store.recordPaymentReminder(company.id, { ...body, status });
     });
 
     realtimeEvents.broadcast(principal.tenantId, "receivables.reminder.sent", recorded);
-    return reply.status(201).send(recorded);
+    return reply.status(201).send({ ...recorded, notificationId });
   });
 
   // ==========================================

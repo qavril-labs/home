@@ -20,6 +20,7 @@ import { registerInvoicingRoutes } from "./invoicing-routes";
 import { registerApprovalsRoutes } from "./approvals-routes";
 import { MemoryTicketStore, type TicketStore } from "./stream-tickets";
 import { registerCmsRoutes } from "./cms-routes";
+import type { EmailJobQueue } from "@erp/notifications";
 import { registerBankingRoutes } from "./banking-routes";
 import { registerPurchasingRoutes } from "./purchasing-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
@@ -89,6 +90,8 @@ export interface AppOptions {
   readonly corsOrigins?: readonly string[];
   /** Set when the API runs behind a proxy, so request.ip is the visitor's address. */
   readonly trustProxy?: boolean;
+  /** Queue for outgoing email (PLT-10). Without it, email reminders are recorded but not sent. */
+  readonly emailQueue?: EmailJobQueue;
   readonly leadRateLimit?: RateLimitOptions;
   /** Limits self-service sign-ups and sign-ins per IP. */
   readonly signupRateLimit?: RateLimitOptions;
@@ -478,7 +481,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
-  registerInvoicingRoutes(app, { pool, clock, authenticate, tickets: options.ticketStore ?? new MemoryTicketStore() });
+  registerInvoicingRoutes(app, { pool, clock, authenticate, tickets: options.ticketStore ?? new MemoryTicketStore(), emailQueue: options.emailQueue });
   registerApprovalsRoutes(app, { pool, clock, authenticateRequest: authenticate });
   registerBankingRoutes(app, { pool, clock, authenticate });
   registerPurchasingRoutes(app, { pool, clock, authenticate });
