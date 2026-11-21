@@ -78,6 +78,21 @@ const MatchOverrideSchema = z.object({
   note: z.string().min(1),
 });
 
+/** Parses a decimal string with up to two places into integer minor units. */
+function decimalToMinor(value: string): bigint {
+  const m = /^(-?)(\d+)(?:\.(\d{1,2}))?$/.exec(value.trim());
+  if (!m) return 0n;
+  const minor = BigInt(m[2]!) * 100n + BigInt((m[3] ?? "").padEnd(2, "0") || "0");
+  return m[1] ? -minor : minor;
+}
+
+function minorToDecimal(minor: bigint): string {
+  const negative = minor < 0n;
+  const abs = negative ? -minor : minor;
+  const text = `${abs / 100n}.${(abs % 100n).toString().padStart(2, "0")}`;
+  return negative ? `-${text}` : text;
+}
+
 export function registerPurchasingRoutes(
   app: FastifyInstance,
   deps: PurchasingRouteDeps
@@ -200,17 +215,17 @@ export function registerPurchasingRoutes(
     let matchedCount = 0;
     let varianceCount = 0;
     let unmatchedCount = 0;
-    let totalValueNum = 0;
+    let totalValueMinor = 0n;
 
     for (const m of matches) {
       if (m.overrideApproved || m.status === "MATCHED") {
         matchedCount++;
       } else if (m.status === "PRICE_VARIANCE" || m.status === "QUANTITY_VARIANCE") {
         varianceCount++;
-        totalValueNum += parseFloat(m.billTotal) || 0;
+        totalValueMinor += decimalToMinor(m.billTotal);
       } else {
         unmatchedCount++;
-        totalValueNum += parseFloat(m.billTotal) || 0;
+        totalValueMinor += decimalToMinor(m.billTotal);
       }
     }
 
@@ -219,7 +234,7 @@ export function registerPurchasingRoutes(
       matchedCount,
       varianceCount,
       unmatchedCount,
-      totalValueUnderReview: totalValueNum.toFixed(2),
+      totalValueUnderReview: minorToDecimal(totalValueMinor),
     };
 
     return { ok: true, matches, summary };

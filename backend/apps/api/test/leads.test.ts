@@ -128,7 +128,7 @@ describe("public lead intake", () => {
     });
     expect(allowed.statusCode).toBe(204);
     expect(allowed.headers["access-control-allow-origin"]).toBe(SITE_ORIGIN);
-    expect(allowed.headers["access-control-allow-methods"]).toBe("GET, POST, OPTIONS");
+    expect(allowed.headers["access-control-allow-methods"]).toBe("GET, POST, PUT, PATCH, DELETE, OPTIONS");
 
     const other = await app.inject({
       method: "OPTIONS",

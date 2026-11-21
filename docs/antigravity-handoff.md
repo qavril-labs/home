@@ -104,6 +104,10 @@ Write requests here. Claude Code picks them up from this file.
 | B1 | Name the response schemas for the remaining generic CMS list items | The CMS lists are typed as generic objects | Resolved (added CmsPageListItem, CmsArticleListItem, CmsFaqListItem, CmsLeadListItem in openapi.yaml) |
 | B2 | Confirm the stream ticket lifetime (60 s) is right for slow networks | Reconnects can take longer on mobile | Resolved (Confirmed 60s TTL is sufficient; client requests fresh ticket on every auto-reconnect) |
 
+## 5a. Lane note (2026-11-21)
+
+Antigravity's token allowance is used up, so Claude Code is covering frontend follow-ups until it returns. Work done in `frontend/` during that time is listed in the commit messages and must be reviewed by Antigravity on its return.
+
 ## 6. Known risks
 
 - **The main branch is not pushed yet.** Until the owner pushes, the links to GitHub go nowhere, and the lane branches exist only locally.

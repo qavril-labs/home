@@ -12,7 +12,7 @@ Status key: **Implemented** means working and tested. **Partial** means the core
 | PLT-04 | Tax & Country Rules Engine | Partial | Tax codes with effective-dated rates, exclusive and inclusive pricing, reverse charge, overlap validation | Country rule packs, compound taxes, withholding, document-level rounding |
 | PLT-05 | Multi-currency & FX | Partial | Exact money arithmetic, zero-decimal and three-decimal currencies, effective-dated rates, inverse rates | Realized and unrealized gain/loss posting, revaluation, rate import |
 | PLT-06 | Events, Posting & Jobs | Partial | Domain events, transactional outbox (Postgres), dispatcher with leases, retries, dead-lettering, idempotent consumers | Worker process, dead-letter tooling, per-aggregate ordering, scheduler |
-| PLT-07 | Workflow & Approvals | Not started | | Approval chains, thresholds, delegation |
+| PLT-07 | Workflow & Approvals | Partial | Approvals inbox API (`/v1/approvals`, approve and reject, agent audit log, live events) | Approval chains, thresholds, delegation. The Fastify routes share the `/v1/approvals` paths with the UAAP service and are not yet in the contract (see Known gaps) |
 | PLT-08 | Document Numbering | Partial | Gap-free counters with row locks, yearly and monthly resets, scoped counters | Configurable number patterns, per-branch rules in the UI |
 | PLT-09 | Custom Fields & Layouts | Not started | | Everything |
 | PLT-10 | Notifications | Not started | | Email, SMS, WhatsApp, push, templates |
@@ -65,10 +65,21 @@ The marketing site posts early-access requests to `POST /v1/public/leads`. Leads
 ## Counts
 
 - Implemented: 0
-- Partial: 11
-- Not started: 12
+- Partial: 12
+- Not started: 11
+
+## Update 2026-11-21
+
+- Procurement slice (PRC-01 to PRC-03): purchase orders, goods receipts and three-way matches with an override are served under `/v1/procurement/orders`, `/receipts` and `/matches`, and are now in `contracts/openapi.yaml`. The match summary total is computed in integer minor units (it used floats before).
+- Bank feeds (FIN-04): lines, statement import, reconcile and unreconcile are in the contract.
+- UAAP: Ticket Tess and Onboard Ola agents added with tests. Python suite: 274 passed, 5 skipped (the skipped ones need `UAAP_TEST_DATABASE_URL`). It needs `pytest-asyncio` installed.
+- Checks run: backend typecheck, contract drift test, web build, 41 web unit tests and the site check (5,772) all pass. The Postgres integration tests and the Playwright suite were not run in this pass.
+- The contract-undocumented list shrank by seven procurement routes. Six `/v1/approvals` routes remain.
 
 ## Known gaps in the Phase 0 build
+
+- The Fastify approvals routes and the UAAP service both use `/v1/approvals`, with different shapes (`requests` and `status` versus `approvals` and a payload hash). The contract documents only the UAAP one. Decide which service owns the path, or move the Fastify one to a different prefix, before documenting it.
+- `frontend/web/src/lib/three-way-match.ts`, `bank-reconciliation-rules.ts`, `procurement-mock.ts` and the two modals that use them (`ThreeWayMatchModal`, `BankRecRulesModal`) are not used by any screen. They hold seed data and match money in the browser, against the UI contract. Wire them to `/v1/procurement/matches` and `/v1/banking/*`, or delete them.
 
 - Only the ledger routes enforce entitlements. The other modules do not exist yet, so there is nothing else to enforce.
 - No outbox worker runs in production. The dispatcher exists and is tested; a process that calls it on a timer has not been added.

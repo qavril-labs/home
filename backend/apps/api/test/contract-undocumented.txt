@@ -1,0 +1,6 @@
+GET /v1/approvals
+GET /v1/approvals/audit-logs
+GET /v1/approvals/{id}
+POST /v1/approvals
+POST /v1/approvals/{id}/approve
+POST /v1/approvals/{id}/reject
