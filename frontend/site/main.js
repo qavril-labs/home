@@ -115,7 +115,7 @@
       data.timezone = visitorTimeZone();
       if (presetPlan) data.message = "Plan of interest: " + presetPlan + (data.message ? "\n" + data.message : "");
 
-      if (!config.apiBase) {
+      if (!config.contentApiBase) {
         setStatus(notConnected(), "err");
         return;
       }
@@ -123,7 +123,7 @@
       submit.disabled = true;
       setStatus("Sending...", "");
       try {
-        var response = await fetch(config.apiBase.replace(/\/$/, "") + "/v1/public/leads", {
+        var response = await fetch(config.contentApiBase.replace(/\/$/, "") + "/v1/public/leads", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify(data)
@@ -302,7 +302,7 @@
       website: String(fields.get("website") || ""),
       source: source
     };
-    if (!config.apiBase) {
+    if (!config.contentApiBase) {
       status.textContent = notConnected();
       status.className = "status modal-status err";
       return;
@@ -310,7 +310,7 @@
     button.disabled = true;
     status.textContent = "Sending...";
     status.className = "status modal-status";
-    fetch(config.apiBase.replace(/\/$/, "") + "/v1/public/leads", {
+    fetch(config.contentApiBase.replace(/\/$/, "") + "/v1/public/leads", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify(data)
@@ -631,7 +631,7 @@
 
   // --- Dynamic CMS Hydration Routine ---
   async function hydrateDynamicCms() {
-    var apiBase = config.apiBase;
+    var apiBase = config.contentApiBase;
     if (!apiBase) return;
 
     var controller = typeof AbortController !== "undefined" ? new AbortController() : null;
