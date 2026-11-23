@@ -39,7 +39,7 @@ node backend/scripts/load-test.mjs https://api-staging.example 60 20
 
 **Known gaps, not fixed**
 - **Rate limit is per process.** Every `/v1` route allows 300 requests a minute per tenant and address (a forged token for another tenant only uses the sender's own allowance). The counters live in memory, so several API instances each keep their own; a shared store such as Redis is needed before scaling out.
-- **Most write routes check no permission.** Invoicing, master data and procurement writes only require a signed-in user, so the built-in `user` role (no permissions) can post invoices. Banking, ledger and quick entries do check. Needs a permission per module before real users with limited roles exist.
+- **Write routes check a permission; read routes mostly do not.** Writes need `sal.invoice.write`, `prc.bill.write`, `mdm.party.write`, `mdm.item.write`, `fin.accounts.write`, `prc.order.write`, `prc.receipt.write` or `prc.match.override`, and the built-in `accountant` role holds them through its `sal.*`, `prc.*`, `mdm.*` and `fin.*` grants (`write-permissions.test.ts`). Reads of invoices, bills, parties, items, orders and statements still only need a signed-in user, so the `user` role can read business data. Add read permissions before users with limited roles are onboarded.
 - **No email verification or password reset.** The platform cannot recover an account that loses its password.
 - **No two-factor authentication.**
 - **The staging private key** (`qavril-staging-key.pem`) sits in the project root. It is git-ignored, but it should be moved out of the project and rotated if it has ever been shared.

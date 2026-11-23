@@ -104,7 +104,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.post("/v1/master-data/parties", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.party.write");
     const body = CreatePartyBody.parse(request.body);
     const created = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -125,7 +125,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.put("/v1/master-data/parties/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.party.write");
     const { id } = request.params as { id: string };
     const body = UpdatePartyBody.parse(request.body);
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -137,7 +137,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.delete("/v1/master-data/parties/:id", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.party.write");
     const { id } = request.params as { id: string };
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
@@ -172,7 +172,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.post("/v1/master-data/items", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.item.write");
     const body = CreateItemBody.parse(request.body);
     const created = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -195,7 +195,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.put("/v1/master-data/items/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.item.write");
     const { id } = request.params as { id: string };
     const body = UpdateItemBody.parse(request.body);
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -207,7 +207,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.delete("/v1/master-data/items/:id", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.item.write");
     const { id } = request.params as { id: string };
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
@@ -230,7 +230,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.post("/v1/master-data/accounts", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "fin.accounts.write");
     const body = CreateAccountBody.parse(request.body);
     const created = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -247,7 +247,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.put("/v1/master-data/accounts/:code", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "fin.accounts.write");
     const { code } = request.params as { code: string };
     const body = UpdateAccountBody.parse(request.body);
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {

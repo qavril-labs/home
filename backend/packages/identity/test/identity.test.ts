@@ -44,7 +44,7 @@ describe("permissions", () => {
   });
 
   it("expands roles into a sorted, de-duplicated list", () => {
-    expect(expandRoles(["accountant", "accountant"])).toEqual(["fin.*", "prc.*", "sal.*"]);
+    expect(expandRoles(["accountant", "accountant"])).toEqual(["fin.*", "mdm.*", "prc.*", "sal.*"]);
     expect(expandRoles(["unknown-role"])).toEqual([]);
   });
 });

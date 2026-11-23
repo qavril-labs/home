@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
-import type { Principal } from "@erp/identity";
+import { hasPermission, type Principal } from "@erp/identity";
 import { DomainError, systemClock, type Clock } from "@erp/kernel";
 import type { Company } from "@erp/tenancy";
 import {
@@ -101,11 +101,14 @@ export function registerPurchasingRoutes(
   const store = deps.purchasingStore ?? new PgPurchasingStore(deps.clock);
   const auditClock = deps.clock ?? systemClock;
 
-  async function resolvePrincipalAndCompany(req: FastifyRequest): Promise<{
+  async function resolvePrincipalAndCompany(req: FastifyRequest, permission?: string): Promise<{
     principal: Principal;
     companyId: string;
   }> {
     const principal = await deps.authenticate(req);
+    if (permission && !hasPermission(principal.permissions, permission)) {
+      throw new DomainError("FORBIDDEN", `Missing permission ${permission}`);
+    }
     const companyId = await withTenantTransaction(
       deps.pool,
       principal.tenantId,
@@ -144,7 +147,7 @@ export function registerPurchasingRoutes(
 
   // 2. Create Purchase Order
   app.post("/v1/procurement/orders", async (request, reply) => {
-    const { principal, companyId } = await resolvePrincipalAndCompany(request);
+    const { principal, companyId } = await resolvePrincipalAndCompany(request, "prc.order.write");
     const parsed = CreatePurchaseOrderSchema.parse(request.body);
 
     const order = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -163,7 +166,7 @@ export function registerPurchasingRoutes(
 
   // 3. Update Purchase Order Status
   app.patch("/v1/procurement/orders/:id/status", async (request) => {
-    const { principal } = await resolvePrincipalAndCompany(request);
+    const { principal } = await resolvePrincipalAndCompany(request, "prc.order.write");
     const { id } = request.params as { id: string };
     const { status } = UpdatePOStatusSchema.parse(request.body);
 
@@ -194,7 +197,7 @@ export function registerPurchasingRoutes(
 
   // 5. Create Goods Receipt Note
   app.post("/v1/procurement/receipts", async (request, reply) => {
-    const { principal, companyId } = await resolvePrincipalAndCompany(request);
+    const { principal, companyId } = await resolvePrincipalAndCompany(request, "prc.receipt.write");
     const parsed = CreateGoodsReceiptSchema.parse(request.body);
 
     const receipt = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -251,7 +254,7 @@ export function registerPurchasingRoutes(
 
   // 7. Approve Match Override
   app.post("/v1/procurement/matches/:id/override", async (request) => {
-    const { principal } = await resolvePrincipalAndCompany(request);
+    const { principal } = await resolvePrincipalAndCompany(request, "prc.match.override");
     const { id } = request.params as { id: string };
     const { note } = MatchOverrideSchema.parse(request.body);
 

@@ -8,7 +8,7 @@
  */
 export const BUILT_IN_ROLES: Readonly<Record<string, readonly string[]>> = {
   tenant_admin: ["*"],
-  accountant: ["fin.*", "prc.*", "sal.*"],
+  accountant: ["fin.*", "mdm.*", "prc.*", "sal.*"],
   user: [],
 };
 

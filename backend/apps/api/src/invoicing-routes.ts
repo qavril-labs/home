@@ -264,7 +264,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.post("/v1/invoicing/invoices", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.write");
     const body = CreateInvoiceBody.parse(request.body);
     const key = idempotencyKeyFrom(request);
     const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
@@ -285,7 +285,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.put("/v1/invoicing/invoices/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.write");
     const { id } = request.params as { id: string };
     const body = UpdateInvoiceBody.parse(request.body);
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -304,7 +304,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.delete("/v1/invoicing/invoices/:id", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.write");
     const { id } = request.params as { id: string };
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
@@ -320,7 +320,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.post("/v1/invoicing/invoices/:id/pay", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.write");
     const { id } = request.params as { id: string };
     const key = idempotencyKeyFrom(request);
     const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
@@ -356,7 +356,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Chase Chloe Reminders (FIN-14)
   // ==========================================
   app.post("/v1/invoicing/reminders", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.write");
     const body = RecordReminderBody.parse(request.body);
     // "sent" means handed to delivery. Only email can be delivered today, and only when a queue is
     // configured; anything else is recorded as approved so the books never claim a send that did not happen.
@@ -403,7 +403,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.post("/v1/invoicing/bills", async (request, reply) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "prc.bill.write");
     const body = CreateBillBody.parse(request.body);
     const key = idempotencyKeyFrom(request);
     const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
