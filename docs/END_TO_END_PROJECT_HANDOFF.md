@@ -34,7 +34,7 @@ This differs from what [build-plan.md](build-plan.md) describes, and both lanes 
 
 | Folder | Branch | State |
 |---|---|---|
-| `E:\SaaS` | `chore/split-backend-frontend` | The real integration line. 22 commits ahead of `origin/main`, 4 behind it (PRs 5 to 8: site and CMS work). Uncommitted: `frontend/web/src/lib/api-client.ts` (+16 lines: server error message first, plain 401 and 409 wording) and the two handoff docs |
+| `E:\SaaS` | `chore/split-backend-frontend` | The real integration line and the ERP's home. `origin/main` is the website-only repository (it deleted the ERP in PR #6), so there is no merge or PR to it. Uncommitted: `frontend/web/src/lib/api-client.ts` (+16 lines: server error message first, plain 401 and 409 wording) and the two handoff docs |
 | `E:\SaaS\.worktrees\frontend` | `lane/frontend` | Stale at `9c5f8cc`. It is an ancestor of the chore branch, so it contains nothing the chore branch lacks. Recent frontend work was done in `E:\SaaS` directly |
 | `E:\SaaS\.worktrees\backend` | `lane/backend` | **Diverged, not stale.** Old pre-split layout (`packages/` at the root, not `backend/`). 10 commits not in the chore branch (inventory by batch and expiry, point-of-sale sync, counts and transfers, quotes, credit notes, master data, tamper-evident audit chain, status page), merge-base `164cfaf`. Its migrations `0006` to `0014` clash in number with the chore branch's `0006` to `0013` |
 
@@ -115,7 +115,7 @@ Last recorded: backend with Postgres 235 passed, 4 skipped (2026-11-21); Python 
 |---|---|---|
 | D1 | What to do with `lane/backend` (inventory, POS, quotes, credit notes, audit chain) | Keep the branch; port the work into `backend/` as separate PRs after B2, renumbering migrations. Do not merge it directly |
 | D2 | Which branch both lanes commit to while `lane/*` worktrees are stale | Commit to `chore/split-backend-frontend` in `E:\SaaS`, one lane at a time; or reset the lane worktrees onto it |
-| D3 | Go-ahead for the repository split | After B1, B2 and the consolidation PR are merged and staging has run once |
+| D3 | Go-ahead for the repository split (decided direction 2026-11-23: keep this branch, ERP moves to new repositories; `origin/main` stays website-only) | Create `platform` first and move the shared packages; needs the owner to create the repositories, then B11 |
 | D4 | AWS pieces for staging, SES sender, deploy role | Owner creates them from [deploy-staging.md](deploy-staging.md) |
 | D5 | Hosting for the web app and site | S3 plus CloudFront behind Cloudflare, as already assumed |
 
@@ -126,7 +126,7 @@ Last recorded: backend with Postgres 235 passed, 4 skipped (2026-11-21); Python 
 | # | Task | Done when |
 |---|---|---|
 | B1 | Bank rules engine (FIN-04) | Migration for a tenant-scoped rules table with RLS; routes in the contract; deterministic match engine; unit and Postgres tests including audit entries; `BankRecRulesModal` can bind to it |
-| B2 | Merge `origin/main` into the chore branch and open the consolidation PR | Merge conflicts resolved (PRs 5 to 8 touched the site and CMS); CI green; the PR describes the `lane/backend` divergence |
+| B2 | ~~Merge `origin/main`~~ **Cancelled 2026-11-23.** `origin/main` is now the website-only repository (PR #6 deleted the ERP: 438 files). The owner chose to keep `chore/split-backend-frontend` as the ERP's home and move it to new repositories. Never merge `origin/main` into this branch | Instead: keep this branch green; the ERP moves to the new `platform` repository after D3 (B11). Site-only changes from PRs 5, 7, 8 are cherry-picked into `frontend/site` only if still needed |
 | B3 | Port `lane/backend` features per D1 | Each feature lands with renumbered migrations, tests and contract entries |
 | B4 | Staging deploy | After D4: run the workflow once, confirm health 200 on port 3002 |
 | B5 | Security hardening | Rate limits on authenticated routes, email verification, MFA design, audit on every money route, CORS policy, move the `.pem` out of the project |
@@ -170,3 +170,7 @@ D1 to D5, AWS and SES setup, a consenting pilot customer with an accountant's si
 2. Commits name catalog IDs; a new dependency needs a stated reason.
 3. Before saying done, run the section 7 commands and list which were not run.
 4. If this document and the code disagree, the code wins; fix the document in the same PR.
+
+## 13. Change log
+
+- 2026-11-23: B2 (merge `origin/main`) cancelled. `origin/main` removed the ERP in PR #6; the ERP stays on `chore/split-backend-frontend` and moves to new repositories. Sections 3, 9 and 10 updated. Antigravity is not blocked: it may commit again.
