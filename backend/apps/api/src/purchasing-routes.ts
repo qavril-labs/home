@@ -134,7 +134,7 @@ export function registerPurchasingRoutes(
 
   // 1. List Purchase Orders
   app.get("/v1/procurement/orders", async (request) => {
-    const { principal } = await resolvePrincipalAndCompany(request);
+    const { principal } = await resolvePrincipalAndCompany(request, "prc.order.read");
     const query = request.query as { status?: string; limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 100;
 
@@ -184,7 +184,7 @@ export function registerPurchasingRoutes(
 
   // 4. List Goods Receipt Notes
   app.get("/v1/procurement/receipts", async (request) => {
-    const { principal } = await resolvePrincipalAndCompany(request);
+    const { principal } = await resolvePrincipalAndCompany(request, "prc.receipt.read");
     const query = request.query as { status?: string; limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 100;
 
@@ -216,7 +216,7 @@ export function registerPurchasingRoutes(
 
   // 6. List 3-Way Matches with Summary Metrics
   app.get("/v1/procurement/matches", async (request) => {
-    const { principal } = await resolvePrincipalAndCompany(request);
+    const { principal } = await resolvePrincipalAndCompany(request, "prc.match.read");
     const query = request.query as { status?: string; limit?: string };
     const limit = query.limit ? parseInt(query.limit, 10) : 100;
 

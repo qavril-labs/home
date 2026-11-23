@@ -83,7 +83,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   // MDM-01: Customers & Suppliers (Parties)
   // ==========================================
   app.get("/v1/master-data/parties", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.party.read");
     const query = request.query as { partyType?: string; status?: string; search?: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -93,7 +93,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.get("/v1/master-data/parties/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.party.read");
     const { id } = request.params as { id: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
@@ -151,7 +151,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   // MDM-02: Items & Catalog
   // ==========================================
   app.get("/v1/master-data/items", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.item.read");
     const query = request.query as { itemType?: string; category?: string; status?: string; search?: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -161,7 +161,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   });
 
   app.get("/v1/master-data/items/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "mdm.item.read");
     const { id } = request.params as { id: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgMasterDataStore(tx, principal.tenantId, deps.clock);
@@ -221,7 +221,7 @@ export function registerMasterDataRoutes(app: FastifyInstance, deps: MasterDataR
   // MDM-03: Chart of Accounts
   // ==========================================
   app.get("/v1/master-data/accounts", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "fin.report.read");
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
       const store = new PgLedgerStore(tx, principal.tenantId);

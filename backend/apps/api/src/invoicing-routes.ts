@@ -239,7 +239,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Invoices (SAL-04 & AR)
   // ==========================================
   app.get("/v1/invoicing/invoices", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.read");
     const query = request.query as { status?: string; search?: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -253,7 +253,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   });
 
   app.get("/v1/invoicing/invoices/:id", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.read");
     const { id } = request.params as { id: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
@@ -343,7 +343,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Customer Statement (FIN-02)
   // ==========================================
   app.get("/v1/invoicing/statements/:partyId", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "sal.invoice.read");
     const { partyId } = request.params as { partyId: string };
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
@@ -393,7 +393,7 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
   // Vendor Bills (FIN-03 & AP)
   // ==========================================
   app.get("/v1/invoicing/bills", async (request) => {
-    const principal = await signedIn(request);
+    const principal = await signedIn(request, "prc.bill.read");
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const company = await firstCompany(tx, principal.tenantId);
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);

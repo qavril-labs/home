@@ -12,7 +12,7 @@ const PASSWORD = "a long permissions password";
 const ANY_ID = "01900000-0000-7000-8000-0000000000ff";
 
 interface WriteRoute {
-  readonly method: "POST" | "PUT" | "PATCH" | "DELETE";
+  readonly method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   readonly url: string;
   readonly payload?: object;
   /** Permission the route needs; the matrix below checks who has it. */
@@ -39,6 +39,23 @@ const routes: WriteRoute[] = [
   { method: "POST", url: "/v1/procurement/receipts", payload: {}, permission: "prc.receipt.write" },
   { method: "POST", url: `/v1/procurement/matches/${ANY_ID}/override`, payload: {}, permission: "prc.match.override" },
 ];
+
+const readRoutes: WriteRoute[] = (
+  [
+    ["/v1/invoicing/invoices", "sal.invoice.read"],
+    [`/v1/invoicing/invoices/${ANY_ID}`, "sal.invoice.read"],
+    [`/v1/invoicing/statements/${ANY_ID}`, "sal.invoice.read"],
+    ["/v1/invoicing/bills", "prc.bill.read"],
+    ["/v1/master-data/parties", "mdm.party.read"],
+    [`/v1/master-data/parties/${ANY_ID}`, "mdm.party.read"],
+    ["/v1/master-data/items", "mdm.item.read"],
+    [`/v1/master-data/items/${ANY_ID}`, "mdm.item.read"],
+    ["/v1/master-data/accounts", "fin.report.read"],
+    ["/v1/procurement/orders", "prc.order.read"],
+    ["/v1/procurement/receipts", "prc.receipt.read"],
+    ["/v1/procurement/matches", "prc.match.read"],
+  ] as const
+).map(([url, permission]) => ({ method: "GET" as const, url, permission }));
 
 describe("Write routes check a permission (PLT-01, PLT-21)", () => {
   let db: TestDatabase;
@@ -92,6 +109,20 @@ describe("Write routes check a permission (PLT-01, PLT-21)", () => {
       const res = await call(route, token);
       // The empty body or made-up id fails later (validation or not found); it must not fail on permission.
       expect(res.statusCode, `${route.method} ${route.url}`).not.toBe(403);
+      expect(res.statusCode).not.toBe(401);
+    }
+  });
+
+  it.each(readRoutes)("$method $url refuses a signed-in user without $permission", async (route) => {
+    const res = await call(route, tokens.user);
+    expect(res.statusCode).toBe(403);
+    expect(res.json().error.message).toContain(route.permission);
+  });
+
+  it.each(readRoutes)("$method $url is not refused for the accountant or the owner", async (route) => {
+    for (const token of [tokens.accountant, tokens.admin]) {
+      const res = await call(route, token);
+      expect(res.statusCode, route.url).not.toBe(403);
       expect(res.statusCode).not.toBe(401);
     }
   });
