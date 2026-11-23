@@ -12,3 +12,4 @@ export * from "./pool";
 export * from "./postgres";
 export * from "./transactions";
 export * from "./notifications-store";
+export * from "./banking-store";

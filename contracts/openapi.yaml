@@ -774,10 +774,11 @@ paths:
             application/json:
               schema:
                 type: object
-                required: [ok, imported, lines]
+                required: [ok, imported, ambiguous, lines]
                 properties:
                   ok: {type: boolean}
                   imported: {type: integer}
+                  ambiguous: {type: integer, description: "Lines where several documents fit. They stay unmatched; nothing is guessed."}
                   lines:
                     type: array
                     items:
@@ -842,6 +843,159 @@ paths:
                   ok: {type: boolean}
                   lineId: {type: string}
                   status: {type: string, example: "Unmatched"}
+
+  /v1/banking/rules:
+    get:
+      summary: List bank reconciliation rules in the order they run (FIN-04)
+      operationId: listBankRules
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Rules ordered by priority
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, rules]
+                properties:
+                  ok: {type: boolean}
+                  rules:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/BankRule"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+    post:
+      summary: Create a bank rule (FIN-04)
+      operationId: createBankRule
+      description: >
+        Rules only suggest a match for one open invoice (money in) or bill (money out); they never
+        reconcile or post. A name already in use returns 409. Needs fin.journal.post. Audited.
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankRuleInput"
+      responses:
+        "201":
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, rule]
+                properties:
+                  ok: {type: boolean}
+                  rule:
+                    $ref: "#/components/schemas/BankRule"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /v1/banking/rules/{id}:
+    put:
+      summary: Replace a bank rule (FIN-04)
+      operationId: updateBankRule
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BankRuleInput"
+      responses:
+        "200":
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, rule]
+                properties:
+                  ok: {type: boolean}
+                  rule:
+                    $ref: "#/components/schemas/BankRule"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+    delete:
+      summary: Delete a bank rule (FIN-04)
+      operationId: deleteBankRule
+      description: Lines already suggested keep the rule name they were suggested by. The deletion is audited.
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "200":
+          description: Rule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, id]
+                properties:
+                  ok: {type: boolean}
+                  id: {type: string, format: uuid}
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /v1/banking/rules/apply:
+    post:
+      summary: Run the rules again over lines that are not reconciled (FIN-04)
+      operationId: applyBankRules
+      description: >
+        Re-evaluates lines that are Unmatched or Suggested. Reconciled lines never change.
+        Repeating the call with no change in rules or documents changes nothing.
+      tags: ["Banking"]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Counts from the run
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, evaluated, suggested, ambiguous, unmatched, changed]
+                properties:
+                  ok: {type: boolean}
+                  evaluated: {type: integer}
+                  suggested: {type: integer}
+                  ambiguous: {type: integer}
+                  unmatched: {type: integer}
+                  changed: {type: integer}
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
 
   # ---- Bot API (UAAP agent service). Served by services/uaap, not apps/api. ----
 
@@ -3358,6 +3512,41 @@ components:
         matchedRef: {type: string}
         matchedLabel: {type: string}
         confidence: {type: number}
+        ruleId: {type: string, description: "Rule that produced the suggestion. Absent when the built-in default rule did."}
+        ruleName: {type: string}
+
+    BankRule:
+      type: object
+      required: [id, name, priority, active, direction, descriptionContains, amountMin, amountMax, matchOn, amountTolerance, confidence, createdAt, updatedAt]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string, minLength: 1, maxLength: 120}
+        priority: {type: integer, minimum: 1, maximum: 10000, description: "Lower runs first; ties break on id."}
+        active: {type: boolean}
+        direction: {type: string, enum: [IN, OUT, ANY]}
+        descriptionContains: {type: string, nullable: true, description: "Case-insensitive text the line description must contain."}
+        amountMin: {type: string, nullable: true, description: "Decimal string. Lines below it do not match."}
+        amountMax: {type: string, nullable: true}
+        matchOn: {type: string, enum: [amount, reference, amount_and_reference]}
+        amountTolerance: {type: string, description: "Decimal string. A document matches on amount when the difference is at most this."}
+        confidence: {type: integer, minimum: 1, maximum: 100, description: "Reported when this rule produces a suggestion. Configured, not computed."}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+
+    BankRuleInput:
+      type: object
+      required: [name]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 120}
+        priority: {type: integer, minimum: 1, maximum: 10000, default: 100}
+        active: {type: boolean, default: true}
+        direction: {type: string, enum: [IN, OUT, ANY], default: ANY}
+        descriptionContains: {type: string, nullable: true}
+        amountMin: {type: string, nullable: true}
+        amountMax: {type: string, nullable: true}
+        matchOn: {type: string, enum: [amount, reference, amount_and_reference], default: amount}
+        amountTolerance: {type: string, default: "0.00"}
+        confidence: {type: integer, minimum: 1, maximum: 100, default: 90}
 
     CmsAuthVerifyInput:
       type: object

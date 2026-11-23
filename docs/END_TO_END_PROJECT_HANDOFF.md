@@ -72,7 +72,7 @@ Status key as in [phase-0-status.md](phase-0-status.md): no product is yet marke
 | SAL-04, FIN-02 | Partial | Invoices, payments, void by reversal, statements, reminders. Quotes and credit notes only on `lane/backend` |
 | MDM-01/02/03 | Partial | Parties, items, accounts APIs |
 | PRC-01 to PRC-03 | Partial | `/v1/procurement/orders`, `/receipts`, `/matches` with override; in the contract; match total in integer minor units |
-| FIN-04 bank | Partial | Lines, statement import, reconcile and unreconcile. **Rules engine not built** |
+| FIN-04 bank | Partial | Lines, statement import, reconcile and unreconcile, tenant-defined matching rules (suggest only, never post). No ledger posting on reconcile yet |
 | FIN-03 payables, FIN-09 statements | Not started on the backend | The web screens use what the API offers |
 | INV, POS | Not on the chore branch | Exist on `lane/backend` (old layout) |
 | UAAP | Eight bots | Python suite 274 passed, 5 skipped (need `UAAP_TEST_DATABASE_URL`) |
@@ -125,7 +125,7 @@ Last recorded: backend with Postgres 235 passed, 4 skipped (2026-11-21); Python 
 
 | # | Task | Done when |
 |---|---|---|
-| B1 | Bank rules engine (FIN-04) | Migration for a tenant-scoped rules table with RLS; routes in the contract; deterministic match engine; unit and Postgres tests including audit entries; `BankRecRulesModal` can bind to it |
+| B1 | ~~Bank rules engine (FIN-04)~~ **Done 2026-11-23** | `@erp/banking` engine, migration `0014_bank_rules`, `/v1/banking/rules` (list, create, `PUT`/`DELETE` by id, `apply`), audit entries, 29 new tests. Frontend can now do F4. See the change log |
 | B2 | ~~Merge `origin/main`~~ **Cancelled 2026-11-23.** `origin/main` is now the website-only repository (PR #6 deleted the ERP: 438 files). The owner chose to keep `chore/split-backend-frontend` as the ERP's home and move it to new repositories. Never merge `origin/main` into this branch | Instead: keep this branch green; the ERP moves to the new `platform` repository after D3 (B11). Site-only changes from PRs 5, 7, 8 are cherry-picked into `frontend/site` only if still needed |
 | B3 | Port `lane/backend` features per D1 | Each feature lands with renumbered migrations, tests and contract entries |
 | B4 | Staging deploy | After D4: run the workflow once, confirm health 200 on port 3002 |
@@ -174,3 +174,4 @@ D1 to D5, AWS and SES setup, a consenting pilot customer with an accountant's si
 ## 13. Change log
 
 - 2026-11-23: B2 (merge `origin/main`) cancelled. `origin/main` removed the ERP in PR #6; the ERP stays on `chore/split-backend-frontend` and moves to new repositories. Sections 3, 9 and 10 updated. Antigravity is not blocked: it may commit again.
+- 2026-11-23: B1 done. New: `backend/packages/banking` (pure bigint engine), migration `0014_bank_rules.sql`, `backend/packages/db/src/banking-store.ts`, rule routes in `banking-routes.ts`, contract entries (`listBankRules`, `createBankRule`, `updateBankRule`, `deleteBankRule`, `applyBankRules`; `BankFeedLine` gains `ruleId`, `ruleName`; import response gains `ambiguous`). Behaviour changes for the frontend: (1) all `/v1/banking/*` routes now require a permission (`fin.report.read` to read, `fin.journal.post` to change); the built-in `user` role has none; (2) the old import matched floats against the wrong status names, so it never suggested anything; now exact minor-unit matching against open invoices (`issued`, `sent`, `partially_paid`, `overdue`) and bills (`approved`, `overdue`) by balance due, default confidence 80; (3) two documents with the same amount are reported as ambiguous and left unmatched. Frontend next: F4 binds `BankRecRulesModal` to the new routes; regenerate the client with `npm --prefix frontend run api:generate`.

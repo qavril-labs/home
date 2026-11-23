@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@erp/audit": "*",
+    "@erp/banking": "*",
     "@erp/events": "*",
     "@erp/identity": "*",
     "@erp/kernel": "*",
