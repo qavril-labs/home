@@ -162,6 +162,22 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
       signal: controller.signal,
     });
     if (!response.ok) {
+      let serverMessage: string | null = null;
+      try {
+        const errJson = (await response.json()) as { error?: { message?: string }; message?: string };
+        serverMessage = errJson?.error?.message || errJson?.message || null;
+      } catch {
+        // ignore non-JSON error bodies
+      }
+      if (serverMessage) {
+        throw new Error(serverMessage);
+      }
+      if (response.status === 401) {
+        throw new Error("Your session expired or ticket is invalid. Please sign in again.");
+      }
+      if (response.status === 409) {
+        throw new Error("This entry has already been recorded or conflicts with an existing record.");
+      }
       throw new Error(`HTTP ${response.status} on ${path}`);
     }
     if (response.status === 204) {
