@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import type { Principal } from "@erp/identity";
-import { DomainError, type Clock } from "@erp/kernel";
+import { DomainError, systemClock, type Clock } from "@erp/kernel";
 import type { Company } from "@erp/tenancy";
 import {
   PgPurchasingStore,
@@ -10,6 +10,7 @@ import {
   type Queryable,
 } from "@erp/db";
 import { realtimeEvents } from "./invoicing-routes";
+import { auditWrite, pick } from "./audit-write";
 
 export interface PurchasingRouteDeps {
   pool: Pool;
@@ -98,6 +99,7 @@ export function registerPurchasingRoutes(
   deps: PurchasingRouteDeps
 ): void {
   const store = deps.purchasingStore ?? new PgPurchasingStore(deps.clock);
+  const auditClock = deps.clock ?? systemClock;
 
   async function resolvePrincipalAndCompany(req: FastifyRequest): Promise<{
     principal: Principal;
@@ -145,12 +147,14 @@ export function registerPurchasingRoutes(
     const { principal, companyId } = await resolvePrincipalAndCompany(request);
     const parsed = CreatePurchaseOrderSchema.parse(request.body);
 
-    const order = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
-      store.createPurchaseOrder(tx, principal.tenantId, {
-        ...parsed,
-        companyId,
-      })
-    );
+    const order = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const created = await store.createPurchaseOrder(tx, principal.tenantId, { ...parsed, companyId });
+      await auditWrite(tx, auditClock, principal, request, {
+        action: "procurement.order.create", entityType: "purchase_order", entityId: created.id,
+        after: pick(created, ["supplierId", "status", "currency", "total", "orderDate"]),
+      });
+      return created;
+    });
 
     realtimeEvents.broadcast(principal.tenantId, "procurement.order.created", order);
 
@@ -163,9 +167,12 @@ export function registerPurchasingRoutes(
     const { id } = request.params as { id: string };
     const { status } = UpdatePOStatusSchema.parse(request.body);
 
-    await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
-      store.updatePurchaseOrderStatus(tx, id, status)
-    );
+    await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      await store.updatePurchaseOrderStatus(tx, id, status);
+      await auditWrite(tx, auditClock, principal, request, {
+        action: "procurement.order.status", entityType: "purchase_order", entityId: id, after: { status },
+      });
+    });
 
     realtimeEvents.broadcast(principal.tenantId, "procurement.order.updated", { id, status });
 
@@ -190,12 +197,14 @@ export function registerPurchasingRoutes(
     const { principal, companyId } = await resolvePrincipalAndCompany(request);
     const parsed = CreateGoodsReceiptSchema.parse(request.body);
 
-    const receipt = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
-      store.createGoodsReceiptNote(tx, principal.tenantId, {
-        ...parsed,
-        companyId,
-      })
-    );
+    const receipt = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const created = await store.createGoodsReceiptNote(tx, principal.tenantId, { ...parsed, companyId });
+      await auditWrite(tx, auditClock, principal, request, {
+        action: "procurement.receipt.create", entityType: "goods_receipt", entityId: created.id,
+        after: pick(created, ["poId", "status", "receivedDate"]),
+      });
+      return created;
+    });
 
     realtimeEvents.broadcast(principal.tenantId, "procurement.receipt.created", receipt);
 
@@ -246,9 +255,13 @@ export function registerPurchasingRoutes(
     const { id } = request.params as { id: string };
     const { note } = MatchOverrideSchema.parse(request.body);
 
-    await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
-      store.approveMatchOverride(tx, id, note, principal.userId || "Procurement Lead")
-    );
+    await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      await store.approveMatchOverride(tx, id, note, principal.userId || "Procurement Lead");
+      await auditWrite(tx, auditClock, principal, request, {
+        action: "procurement.match.override", entityType: "three_way_match", entityId: id,
+        before: { overrideApproved: false }, after: { overrideApproved: true, note },
+      });
+    });
 
     const payload = { id, note, overrideApproved: true, toleranceOk: true };
     realtimeEvents.broadcast(principal.tenantId, "procurement.match.override", payload);

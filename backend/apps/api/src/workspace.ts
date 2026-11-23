@@ -1,5 +1,6 @@
 import { balancesFor, computeInsights } from "./insights";
 import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
+import { auditWrite } from "./audit-write";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { hasPermission, type Principal } from "@erp/identity";
@@ -274,6 +275,10 @@ export function registerWorkspaceRoutes(app: FastifyInstance, deps: WorkspaceRou
     const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
       runIdempotent(tx, { tenantId: principal.tenantId, scope: "workspace.quick-entry", key, payload: body }, async () => {
         const entry = await postEntry(tx);
+        await auditWrite(tx, deps.clock, principal, request, {
+          action: "workspace.quick-entry", entityType: "journal_entry", entityId: entry.id,
+          after: { reference: entry.reference, kind: body.kind, amount: body.amount, date: body.date, via: body.via },
+        });
         return { status: 201, body: { id: entry.id, reference: entry.reference } };
       }),
     );

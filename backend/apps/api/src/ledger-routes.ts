@@ -5,6 +5,7 @@ import { Ledger } from "@erp/ledger";
 import { Money } from "@erp/money";
 import { DomainError, type Clock } from "@erp/kernel";
 import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
+import { auditWrite } from "./audit-write";
 import { assertEntitled, type Company } from "@erp/tenancy";
 import {
   PgLedgerStore,
@@ -88,6 +89,7 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
     companyId: string,
     work: (ledger: Ledger, company: Company) => Promise<T>,
     idempotent?: { scope: string; payload: unknown },
+    audit?: (result: T) => { action: string; entityId: string; after: Record<string, unknown> },
   ): Promise<T> {
     const principal = await deps.authenticate(request);
     if (!hasPermission(principal.permissions, permission)) {
@@ -105,12 +107,23 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
         company.baseCurrency,
         deps.clock,
       );
-      if (!idempotent) return work(ledger, company);
+      // The audit entry is written in this transaction, so it exists exactly when the posting does.
+      const doWork = async (): Promise<T> => {
+        const result = await work(ledger, company);
+        if (audit) {
+          const entry = audit(result);
+          await auditWrite(tx, deps.clock, principal, request, {
+            action: entry.action, entityType: "journal_entry", entityId: entry.entityId, after: entry.after,
+          });
+        }
+        return result;
+      };
+      if (!idempotent) return doWork();
       // Posting twice would double the books, so a retry with the same key gets the first result.
       const result = await runIdempotent(
         tx,
         { tenantId: principal.tenantId, scope: idempotent.scope, key: idempotencyKeyFrom(request), payload: idempotent.payload },
-        async () => ({ status: 201, body: await work(ledger, company) }),
+        async () => ({ status: 201, body: await doWork() }),
       );
       return result.body as T;
     });
@@ -161,6 +174,10 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
         })),
       }),
       { scope: "ledger.journal.post", payload: body },
+      (e) => ({
+        action: "ledger.journal.post", entityId: String((e as { id: string }).id),
+        after: { reference: body.reference, date: body.date, currency: body.currency, lines: body.lines.length },
+      }),
     );
     return reply.status(201).send(entry);
   });
@@ -171,6 +188,10 @@ export function registerLedgerRoutes(app: FastifyInstance, deps: LedgerRouteDeps
     const entry = await withLedger(request, "fin.journal.post", body.companyId, (ledger) =>
       ledger.reverse(id, { reference: body.reference, date: body.date }),
       { scope: "ledger.journal.reverse", payload: { id, ...body } },
+      (e) => ({
+        action: "ledger.journal.reverse", entityId: String((e as { id: string }).id),
+        after: { reversedEntryId: id, reference: body.reference, date: body.date },
+      }),
     );
     return reply.status(201).send(entry);
   });

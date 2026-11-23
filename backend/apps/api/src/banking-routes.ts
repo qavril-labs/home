@@ -209,6 +209,11 @@ export function registerBankingRoutes(app: FastifyInstance, deps: BankingRouteDe
       if (res.rowCount === 0) {
         throw new DomainError("NOT_FOUND", "Bank line not found");
       }
+      await new AuditLog(new PgAuditStore(tx), clock).record({
+        tenantId: principal.tenantId, actorId: principal.userId, action: "bank.line.reconcile",
+        entityType: "bank_line", entityId: body.lineId, before: null,
+        after: { status: "Reconciled", matchedRef: body.matchedRef }, requestId: request.id,
+      });
       return { ok: true, lineId: body.lineId, matchedRef: body.matchedRef, status: "Reconciled" };
     });
   });
@@ -230,6 +235,10 @@ export function registerBankingRoutes(app: FastifyInstance, deps: BankingRouteDe
       if (res.rowCount === 0) {
         throw new DomainError("NOT_FOUND", "Bank line not found");
       }
+      await new AuditLog(new PgAuditStore(tx), clock).record({
+        tenantId: principal.tenantId, actorId: principal.userId, action: "bank.line.unreconcile",
+        entityType: "bank_line", entityId: body.lineId, before: null, after: { status: "Unmatched" }, requestId: request.id,
+      });
       return { ok: true, lineId: body.lineId, status: "Unmatched" };
     });
   });

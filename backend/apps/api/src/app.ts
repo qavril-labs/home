@@ -197,7 +197,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       const authHeader = request.headers.authorization;
       const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
       const tenantId = token ? tenantFromToken(token) : null;
-      const key = tenantId || request.ip;
+      // Keyed by tenant and address together, so a forged token for another tenant only uses up the sender's own allowance.
+      const key = `${tenantId ?? "-"}:${request.ip}`;
       const now = clock.now().getTime();
       if (apiLimiter.blocked(key, now)) {
         reply.header("retry-after", "60");

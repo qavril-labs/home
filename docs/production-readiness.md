@@ -38,13 +38,14 @@ node backend/scripts/load-test.mjs https://api-staging.example 60 20
 | Production dependencies have no known vulnerabilities (backend and frontend) | `npm audit --omit=dev`, run on this date |
 
 **Known gaps, not fixed**
-- **No rate limit on most routes** except sign-up, sign-in and lead intake. An authenticated user can send unlimited requests.
+- **Rate limit is per process.** Every `/v1` route allows 300 requests a minute per tenant and address (a forged token for another tenant only uses the sender's own allowance). The counters live in memory, so several API instances each keep their own; a shared store such as Redis is needed before scaling out.
+- **Most write routes check no permission.** Invoicing, master data and procurement writes only require a signed-in user, so the built-in `user` role (no permissions) can post invoices. Banking, ledger and quick entries do check. Needs a permission per module before real users with limited roles exist.
 - **No email verification or password reset.** The platform cannot recover an account that loses its password.
 - **No two-factor authentication.**
 - **The staging private key** (`qavril-staging-key.pem`) sits in the project root. It is git-ignored, but it should be moved out of the project and rotated if it has ever been shared.
 - **CMS tables have no tenant column.** That is correct for platform content, and it is a deliberate exception to the tenant rule.
 - **Live events are only tenant-filtered in the application.** The bus and stream both check the tenant, but this is not enforced by the database.
-- **Audit log coverage** has not been checked against every money-moving route.
+- **Audit log coverage:** ledger postings and reversals, quick entries, invoices (create, update, pay, delete), bills, purchase orders, receipts, match overrides, bank import, reconcile and unreconcile, and bank rules write an audit entry in the same transaction (`audit-coverage.test.ts`). Not yet covered: parties, items and accounts (master data), payment reminders, approval requests (they have their own agent log), CMS.
 
 ## 3. Real customers' books
 

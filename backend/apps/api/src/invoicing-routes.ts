@@ -8,6 +8,7 @@ import { z } from "zod";
 import { hasPermission, type Principal } from "@erp/identity";
 import { DomainError, type Clock } from "@erp/kernel";
 import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
+import { auditWrite, pick } from "./audit-write";
 import type { Company } from "@erp/tenancy";
 import { enqueueEmail, type EmailJobQueue } from "@erp/notifications";
 import {
@@ -78,6 +79,9 @@ export class RealtimeEventManager {
 }
 
 export const realtimeEvents = new RealtimeEventManager();
+
+const INVOICE_AUDIT_FIELDS = ["invoiceNumber", "partyId", "status", "currency", "subtotal", "taxTotal", "total", "amountPaid", "balanceDue"] as const;
+const BILL_AUDIT_FIELDS = ["billNumber", "supplierId", "status", "currency", "subtotal", "taxTotal", "total", "amountPaid", "balanceDue"] as const;
 
 async function firstCompany(tx: Queryable, tenantId: string): Promise<Company> {
   const { rows } = await tx.query<{ id: string }>(
@@ -267,7 +271,12 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
       runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.invoice.create", key, payload: body }, async () => {
         const company = await firstCompany(tx, principal.tenantId);
         const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-        return { status: 201, body: await store.createInvoice(company.id, body) };
+        const created = await store.createInvoice(company.id, body);
+        await auditWrite(tx, deps.clock, principal, request, {
+          action: "sales.invoice.create", entityType: "invoice", entityId: String((created as { id: string }).id),
+          after: pick(created, INVOICE_AUDIT_FIELDS),
+        });
+        return { status: 201, body: created };
       }),
     );
     // A replayed response was already announced when it was first created.
@@ -281,7 +290,13 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     const body = UpdateInvoiceBody.parse(request.body);
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-      return store.updateInvoice(id, body);
+      const before = await store.findInvoice(id);
+      const result = await store.updateInvoice(id, body);
+      await auditWrite(tx, deps.clock, principal, request, {
+        action: "sales.invoice.update", entityType: "invoice", entityId: id,
+        before: pick(before, INVOICE_AUDIT_FIELDS), after: pick(result, INVOICE_AUDIT_FIELDS),
+      });
+      return result;
     });
 
     realtimeEvents.broadcast(principal.tenantId, "sales.invoice.updated", updated);
@@ -293,7 +308,11 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     const { id } = request.params as { id: string };
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
+      const before = await store.findInvoice(id);
       await store.deleteInvoice(id);
+      await auditWrite(tx, deps.clock, principal, request, {
+        action: "sales.invoice.delete", entityType: "invoice", entityId: id, before: pick(before, INVOICE_AUDIT_FIELDS), after: null,
+      });
     });
 
     realtimeEvents.broadcast(principal.tenantId, "sales.invoice.deleted", { id });
@@ -307,7 +326,13 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     const result = await withTenantTransaction(deps.pool, principal.tenantId, (tx) =>
       runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.invoice.pay", key, payload: { id } }, async () => {
         const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-        return { status: 200, body: await store.markInvoicePaid(id) };
+        const before = await store.findInvoice(id);
+        const paid = await store.markInvoicePaid(id);
+        await auditWrite(tx, deps.clock, principal, request, {
+          action: "sales.invoice.pay", entityType: "invoice", entityId: id,
+          before: pick(before, INVOICE_AUDIT_FIELDS), after: pick(paid, INVOICE_AUDIT_FIELDS),
+        });
+        return { status: 200, body: paid };
       }),
     );
     if (!result.replayed) realtimeEvents.broadcast(principal.tenantId, "sales.invoice.paid", result.body);
@@ -385,7 +410,12 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
       runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.bill.create", key, payload: body }, async () => {
         const company = await firstCompany(tx, principal.tenantId);
         const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-        return { status: 201, body: await store.createBill(company.id, body) };
+        const created = await store.createBill(company.id, body);
+        await auditWrite(tx, deps.clock, principal, request, {
+          action: "purchasing.bill.create", entityType: "bill", entityId: String((created as { id: string }).id),
+          after: pick(created, BILL_AUDIT_FIELDS),
+        });
+        return { status: 201, body: created };
       }),
     );
     if (!result.replayed) realtimeEvents.broadcast(principal.tenantId, "purchasing.bill.created", result.body);
