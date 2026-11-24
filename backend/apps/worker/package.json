@@ -8,9 +8,12 @@
     "start": "tsx src/main.ts"
   },
   "dependencies": {
+    "@erp/audit": "*",
     "@erp/db": "*",
     "@erp/events": "*",
+    "@erp/kernel": "*",
     "@erp/notifications": "*",
+    "@erp/pm-bots": "*",
     "@erp/queue": "*"
   }
 }

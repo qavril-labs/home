@@ -211,4 +211,83 @@ export class PgPmBotsStore {
     );
     return this.report(rows[0]!);
   }
+
+  /** Open blocker incidents that have not been closed. The scanner decides which are due. */
+  async openIncidents(): Promise<OpenIncidentRow[]> {
+    const { rows } = await this.db.query(
+      `SELECT id, project_id, task_id, reason, blocked_by_user_id, reported_by, blocked_at, sla_due_at, escalated_at, escalation_count
+         FROM blocker_incidents WHERE unblocked_at IS NULL ORDER BY sla_due_at, id`,
+    );
+    return rows.map((r) => ({
+      id: r.id, projectId: r.project_id, taskId: r.task_id, reason: r.reason, blockedByUserId: r.blocked_by_user_id,
+      reportedBy: r.reported_by, blockedAt: new Date(r.blocked_at), slaDueAt: new Date(r.sla_due_at),
+      escalatedAt: r.escalated_at ? new Date(r.escalated_at) : null, escalationCount: r.escalation_count,
+    }));
+  }
+
+  async markIncidentEscalated(id: string, at: Date): Promise<void> {
+    await this.db.query(
+      "UPDATE blocker_incidents SET escalated_at = $2, escalation_count = escalation_count + 1 WHERE id = $1 AND unblocked_at IS NULL",
+      [id, at],
+    );
+  }
+
+  /** True exactly once per key. The unique key on (tenant, idempotency_key) is what stops a double send. */
+  async claimDelivery(d: {
+    id: string; tenantId: string; projectId: string | null; key: string; botType: string;
+    entityId: string; recipientId: string | null; channel: string; status: "queued" | "skipped"; error?: string;
+  }): Promise<boolean> {
+    const { rowCount } = await this.db.query(
+      `INSERT INTO bot_delivery_log (id, tenant_id, project_id, idempotency_key, bot_type, entity_id, recipient_id, channel, status, error)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (tenant_id, idempotency_key) DO NOTHING`,
+      [d.id, d.tenantId, d.projectId, d.key, d.botType, d.entityId, d.recipientId, d.channel, d.status, d.error ?? null],
+    );
+    return (rowCount ?? 0) > 0;
+  }
+
+  async finishDelivery(key: string, status: "sent" | "failed", at: Date, error?: string): Promise<void> {
+    await this.db.query(
+      `UPDATE bot_delivery_log SET status = $2, attempts = attempts + 1, error = $3, sent_at = CASE WHEN $2 = 'sent' THEN $4::timestamptz END
+        WHERE idempotency_key = $1`,
+      [key, status, error ?? null, at],
+    );
+  }
+
+  async userEmail(userId: string): Promise<string | null> {
+    const { rows } = await this.db.query("SELECT email FROM users WHERE id = $1 AND status = 'ACTIVE'", [userId]);
+    return rows[0]?.email ?? null;
+  }
+
+  /** Drafts older than the cutoff that have not been reminded about. */
+  async draftsNeedingReminder(createdBefore: Date): Promise<{ id: string; projectId: string; weekStart: string; createdAt: Date }[]> {
+    const { rows } = await this.db.query(
+      "SELECT id, project_id, week_start, created_at FROM weekly_reports WHERE status = 'draft' AND reminded_at IS NULL AND created_at <= $1",
+      [createdBefore],
+    );
+    return rows.map((r) => ({ id: r.id, projectId: r.project_id, weekStart: day(r.week_start), createdAt: new Date(r.created_at) }));
+  }
+
+  async markReportReminded(id: string, at: Date): Promise<void> {
+    await this.db.query("UPDATE weekly_reports SET reminded_at = $2 WHERE id = $1 AND reminded_at IS NULL", [id, at]);
+  }
+
+  /** Takes a transaction-scoped lock so two worker replicas never run the same scan for a tenant. */
+  async tryScanLock(name: string): Promise<boolean> {
+    const { rows } = await this.db.query("SELECT pg_try_advisory_xact_lock(hashtext($1)) AS ok", [name]);
+    return rows[0]?.ok === true;
+  }
+}
+
+export interface OpenIncidentRow {
+  id: string;
+  projectId: string | null;
+  taskId: string | null;
+  reason: string;
+  blockedByUserId: string | null;
+  reportedBy: string | null;
+  blockedAt: Date;
+  slaDueAt: Date;
+  escalatedAt: Date | null;
+  escalationCount: number;
 }

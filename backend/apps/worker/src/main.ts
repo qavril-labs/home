@@ -3,6 +3,7 @@
 import { OutboxDispatcher } from "@erp/events";
 import { PgNotificationStore, PgOutboxStore, createPool } from "@erp/db";
 import { ConsoleEmailProvider, EMAIL_SEND_JOB, SesEmailProvider, createEmailSendHandler, loadSesConfig, type EmailSendJob } from "@erp/notifications";
+import { runBlockerEscalationScan, runReportReminderScan } from "./pm-bots-jobs";
 import { QUEUES, QueueEventSink, createQueue, createWorker, redisConnection } from "@erp/queue";
 
 function required(name: string): string {
