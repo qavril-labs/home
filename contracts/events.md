@@ -89,6 +89,26 @@ export interface DomainEvent<T = Record<string, unknown>> {
   - `approvedBy`: string
   - `executedAt`: string
 
+### 5. Project Management Bots (`PSA-01`, `packages/pm-bots`)
+Consumed by the bots. The task events come from the project and task module (PSA-01), which is not built yet.
+- **`task.created`**: Consumed by the Intake & Triage bot when `triageStatus` is `untriaged`.
+  - `taskId`, `projectId`: string
+  - `title`: string
+  - `description`?: string
+  - `category`?, `priority`?, `teamId`?: string (set by a person; the bot never overwrites them)
+- **`task.status_changed`**: Consumed by the Blocker & Escalation and Deadline Reminder bots.
+  - `taskId`, `projectId`: string
+  - `oldStatus`, `newStatus`: string
+  - `blockerReason`?: string (required, 5 or more characters, when `newStatus` is "Blocked")
+  - `blockedByUserId`?: string
+- **`task.due_date_changed`**: Consumed by the Deadline Reminder bot.
+  - `taskId`, `projectId`: string
+  - `oldDueDate`, `newDueDate`: string | null (ISO 8601 UTC)
+- **`standup.blocker_reported`**: Emitted when a standup response has blocker text. Consumed by the Blocker & Escalation bot.
+  - `projectId`, `userId`: string
+  - `standupDate`: string (YYYY-MM-DD)
+  - `text`: string
+
 ---
 
 ## Consumer Guarantees

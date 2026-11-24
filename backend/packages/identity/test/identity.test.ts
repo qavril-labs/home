@@ -46,6 +46,8 @@ describe("permissions", () => {
   it("expands roles into a sorted, de-duplicated list", () => {
     expect(expandRoles(["accountant", "accountant"])).toEqual(["fin.*", "mdm.*", "prc.*", "sal.*"]);
     expect(expandRoles(["unknown-role"])).toEqual([]);
+    expect(expandRoles(["project_manager"])).toEqual(["pm.bots.configure", "pm.bots.override", "pm.bots.view_logs"]);
+    expect(expandRoles(["project_lead"])).toEqual(["pm.bots.override"]);
   });
 });
 

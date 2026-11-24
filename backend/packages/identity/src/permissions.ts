@@ -10,6 +10,9 @@ export const BUILT_IN_ROLES: Readonly<Record<string, readonly string[]>> = {
   tenant_admin: ["*"],
   accountant: ["fin.*", "mdm.*", "prc.*", "sal.*"],
   user: [],
+  // Project management bots (PSA-01 bots). Spec: docs/pm-bots-mvp-spec.md.
+  project_manager: ["pm.bots.configure", "pm.bots.override", "pm.bots.view_logs"],
+  project_lead: ["pm.bots.override"],
 };
 
 export function expandRoles(roles: readonly string[]): string[] {

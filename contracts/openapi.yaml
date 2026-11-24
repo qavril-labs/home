@@ -2497,6 +2497,186 @@ paths:
             application/json:
               schema: {$ref: "#/components/schemas/ErrorResponse"}
 
+  /v1/projects/{projectId}/bots:
+    get:
+      summary: List the five project management bots with their state (PSA-01 bots)
+      operationId: listProjectBots
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Always five entries, one per bot type. A bot never configured is returned disabled with its default config.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bots]
+                properties:
+                  bots:
+                    type: array
+                    items: {$ref: "#/components/schemas/PmBot"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "403": {$ref: "#/components/responses/ForbiddenError"}
+
+  /v1/projects/{projectId}/bots/{botType}:
+    put:
+      summary: Enable, disable or configure one bot. Needs pm.bots.configure.
+      operationId: updateProjectBot
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: string}}
+        - {name: botType, in: path, required: true, schema: {$ref: "#/components/schemas/PmBotType"}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              properties:
+                enabled: {type: boolean}
+                config: {type: object, additionalProperties: true, description: "Thresholds, quiet hours, schedules, channels and recipients. Keys per bot are listed in docs/pm-bots-mvp-spec.md."}
+      responses:
+        "200":
+          description: The updated bot
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PmBot"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "403": {$ref: "#/components/responses/ForbiddenError"}
+
+  /v1/projects/{projectId}/bots/{botType}/logs:
+    get:
+      summary: Delivery and execution log for one bot. Needs pm.bots.view_logs.
+      operationId: listProjectBotLogs
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: string}}
+        - {name: botType, in: path, required: true, schema: {$ref: "#/components/schemas/PmBotType"}}
+        - {name: cursor, in: query, required: false, schema: {type: string}}
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 200, default: 50}}
+      responses:
+        "200":
+          description: Newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [logs]
+                properties:
+                  logs:
+                    type: array
+                    items: {$ref: "#/components/schemas/PmBotLogEntry"}
+                  nextCursor: {type: string, nullable: true}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "403": {$ref: "#/components/responses/ForbiddenError"}
+
+  /v1/tasks/{taskId}/triage/resolve:
+    post:
+      summary: Accept or override the triage suggestion on a task. Needs pm.bots.override.
+      operationId: resolveTriageSuggestion
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: taskId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: {type: string, enum: [accept, override]}
+                category: {type: string, description: "Used with override."}
+                priority: {type: string, description: "Used with override."}
+                teamId: {type: string, description: "Used with override."}
+      responses:
+        "200":
+          description: The resolved suggestion
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/TriageSuggestion"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "403": {$ref: "#/components/responses/ForbiddenError"}
+        "404":
+          description: No pending suggestion for this task
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+        "409":
+          description: The suggestion was already resolved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
+  /v1/projects/{projectId}/standup/respond:
+    post:
+      summary: Submit or edit today's standup response. One row per project, user and date.
+      operationId: respondToStandup
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                yesterday: {type: string}
+                today: {type: string}
+                blockers: {type: string, description: "Empty or 'No blockers' means none. Any other text raises standup.blocker_reported."}
+      responses:
+        "200":
+          description: The stored response. late is true when submitted after the cutoff.
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/StandupResponse"}
+        "400": {$ref: "#/components/responses/ValidationError"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+
+  /v1/projects/{projectId}/reports/{reportId}/approve:
+    post:
+      summary: Approve and send a draft weekly report. Needs pm.bots.override.
+      operationId: approveWeeklyReport
+      tags: ["PM Bots"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: projectId, in: path, required: true, schema: {type: string}}
+        - {name: reportId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: The report, now sent
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/WeeklyReport"}
+        "401": {$ref: "#/components/responses/UnauthenticatedError"}
+        "403": {$ref: "#/components/responses/ForbiddenError"}
+        "404":
+          description: No such report in this project
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+        "409":
+          description: Only a draft can be approved
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/ErrorResponse"}
+
 components:
   securitySchemes:
     BearerAuth:
@@ -4199,3 +4379,83 @@ components:
         error: {type: string, nullable: true}
         createdAt: {type: string, format: date-time}
         sentAt: {type: string, format: date-time, nullable: true}
+
+    PmBotType:
+      type: string
+      enum: [deadline_reminder, blocker_escalation, intake_triage, daily_standup, weekly_report]
+
+    PmBot:
+      type: object
+      required: [botType, enabled, config]
+      properties:
+        botType: {$ref: "#/components/schemas/PmBotType"}
+        enabled: {type: boolean}
+        config: {type: object, additionalProperties: true}
+        updatedBy: {type: string, nullable: true}
+        updatedAt: {type: string, format: date-time, nullable: true}
+        deadLetterWarning: {type: boolean, description: "True when jobs for this bot reached the dead-letter queue. Show a non-blocking warning."}
+
+    PmBotLogEntry:
+      type: object
+      required: [id, botType, entityId, channel, status, createdAt]
+      properties:
+        id: {type: string}
+        botType: {$ref: "#/components/schemas/PmBotType"}
+        entityId: {type: string}
+        recipientId: {type: string, nullable: true}
+        channel: {type: string}
+        status: {type: string, enum: [queued, sent, failed, skipped]}
+        error: {type: string, nullable: true}
+        createdAt: {type: string, format: date-time}
+        sentAt: {type: string, format: date-time, nullable: true}
+
+    TriageSuggestion:
+      type: object
+      required: [id, taskId, confidence, status]
+      properties:
+        id: {type: string}
+        taskId: {type: string}
+        suggestedCategory: {type: string, nullable: true}
+        suggestedPriority: {type: string, nullable: true}
+        suggestedTeamId: {type: string, nullable: true}
+        duplicateOfTaskId: {type: string, nullable: true, description: "A possible duplicate. The task stays open until a person confirms."}
+        confidence: {type: number, minimum: 0, maximum: 1, description: "0.80 or more is applied automatically. Lower goes to Needs Triage."}
+        status: {type: string, enum: [pending, accepted, overridden]}
+        resolvedBy: {type: string, nullable: true}
+        resolvedAt: {type: string, format: date-time, nullable: true}
+
+    StandupResponse:
+      type: object
+      required: [projectId, userId, standupDate, yesterday, today, blockers, submittedAt, late]
+      properties:
+        projectId: {type: string}
+        userId: {type: string}
+        standupDate: {type: string, format: date}
+        yesterday: {type: string}
+        today: {type: string}
+        blockers: {type: string}
+        submittedAt: {type: string, format: date-time}
+        late: {type: boolean}
+
+    WeeklyReport:
+      type: object
+      required: [id, projectId, weekStart, weekEnd, healthStatus, status, summary]
+      properties:
+        id: {type: string}
+        projectId: {type: string}
+        weekStart: {type: string, format: date}
+        weekEnd: {type: string, format: date}
+        healthStatus: {type: string, enum: [green, amber, red]}
+        status: {type: string, enum: [draft, approved, sent]}
+        sentAt: {type: string, format: date-time, nullable: true}
+        summary:
+          type: object
+          required: [completed, created, inProgress, open, overdue, activeBlockers, overduePct]
+          properties:
+            completed: {type: integer}
+            created: {type: integer}
+            inProgress: {type: integer}
+            open: {type: integer}
+            overdue: {type: integer}
+            activeBlockers: {type: integer}
+            overduePct: {type: number, description: "Percent of open tasks that are overdue, one decimal."}
