@@ -25,16 +25,25 @@ export function registeredRoutes() {
   return found;
 }
 
-export function contractOperations() {
-  const found = new Set();
+// Operations in the contract. An operation marked `x-planned: true` (documented ahead of its route)
+// is left out unless includePlanned is set. Remove the marker when the route ships; the gate then
+// checks it like any other operation.
+export function contractOperations({ includePlanned = true } = {}) {
+  const ops = [];
   let path = null;
+  let current = null;
   for (const line of readFileSync(contractPath, "utf8").split("\n")) {
     const p = line.match(/^ {2}(\/v1\S*):\s*$/);
-    if (p) { path = p[1]; continue; }
+    if (p) { path = p[1]; current = null; continue; }
     const m = line.match(/^ {4}(get|post|put|patch|delete):\s*$/);
-    if (m && path) found.add(`${m[1].toUpperCase()} ${path}`);
+    if (m && path) {
+      current = { key: `${m[1].toUpperCase()} ${path}`, planned: false };
+      ops.push(current);
+      continue;
+    }
+    if (current && /^ {6}x-planned:\s*true\s*$/.test(line)) current.planned = true;
   }
-  return found;
+  return new Set(ops.filter((op) => includePlanned || !op.planned).map((op) => op.key));
 }
 
 // The bot API is served by the Python agent service (backend/services/uaap), not by apps/api, so
@@ -43,14 +52,17 @@ export const UAAP_SERVED_PREFIXES = ["/v1/agents", "/v1/approvals"];
 
 export function drift() {
   const code = registeredRoutes();
+  const all = contractOperations();
+  const served = contractOperations({ includePlanned: false });
   const contract = new Set(
-    [...contractOperations()].filter((op) => !UAAP_SERVED_PREFIXES.some((p) => op.split(" ")[1].startsWith(p))),
+    [...served].filter((op) => !UAAP_SERVED_PREFIXES.some((p) => op.split(" ")[1].startsWith(p))),
   );
   return {
     undocumented: [...code].filter((x) => !contract.has(x)).sort(),
     missing: [...contract].filter((x) => !code.has(x)).sort(),
     codeCount: code.size,
     contractCount: contract.size,
+    plannedCount: [...all].filter((op) => !served.has(op)).length,
   };
 }
 
