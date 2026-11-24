@@ -18,6 +18,7 @@ import { registerLedgerRoutes } from "./ledger-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
+import { hrmsRoutes } from "./hrms-routes";
 
 const ProductsBody = z.object({
   products: z.array(z.string().min(1)).min(1).max(50),
@@ -337,6 +338,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
+  hrmsRoutes(app);
 
   return app;
 }

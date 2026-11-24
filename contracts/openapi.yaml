@@ -625,6 +625,165 @@ paths:
               schema:
                 $ref: "#/components/schemas/TrialBalance"
 
+  /hrms/dashboard:
+    get:
+      summary: HR dashboard KPIs (HRM-01..HRM-19)
+      responses:
+        "200":
+          description: HR dashboard KPIs
+  /hrms/org/tree:
+    get:
+      summary: Org reports-to tree (HRM-02)
+      responses:
+        "200":
+          description: Org tree
+  /hrms/org/departments:
+    get:
+      summary: Departments list (HRM-02)
+      responses:
+        "200":
+          description: Departments
+  /hrms/org/positions:
+    get:
+      summary: Positions list (HRM-02)
+      responses:
+        "200":
+          description: Positions
+  /hrms/headcount-plan:
+    get:
+      summary: Headcount plan by department and period (HRM-16)
+      responses:
+        "200":
+          description: Headcount plan
+  /hrms/requisitions:
+    get:
+      summary: Requisitions list (HRM-16)
+      responses:
+        "200":
+          description: Requisitions
+    post:
+      summary: Create requisition (HRM-16)
+      responses:
+        "201":
+          description: Requisition created
+  /hrms/requisitions/{id}/approve:
+    post:
+      summary: Approve requisition (HRM-16)
+      responses:
+        "200":
+          description: Requisition approved
+  /hrms/recruitment/applications:
+    get:
+      summary: Candidate applications (HRM-09)
+      responses:
+        "200":
+          description: Applications
+  /hrms/offers:
+    get:
+      summary: Offers list (HRM-09)
+      responses:
+        "200":
+          description: Offers
+  /hrms/employees:
+    get:
+      summary: Employee directory (HRM-01)
+      responses:
+        "200":
+          description: Employees
+  /hrms/employees/{id}/reveal-pii:
+    post:
+      summary: Audited PII reveal (HRM-01)
+      responses:
+        "200":
+          description: PII revealed and audited
+  /hrms/lifecycle-events:
+    get:
+      summary: Lifecycle events queue (HRM-17)
+      responses:
+        "200":
+          description: Lifecycle events
+    post:
+      summary: Record lifecycle event (HRM-17)
+      responses:
+        "201":
+          description: Lifecycle event recorded
+  /hrms/attendance:
+    get:
+      summary: Attendance days (HRM-03)
+      responses:
+        "200":
+          description: Attendance days
+  /hrms/leave/balances:
+    get:
+      summary: Leave balances in half-day units (HRM-04)
+      responses:
+        "200":
+          description: Leave balances
+  /hrms/leave/requests:
+    get:
+      summary: Leave requests (HRM-04)
+      responses:
+        "200":
+          description: Leave requests
+    post:
+      summary: Submit leave request (HRM-04)
+      responses:
+        "201":
+          description: Leave request submitted
+  /hrms/payroll/runs:
+    get:
+      summary: Pay runs list (HRM-05)
+      responses:
+        "200":
+          description: Pay runs
+  /hrms/payroll/payslips:
+    get:
+      summary: Posted payslips (HRM-05)
+      responses:
+        "200":
+          description: Payslips
+  /hrms/statutory/filings:
+    get:
+      summary: Statutory filing calendar (HRM-06)
+      responses:
+        "200":
+          description: Statutory filings
+  /hrms/onboarding/tasks:
+    get:
+      summary: Onboarding checklist (HRM-10)
+      responses:
+        "200":
+          description: Onboarding tasks
+  /hrms/compliance/expiries:
+    get:
+      summary: Compliance expiries 30/60/90d (HRM-14)
+      responses:
+        "200":
+          description: Compliance expiries
+  /hrms/separations:
+    get:
+      summary: Exit cases and F&F (HRM-18)
+      responses:
+        "200":
+          description: Exit cases
+  /hrms/loans:
+    get:
+      summary: Loans and advances (HRM-19)
+      responses:
+        "200":
+          description: Loans
+    post:
+      summary: Request loan (HRM-19)
+      responses:
+        "201":
+          description: Loan requested
+  /hrms/self-service/summary:
+    get:
+      summary: Employee self-service summary (HRM-07)
+      responses:
+        "200":
+          description: Self-service summary
+
 components:
   securitySchemes:
     BearerAuth:
