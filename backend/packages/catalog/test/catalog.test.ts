@@ -5,7 +5,7 @@ describe("product registry", () => {
   const registry = buildRegistry();
 
   it("holds every product in the catalog", () => {
-    expect(registry.size).toBe(320);
+    expect(registry.size).toBe(324);
   });
 
   it("matches the catalog's phase split", () => {
@@ -13,7 +13,7 @@ describe("product registry", () => {
     expect({ P0: count("P0"), P1: count("P1"), P2: count("P2"), P3: count("P3"), P4: count("P4") }).toEqual({
       P0: 23,
       P1: 30,
-      P2: 48,
+      P2: 52,
       P3: 184,
       P4: 35,
     });
@@ -37,7 +37,7 @@ describe("product registry", () => {
       state.set(id, "done");
     };
     for (const id of registry.keys()) visit(id, []);
-    expect(state.size).toBe(320);
+    expect(state.size).toBe(324);
   });
 
   it("records the dependencies the general ledger needs", () => {

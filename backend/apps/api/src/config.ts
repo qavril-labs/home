@@ -7,6 +7,7 @@ export interface AppConfig {
   readonly trustProxy: boolean;
   readonly leadWebhookUrl?: string;
   readonly redisUrl?: string;
+  readonly platformTenantId?: string;
 }
 
 function required(env: NodeJS.ProcessEnv, name: string): string {
@@ -34,5 +35,6 @@ export function loadConfig(env: NodeJS.ProcessEnv): AppConfig {
     trustProxy: env.TRUST_PROXY === "true",
     leadWebhookUrl: env.LEAD_WEBHOOK_URL || undefined,
     redisUrl: env.REDIS_URL || undefined,
+    platformTenantId: env.PLATFORM_TENANT_ID || undefined,
   };
 }

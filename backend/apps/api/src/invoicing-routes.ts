@@ -6,14 +6,18 @@ const STREAM_TICKET_TTL_SECONDS = 60;
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { hasPermission, type Principal } from "@erp/identity";
+import { createEvent } from "@erp/events";
 import { DomainError, type Clock } from "@erp/kernel";
 import { idempotencyKeyFrom, runIdempotent } from "./idempotency";
 import { auditWrite, pick } from "./audit-write";
 import type { Company } from "@erp/tenancy";
 import { enqueueEmail, type EmailJobQueue } from "@erp/notifications";
 import {
+  INVOICE_ISSUED,
+  INVOICE_PAID,
   PgInvoicingStore,
   PgNotificationStore,
+  PgOutboxStore,
   PgTenantRepository,
   withTenantTransaction,
   type Pool,
@@ -79,6 +83,26 @@ export class RealtimeEventManager {
 }
 
 export const realtimeEvents = new RealtimeEventManager();
+
+/**
+ * Until edits post a reversal and a new entry, an invoice that is in the books may only change fields
+ * that do not touch money, so the invoice and the ledger cannot drift apart.
+ */
+function assertEditableWhilePosted(
+  before: { postingStatus: string; status: string; partyId: string; issueDate: string; subtotal: string; taxTotal: string; total: string; amountPaid: string; balanceDue: string },
+  body: Partial<{ partyId: string; issueDate: string; status: string; subtotal: string; taxTotal: string; total: string; amountPaid: string; balanceDue: string }>,
+): void {
+  const moneyFields = ["partyId", "issueDate", "subtotal", "taxTotal", "total", "amountPaid", "balanceDue"] as const;
+  const changed = moneyFields.filter((field) => body[field] !== undefined && body[field] !== before[field]);
+  const leavingBooks = body.status !== undefined && ["draft", "paid", "void", "partially_paid"].includes(body.status) && body.status !== before.status;
+  if (changed.length > 0 || leavingBooks) {
+    throw new DomainError(
+      "CONFLICT",
+      "This invoice is in your books. Changing its amounts, customer, date or status will be supported soon; for now use the pay action.",
+      { fields: leavingBooks ? [...changed, "status"] : changed },
+    );
+  }
+}
 
 const INVOICE_AUDIT_FIELDS = ["invoiceNumber", "partyId", "status", "currency", "subtotal", "taxTotal", "total", "amountPaid", "balanceDue"] as const;
 const BILL_AUDIT_FIELDS = ["billNumber", "supplierId", "status", "currency", "subtotal", "taxTotal", "total", "amountPaid", "balanceDue"] as const;
@@ -271,11 +295,16 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
       runIdempotent(tx, { tenantId: principal.tenantId, scope: "invoicing.invoice.create", key, payload: body }, async () => {
         const company = await firstCompany(tx, principal.tenantId);
         const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
-        const created = await store.createInvoice(company.id, body);
+        let created = await store.createInvoice(company.id, body);
         await auditWrite(tx, deps.clock, principal, request, {
           action: "sales.invoice.create", entityType: "invoice", entityId: String((created as { id: string }).id),
           after: pick(created, INVOICE_AUDIT_FIELDS),
         });
+        // An issued invoice reaches the books through the outbox, in this same transaction (rule 3).
+        if (await store.queueForPosting(created.id)) {
+          await new PgOutboxStore(tx).append([createEvent(INVOICE_ISSUED, principal.tenantId, { invoiceId: created.id }, deps.clock)]);
+          created = (await store.findInvoice(created.id)) ?? created;
+        }
         return { status: 201, body: created };
       }),
     );
@@ -291,11 +320,17 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     const updated = await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
       const before = await store.findInvoice(id);
-      const result = await store.updateInvoice(id, body);
+      if (before && before.postingStatus !== "NOT_POSTED") assertEditableWhilePosted(before, body);
+      let result = await store.updateInvoice(id, body);
       await auditWrite(tx, deps.clock, principal, request, {
         action: "sales.invoice.update", entityType: "invoice", entityId: id,
         before: pick(before, INVOICE_AUDIT_FIELDS), after: pick(result, INVOICE_AUDIT_FIELDS),
       });
+      // A draft that is issued now goes to the books.
+      if (before?.status === "draft" && (await store.queueForPosting(id))) {
+        await new PgOutboxStore(tx).append([createEvent(INVOICE_ISSUED, principal.tenantId, { invoiceId: id }, deps.clock)]);
+        result = (await store.findInvoice(id)) ?? result;
+      }
       return result;
     });
 
@@ -309,6 +344,9 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
     await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
       const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
       const before = await store.findInvoice(id);
+      if (before && before.postingStatus !== "NOT_POSTED") {
+        throw new DomainError("CONFLICT", "This invoice is in your books and cannot be deleted yet. Voiding it will be supported soon.");
+      }
       await store.deleteInvoice(id);
       await auditWrite(tx, deps.clock, principal, request, {
         action: "sales.invoice.delete", entityType: "invoice", entityId: id, before: pick(before, INVOICE_AUDIT_FIELDS), after: null,
@@ -328,6 +366,14 @@ export function registerInvoicingRoutes(app: FastifyInstance, deps: InvoicingRou
         const store = new PgInvoicingStore(tx, principal.tenantId, deps.clock);
         const before = await store.findInvoice(id);
         const paid = await store.markInvoicePaid(id);
+        // Money received reaches the books too, for an invoice that is in them and was not already paid.
+        if (before && before.postingStatus !== "NOT_POSTED" && before.status !== "paid" && before.balanceDue !== "0.00") {
+          await new PgOutboxStore(tx).append([
+            createEvent(INVOICE_PAID, principal.tenantId, {
+              invoiceId: id, amount: before.balanceDue, date: deps.clock.now().toISOString().slice(0, 10), sequence: 1,
+            }, deps.clock),
+          ]);
+        }
         await auditWrite(tx, deps.clock, principal, request, {
           action: "sales.invoice.pay", entityType: "invoice", entityId: id,
           before: pick(before, INVOICE_AUDIT_FIELDS), after: pick(paid, INVOICE_AUDIT_FIELDS),

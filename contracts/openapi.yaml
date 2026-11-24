@@ -903,6 +903,84 @@ paths:
         "403":
           $ref: "#/components/responses/ForbiddenError"
 
+  /v1/platform/leads:
+    get:
+      summary: List marketing leads for the platform workspace (B8)
+      operationId: listPlatformLeads
+      description: >
+        Marketing leads are platform data, not tenant data. Only users of the platform workspace
+        (PLATFORM_TENANT_ID) holding platform.leads.read may call this; every other tenant, including
+        tenant admins, gets 403. Newest first. Includes contact details, so it is read-only and never cached.
+      tags: ["Platform"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: limit, in: query, required: false, schema: {type: integer, minimum: 1, maximum: 100, default: 50}}
+        - {name: status, in: query, required: false, schema: {type: string, enum: [new, contacted, booked, closed]}}
+      responses:
+        "200":
+          description: Leads, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, leads]
+                properties:
+                  ok: {type: boolean}
+                  leads:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PlatformLead"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+  /v1/platform/leads/{id}/followup-drafts:
+    post:
+      summary: Save a follow-up draft for a lead (B8)
+      operationId: createLeadFollowupDraft
+      description: >
+        Stores text for a person to review. It never sends anything (sending needs PLT-10). Refused with
+        409 when the lead has not recorded consent, and 404 when the lead does not exist. Needs
+        platform.leads.draft in the platform workspace. Audited.
+      tags: ["Platform"]
+      security:
+        - BearerAuth: []
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject, body]
+              properties:
+                subject: {type: string, minLength: 1, maxLength: 200}
+                body: {type: string, minLength: 1, maxLength: 2000}
+      responses:
+        "201":
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok, draft]
+                properties:
+                  ok: {type: boolean}
+                  draft:
+                    type: object
+                    required: [id, leadId, subject, body, createdAt]
+                    properties:
+                      id: {type: string, format: uuid}
+                      leadId: {type: string, format: uuid}
+                      subject: {type: string}
+                      body: {type: string}
+                      createdAt: {type: string, format: date-time}
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
   /v1/banking/rules/{id}:
     put:
       summary: Replace a bank rule (FIN-04)
@@ -1005,7 +1083,10 @@ paths:
       operationId: listAgents
       description: >
         Returns the bots in service for the caller's tenant, with their purpose, example
-        requests and out-of-scope items. Disabled bots are listed with enabled=false.
+        requests and out-of-scope items. Disabled bots are listed with enabled=false. A bot that
+        needs specific permissions is listed only to callers who hold at least one of them (for
+        example `lead-nurturing`, which is for the platform workspace); bots with no required
+        permissions are listed to everyone. The service still checks permissions on every call.
       servers:
         - url: http://localhost:8090
           description: UAAP agent service (local development)
@@ -1800,6 +1881,24 @@ paths:
           $ref: "#/components/responses/ValidationError"
         "401":
           $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          description: >
+            The invoice is in the books (postingStatus is not NOT_POSTED) and the change touches its
+            amounts, customer, issue date or status. details.fields lists the fields. Notes, due date,
+            payment terms and metadata can still change. Use the pay action to record payment.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code: {type: string, example: CONFLICT}
+                      message: {type: string}
+                      details: {type: object, properties: {fields: {type: array, items: {type: string}}}}
     delete:
       summary: Delete invoicing invoices
       tags: ["Invoicing"]
@@ -1817,6 +1916,10 @@ paths:
           description: Deleted
         "401":
           $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+        "409":
+          description: The invoice is in the books and cannot be deleted. Voiding will be supported in a later release.
   /v1/invoicing/invoices/{id}/pay:
     post:
       summary: Create or run invoicing invoices  pay
@@ -3515,6 +3618,24 @@ components:
         ruleId: {type: string, description: "Rule that produced the suggestion. Absent when the built-in default rule did."}
         ruleName: {type: string}
 
+    PlatformLead:
+      type: object
+      required: [id, name, email, company, country, interest, industry, message, source, createdAt, status, consentAt, lastDraftAt]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        email: {type: string}
+        company: {type: string, nullable: true}
+        country: {type: string, nullable: true}
+        interest: {type: string, enum: [early_access, demo, partner, trial]}
+        industry: {type: string, nullable: true}
+        message: {type: string, nullable: true}
+        source: {type: string}
+        createdAt: {type: string, format: date-time}
+        status: {type: string, enum: [new, contacted, booked, closed]}
+        consentAt: {type: string, format: date-time, nullable: true, description: "When the lead agreed to be contacted. Null means they have not."}
+        lastDraftAt: {type: string, format: date-time, nullable: true}
+
     BankRule:
       type: object
       required: [id, name, priority, active, direction, descriptionContains, amountMin, amountMax, matchOn, amountTolerance, confidence, createdAt, updatedAt]
@@ -3854,6 +3975,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/InvoiceLine"
+        postingStatus:
+          type: string
+          enum: [NOT_POSTED, PENDING, POSTED, FAILED]
+          description: >
+            Whether the invoice is in the books (the ledger). Issued invoices are queued (PENDING) in the
+            same transaction as the invoice and posted by the worker, so POSTED can lag by seconds. FAILED
+            means the posting was refused; postingError says why. NOT_POSTED covers drafts, invoices
+            created already paid, and invoices from before posting existed.
+        ledgerEntryId: {type: string, nullable: true, description: "Journal entry the invoice was posted as; null until POSTED."}
+        postingError: {type: string, nullable: true, description: "Plain-language reason when postingStatus is FAILED."}
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
     InvoicesSummary:

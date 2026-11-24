@@ -23,6 +23,7 @@ import { registerCmsRoutes } from "./cms-routes";
 import type { EmailJobQueue } from "@erp/notifications";
 import { registerBankingRoutes } from "./banking-routes";
 import { registerPurchasingRoutes } from "./purchasing-routes";
+import { registerPlatformLeadsRoutes } from "./platform-leads-routes";
 import { registerNotificationRoutes } from "./notifications-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
@@ -98,6 +99,8 @@ export interface AppOptions {
   readonly signupRateLimit?: RateLimitOptions;
   /** Optional URL that receives a JSON copy of each new lead, for example a chat or form tool. */
   readonly leadWebhookUrl?: string;
+  /** The platform workspace (QAVRIL LABS itself). Only its users may read marketing leads. */
+  readonly platformTenantId?: string;
   /** Where stream tickets are kept. Pass a Redis store when more than one API instance runs. */
   readonly ticketStore?: TicketStore;
 }
@@ -490,6 +493,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerBankingRoutes(app, { pool, clock, authenticate });
   registerPurchasingRoutes(app, { pool, clock, authenticate });
   registerNotificationRoutes(app, { pool, authenticate });
+  registerPlatformLeadsRoutes(app, { pool, clock, authenticate, platformTenantId: options.platformTenantId });
   registerCmsRoutes(app, pool, platformKey);
 
   return app;

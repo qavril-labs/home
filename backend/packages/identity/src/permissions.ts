@@ -9,6 +9,8 @@
 export const BUILT_IN_ROLES: Readonly<Record<string, readonly string[]>> = {
   tenant_admin: ["*"],
   accountant: ["fin.*", "mdm.*", "prc.*", "sal.*"],
+  // Operators of the platform workspace. Tenant admins hold "*", so the API also checks the tenant.
+  platform_operator: ["platform.*"],
   user: [],
 };
 

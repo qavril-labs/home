@@ -18,6 +18,7 @@ const app = buildApp({
   corsOrigins: config.corsOrigins,
   trustProxy: config.trustProxy,
   leadWebhookUrl: config.leadWebhookUrl,
+  platformTenantId: config.platformTenantId,
   // Tickets are shared through Redis when it is configured, so any instance can accept one.
   ticketStore: config.redisUrl ? new RedisTicketStore(redisConnection(config.redisUrl)) : undefined,
   // Email goes through the notifications queue, which the worker drains. Needs Redis.

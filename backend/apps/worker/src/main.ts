@@ -1,7 +1,8 @@
 // Background worker: relays committed outbox events into BullMQ (PLT-06) and runs queue workers.
 // Needs DATABASE_URL (the core database, as the non-superuser app role) and REDIS_URL.
-import { OutboxDispatcher } from "@erp/events";
-import { PgNotificationStore, PgOutboxStore, createPool } from "@erp/db";
+import { OutboxDispatcher, type DomainEvent } from "@erp/events";
+import { systemClock } from "@erp/kernel";
+import { PgNotificationStore, PgOutboxStore, createPool, handleInvoiceEvent } from "@erp/db";
 import { ConsoleEmailProvider, EMAIL_SEND_JOB, SesEmailProvider, createEmailSendHandler, loadSesConfig, type EmailSendJob } from "@erp/notifications";
 import { QUEUES, QueueEventSink, createQueue, createWorker, redisConnection } from "@erp/queue";
 
@@ -25,8 +26,11 @@ const dispatcher = new OutboxDispatcher(new PgOutboxStore(pool), new QueueEventS
 
 // Consumers subscribe here as modules are built (ledger posting, bots, notifications).
 // Each handler must be idempotent: BullMQ can deliver a job more than once.
-const eventsWorker = createWorker(QUEUES.events, connection, async (job) => {
+const eventsWorker = createWorker<DomainEvent>(QUEUES.events, connection, async (job) => {
   console.log(JSON.stringify({ level: "info", msg: "event received", type: job.name, id: job.id }));
+  // Ledger posting (SAL-04 to FIN-01). Idempotent: a redelivered event changes nothing.
+  const outcome = await handleInvoiceEvent(pool, systemClock, job.data);
+  if (outcome) console.log(JSON.stringify({ level: "info", msg: "ledger posting", type: job.name, id: job.id, ...outcome }));
 });
 
 // Email (PLT-10): sends queued messages through Amazon SES, or logs them when SES_FROM_ADDRESS is unset.

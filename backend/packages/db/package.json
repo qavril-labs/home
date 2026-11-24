@@ -21,6 +21,7 @@
     "@erp/money": "*",
     "@erp/notifications": "*",
     "@erp/numbering": "*",
+    "@erp/sales": "*",
     "@erp/tenancy": "*",
     "pg": "^8.23.1"
   }

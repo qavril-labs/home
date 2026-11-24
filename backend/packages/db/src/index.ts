@@ -13,3 +13,4 @@ export * from "./postgres";
 export * from "./transactions";
 export * from "./notifications-store";
 export * from "./banking-store";
+export * from "./invoice-posting";

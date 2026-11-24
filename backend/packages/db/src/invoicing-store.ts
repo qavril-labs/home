@@ -36,6 +36,10 @@ export interface InvoiceRecord {
   notes?: string | null;
   metadata: Record<string, unknown>;
   lines: InvoiceLineRecord[];
+  /** Whether the invoice is in the books (ledger). PENDING means queued; FAILED carries the reason. */
+  postingStatus: "NOT_POSTED" | "PENDING" | "POSTED" | "FAILED";
+  ledgerEntryId: string | null;
+  postingError: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -140,7 +144,8 @@ export class PgInvoicingStore {
       SELECT i.id, i.tenant_id, i.company_id, i.party_id, p.name AS party_name, p.tax_id AS party_tax_id,
              i.invoice_number, i.issue_date::text, i.due_date::text, i.currency, i.status,
              i.subtotal::text, i.tax_total::text, i.total::text, i.amount_paid::text, i.balance_due::text,
-             i.payment_terms, i.notes, i.metadata, i.created_at, i.updated_at
+             i.payment_terms, i.notes, i.metadata, i.created_at, i.updated_at,
+             i.posting_status, i.ledger_entry_id, i.posting_error
         FROM invoices i
         JOIN parties p ON p.id = i.party_id
        WHERE i.tenant_id = $1 AND i.company_id = $2
@@ -211,6 +216,9 @@ export class PgInvoicingStore {
       notes: r.notes,
       metadata: r.metadata ?? {},
       lines: linesByInvoice.get(r.id) ?? [],
+      postingStatus: r.posting_status,
+      ledgerEntryId: r.ledger_entry_id,
+      postingError: r.posting_error,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }));
@@ -221,7 +229,8 @@ export class PgInvoicingStore {
       `SELECT i.id, i.tenant_id, i.company_id, i.party_id, p.name AS party_name, p.tax_id AS party_tax_id,
               i.invoice_number, i.issue_date::text, i.due_date::text, i.currency, i.status,
               i.subtotal::text, i.tax_total::text, i.total::text, i.amount_paid::text, i.balance_due::text,
-              i.payment_terms, i.notes, i.metadata, i.created_at, i.updated_at
+              i.payment_terms, i.notes, i.metadata, i.created_at, i.updated_at,
+              i.posting_status, i.ledger_entry_id, i.posting_error
          FROM invoices i
          JOIN parties p ON p.id = i.party_id
         WHERE i.tenant_id = $1 AND i.id = $2`,
@@ -272,9 +281,24 @@ export class PgInvoicingStore {
         taxCode: l.tax_code,
         lineTotal: l.line_total,
       })),
+      postingStatus: r.posting_status,
+      ledgerEntryId: r.ledger_entry_id,
+      postingError: r.posting_error,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     };
+  }
+
+  /** Queues an issued invoice for posting to the ledger. Returns false when it is not eligible. */
+  async queueForPosting(id: string): Promise<boolean> {
+    const { rowCount } = await this.client.query(
+      `UPDATE invoices
+          SET posting_status = 'PENDING', posting_error = NULL
+        WHERE tenant_id = $1 AND id = $2 AND posting_status IN ('NOT_POSTED', 'FAILED')
+          AND status IN ('issued', 'sent', 'overdue') AND amount_paid = 0`,
+      [this.tenantId, id],
+    );
+    return (rowCount ?? 0) > 0;
   }
 
   async getInvoicesSummary(companyId: string): Promise<InvoicesSummaryRecord> {

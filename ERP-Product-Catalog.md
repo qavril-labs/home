@@ -195,12 +195,16 @@ Master list of every product needed to build a complete ERP for small and medium
 | HRM-07 | Employee Self-Service | Payslips, leave requests, attendance corrections, documents on web and mobile | M | P2 | HRM-04, PLT-19 |
 | HRM-08 | Workforce Scheduling | Shift rotas, skill-based scheduling, labor cost forecasts | M | P2 | HRM-03 |
 | HRM-09 | Recruitment (ATS) | Job posts, candidate pipeline, interviews, offers | M | P3 | HRM-01 |
-| HRM-10 | Onboarding & Offboarding | Checklists, equipment assignment, access revocation | S | P3 | HRM-01, PLT-07 |
+| HRM-10 | Onboarding | Pre-boarding checklists, document collection, equipment assignment, access requests (offboarding is HRM-18) | S | P3 | HRM-01, PLT-07 |
 | HRM-11 | Performance Management | Goals, OKRs, review cycles, 360 feedback | M | P3 | HRM-01 |
 | HRM-12 | Learning Management | Courses, certifications, compliance training with expiry tracking | L | P3 | HRM-01 |
 | HRM-13 | Compensation & Benefits | Pay bands, benefit enrollment, salary reviews | M | P3 | HRM-05 |
 | HRM-14 | Compliance Expiries | Work permits, licenses, certificate expiry alerts | S | P2 | HRM-01, PLT-10 |
 | HRM-15 | Engagement Surveys | Pulse surveys, anonymous feedback, eNPS | S | P4 | HRM-01 |
+| HRM-16 | Headcount Planning & Requisitions | Headcount plans, position budgets, requisition approvals, backfill rules, one filled seat per position | S | P2 | HRM-02, PLT-07, FIN-08 |
+| HRM-17 | Employee Lifecycle Events | Probation review and confirmation, transfers, promotions, role and status changes, all effective-dated | M | P2 | HRM-01, HRM-02, PLT-07 |
+| HRM-18 | Separations, Clearance & Full and Final | Exit cases by type, notice periods, clearance checklists, full and final settlement, access removal | M | P2 | HRM-17, HRM-19, HRM-05, HRM-04, FIN-04, PLT-07 |
+| HRM-19 | Employee Loans & Advances | Loans and advances as receivables, instalments through payroll, recovery at exit | S | P2 | HRM-05, FIN-02 |
 
 ## Projects and field service
 
