@@ -2650,7 +2650,7 @@ paths:
 
   /v1/projects/{projectId}/reports/{reportId}/approve:
     post:
-      summary: Approve and send a draft weekly report. Needs pm.bots.override.
+      summary: Approve a draft weekly report for delivery. Needs pm.bots.override.
       operationId: approveWeeklyReport
       tags: ["PM Bots"]
       security:
@@ -2660,7 +2660,7 @@ paths:
         - {name: reportId, in: path, required: true, schema: {type: string}}
       responses:
         "200":
-          description: The report, now sent
+          description: The report with status approved. The delivery job sends it to the recipients and then sets status sent.
           content:
             application/json:
               schema: {$ref: "#/components/schemas/WeeklyReport"}

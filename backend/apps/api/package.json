@@ -18,6 +18,7 @@
     "@erp/money": "*",
     "@erp/notifications": "*",
     "@erp/numbering": "*",
+    "@erp/pm-bots": "*",
     "@erp/queue": "*",
     "@erp/tenancy": "*",
     "fastify": "^5.12.7",

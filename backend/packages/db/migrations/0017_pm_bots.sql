@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS bot_configs (
 CREATE TABLE IF NOT EXISTS bot_delivery_log (
   id              text PRIMARY KEY,
   tenant_id       uuid NOT NULL REFERENCES tenants (id),
+  project_id      text,
   idempotency_key text NOT NULL,
   bot_type        text NOT NULL,
   entity_id       text NOT NULL,
@@ -32,6 +33,7 @@ CREATE TABLE IF NOT EXISTS bot_delivery_log (
   UNIQUE (tenant_id, idempotency_key)
 );
 CREATE INDEX IF NOT EXISTS bot_delivery_log_entity_idx ON bot_delivery_log (tenant_id, bot_type, entity_id);
+CREATE INDEX IF NOT EXISTS bot_delivery_log_project_idx ON bot_delivery_log (tenant_id, project_id, bot_type, created_at DESC, id DESC);
 
 CREATE TABLE IF NOT EXISTS bot_dead_letter_queue (
   id          text PRIMARY KEY,
@@ -47,15 +49,23 @@ CREATE TABLE IF NOT EXISTS bot_dead_letter_queue (
 CREATE TABLE IF NOT EXISTS blocker_incidents (
   id                 text PRIMARY KEY,
   tenant_id          uuid NOT NULL REFERENCES tenants (id),
-  task_id            text NOT NULL,
+  project_id         text,
+  task_id            text,
+  source             text NOT NULL DEFAULT 'task' CHECK (source IN ('task', 'standup')),
+  reported_by        text,
+  standup_date       date,
   reason             text NOT NULL CHECK (char_length(btrim(reason)) >= 5),
   blocked_by_user_id text,
   blocked_at         timestamptz NOT NULL,
   sla_due_at         timestamptz NOT NULL,
   escalated_at       timestamptz,
   escalation_count   integer NOT NULL DEFAULT 0,
-  unblocked_at       timestamptz
+  unblocked_at       timestamptz,
+  CHECK (source <> 'task' OR task_id IS NOT NULL)
 );
+-- A person's standup blocker opens one incident per project and day, however often they edit the response.
+CREATE UNIQUE INDEX IF NOT EXISTS blocker_incidents_standup_uniq ON blocker_incidents (tenant_id, project_id, reported_by, standup_date)
+  WHERE source = 'standup';
 -- Scanner index: open, not yet escalated incidents ordered by SLA.
 CREATE INDEX IF NOT EXISTS blocker_incidents_open_idx ON blocker_incidents (tenant_id, sla_due_at)
   WHERE unblocked_at IS NULL;

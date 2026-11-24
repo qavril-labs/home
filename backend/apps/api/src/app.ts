@@ -24,6 +24,7 @@ import type { EmailJobQueue } from "@erp/notifications";
 import { registerBankingRoutes } from "./banking-routes";
 import { registerPurchasingRoutes } from "./purchasing-routes";
 import { registerNotificationRoutes } from "./notifications-routes";
+import { registerPmBotsRoutes } from "./pm-bots-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
 
@@ -490,6 +491,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerBankingRoutes(app, { pool, clock, authenticate });
   registerPurchasingRoutes(app, { pool, clock, authenticate });
   registerNotificationRoutes(app, { pool, authenticate });
+  registerPmBotsRoutes(app, { pool, clock, authenticate });
   registerCmsRoutes(app, pool, platformKey);
 
   return app;

@@ -49,8 +49,14 @@ export interface WeeklyReport {
   sentAt: Date | null;
 }
 
-export function approveReport(r: WeeklyReport, at: Date): WeeklyReport {
+export function approveReport(r: WeeklyReport): WeeklyReport {
   if (r.status !== "draft") throw new Error("only a draft report can be approved");
+  return { ...r, status: "approved" };
+}
+
+/** Called by the delivery job once the report has gone to every recipient. */
+export function markReportSent(r: WeeklyReport, at: Date): WeeklyReport {
+  if (r.status !== "approved") throw new Error("only an approved report can be marked sent");
   return { ...r, status: "sent", sentAt: at };
 }
 

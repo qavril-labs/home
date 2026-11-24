@@ -16,10 +16,10 @@ Branch: `feat/pm-bots`. Backend lane is Claude Code. You build the screens again
 |---|---|
 | Decision logic for all five bots, 36 tests | Done (`backend/packages/pm-bots`) |
 | Database tables with row-level security | Written (`0017_pm_bots.sql`), not yet run against Postgres |
-| The six HTTP routes in the contract | **Not built.** The contract is the agreed shape; calls will fail until the routes land |
+| The six HTTP routes in the contract | Built (`pm-bots-routes.ts`). Not yet exercised against Postgres |
 | Project and task tables (PSA-01) | **Not built.** There is no task or project screen to attach the bot UI to yet |
 
-Build against the contract with mocks. Do not assume the routes respond.
+Routes exist but have not been run against a database yet, so build against mocks first and switch to the live API once Claude Code confirms.
 
 ## Screens
 
@@ -33,7 +33,7 @@ Build against the contract with mocks. Do not assume the routes respond.
 2. **Blocker Reason modal.** Shown when a task moves to Blocked. Reason is required, 5 or more characters after trimming, with an optional "blocked by" user. Validate on the client too; the server answers 400 `VALIDATION`.
 3. **Triage badge on a task.** Shows a pending suggestion (category, priority, team, confidence) and a possible-duplicate link. One click to Accept or Override via `POST /v1/tasks/{taskId}/triage/resolve` (needs `pm.bots.override`). 404 means nothing pending. 409 means someone already resolved it. A possible duplicate never closes the task.
 4. **Standup check-in drawer.** Yesterday, Today, Blockers, and a "No blockers, on track" button, sent with `POST /v1/projects/{projectId}/standup/respond`. Editing resubmits the same endpoint; there is one row per person per day. Show `late` when true.
-5. **Weekly report preview and approval.** Show `summary` counts, `overduePct` and health (green, amber, red). A draft has an Approve button that calls `POST .../reports/{reportId}/approve` (needs `pm.bots.override`). 409 means it is no longer a draft.
+5. **Weekly report preview and approval.** Show `summary` counts, `overduePct` and health (green, amber, red). A draft has an Approve button that calls `POST .../reports/{reportId}/approve` (needs `pm.bots.override`). The response has status `approved`; the delivery job sets `sent` later, so show "Approved, sending" until then. 409 means it is no longer a draft.
 
 ## Rules for every screen
 

@@ -13,6 +13,7 @@ import {
   incidentsToEscalate,
   initialBlockerRecipients,
   keys,
+  markReportSent,
   markEscalated,
   nextRetryDelayMs,
   openBlockerIncident,
@@ -236,11 +237,13 @@ describe("Weekly Status Report (WS)", () => {
   it("edge: zero activity still reports counts", () => {
     expect(buildWeeklyCounts([], 0, now, weekStart)).toMatchObject({ completed: 0, open: 0, overduePct: 0 });
   });
-  it("WS-P3 approving a draft sends it; approving twice is refused", () => {
+  it("WS-P3 approving a draft queues it for delivery; the delivery job then marks it sent", () => {
     const d = { status: "draft" as const, createdAt: now, remindedAt: null, sentAt: null };
-    const sent = approveReport(d, now);
-    expect(sent.status).toBe("sent");
-    expect(() => approveReport(sent, now)).toThrow();
+    const approved = approveReport(d);
+    expect(approved.status).toBe("approved");
+    expect(() => approveReport(approved)).toThrow();
+    expect(markReportSent(approved, now)).toMatchObject({ status: "sent", sentAt: now });
+    expect(() => markReportSent(d, now)).toThrow();
   });
   it("WS-N2 a duplicate trigger for the same week hits the same key", () => {
     const log = new InMemoryDeliveryLog();

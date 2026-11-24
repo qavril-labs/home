@@ -5,3 +5,4 @@ export * from "./blocker";
 export * from "./triage";
 export * from "./standup";
 export * from "./report";
+export * from "./config";
