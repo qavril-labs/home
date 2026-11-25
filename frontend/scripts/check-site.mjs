@@ -77,9 +77,9 @@ structuredFaq.forEach(([question, answer], index) => {
 // 3. The form must send what the API accepts.
 const formBlock = html["index.html"].match(/<form id="lead-form"[\s\S]*?<\/form>/)?.[0] ?? "";
 const formNames = new Set([...formBlock.matchAll(/\sname="([^"]+)"/g)].map((match) => match[1]));
-const apiSource = read(join(root, "..", "backend", "apps", "api", "src", "app.ts"));
-const leadBody = apiSource.match(/const LeadBody = z\.object\(\{([\s\S]*?)\n\}\);/)?.[1] ?? "";
-const apiKeys = [...leadBody.matchAll(/^ {2}(\w+):/gm)].map((match) => match[1]);
+// The lead form contract is owned by the website API and mirrored here (lead-form.contract.json).
+const leadContract = JSON.parse(read(join(root, "scripts", "lead-form.contract.json")));
+const apiKeys = Object.keys(leadContract.fields);
 const clientSource = read(join(site, "main.js"));
 const requiredApiKeys = ["name", "email", "interest", "consent"];
 check(apiKeys.length > 0, "API: LeadBody schema is readable");
@@ -114,7 +114,7 @@ check(/apiBase:/.test(config) && /contactEmail:/.test(config), "config.js: apiBa
 
 // 6b. Search and AI discovery: every indexable page has one title, one description, one H1, a canonical,
 // social tags, valid JSON-LD, and appears in the sitemap with a date.
-const indexable = pages.filter((page) => page !== "404.html");
+const indexable = pages.filter((page) => page !== "404.html" && !page.startsWith("admin/") && !html[page].includes("noindex"));
 const sitemapPaths = new Set([...sitemap.matchAll(/<loc>https?:\/\/[^/<]+\/([^<]*)<\/loc>/g)].map((m) => m[1]));
 for (const page of indexable) {
   const text = html[page];

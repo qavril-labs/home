@@ -1977,3 +1977,12 @@ dialog.request-modal .modal-status.err { color: #b3123f; }
 @media (max-width: 1100px) { .crew-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 960px) { .app-trend, .app-quick, .app-recent, .app-accounts { grid-column: span 12; } }
 @media (max-width: 620px) { .crew-grid { grid-template-columns: 1fr; } }
+
+/* Laptop widths (1001-1240px): nine nav links plus the button do not fit at full spacing, so
+   tighten them here instead of letting "Start free" wrap onto a second line. */
+@media (min-width: 1001px) and (max-width: 1240px) {
+  .nav { gap: 12px; }
+  .links { gap: 12px; }
+  .links a { font-size: 0.92rem; }
+  .logo-text { font-size: 0.95rem; }
+}

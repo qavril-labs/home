@@ -1,0 +1,19 @@
+{
+  "$comment": "Contract for POST /v1/public/leads. The marketing site form (qavril-labs/home) must match this file. Changing it is a breaking change to the site.",
+  "endpoint": "POST /v1/public/leads",
+  "fields": {
+    "name": { "type": "string", "required": true, "minLength": 1, "maxLength": 120 },
+    "email": { "type": "string", "required": true, "maxLength": 254 },
+    "company": { "type": "string", "required": false, "maxLength": 160 },
+    "country": { "type": "string", "required": false, "maxLength": 80 },
+    "interest": { "type": "enum", "required": true, "values": ["early_access", "demo", "partner", "trial"] },
+    "industry": { "type": "string", "required": false, "maxLength": 80 },
+    "message": { "type": "string", "required": false, "maxLength": 1000 },
+    "source": { "type": "string", "required": false, "maxLength": 100 },
+    "slot": { "type": "enum", "required": false, "values": ["", "Monday morning", "Monday afternoon", "Tuesday morning", "Tuesday afternoon", "Wednesday morning", "Wednesday afternoon", "Thursday morning", "Thursday afternoon", "Friday morning", "Friday afternoon"] },
+    "timezone": { "type": "string", "required": false, "maxLength": 64 },
+    "consent": { "type": "literal", "required": true, "value": true },
+    "website": { "type": "string", "required": false, "maxLength": 200, "note": "Honeypot. Real visitors leave it empty." }
+  },
+  "responses": { "201": "{ status: 'received' }", "400": "validation error", "429": "rate limited" }
+}
