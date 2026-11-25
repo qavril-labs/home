@@ -67,11 +67,30 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    title: "HR & Payroll",
+    items: [
+      { id: "hrm-dashboard", label: "HR Dashboard", code: "HRM-10/14", icon: Users },
+      { id: "hrm-org", label: "Org & Requisitions", code: "HRM-02/16", icon: Layers },
+      { id: "hrm-recruitment", label: "Recruitment & Offers", code: "HRM-09", icon: Kanban },
+      { id: "hrm-employees", label: "Employees & Lifecycle", code: "HRM-01/17", icon: Users },
+      { id: "hrm-attendance", label: "Attendance & Leave", code: "HRM-03/04", icon: CheckSquare },
+      { id: "hrm-payroll", label: "Payroll & Statutory", code: "HRM-05/06", icon: Receipt },
+      { id: "hrm-separations", label: "Separations & Loans", code: "HRM-18/19", icon: Receipt },
+    ],
+  },
+  {
+    title: "Self-Service",
+    items: [
+      { id: "hrm-self-service", label: "My Self-Service", code: "HRM-07", icon: Users },
+    ],
+  },
+  {
     title: "AI & Autopilot",
     items: [
       { id: "approvals", label: "Approvals Inbox", code: "PLT-07", icon: Sparkles },
       { id: "ledger-lou", label: "Ledger Lou", code: "AGT-03", icon: Bot },
       { id: "chase-chloe", label: "Chase Chloe", code: "FIN-14", icon: Bot },
+      { id: "pm-bots", label: "PM Bots (MVP)", code: "PRJ-BOT", icon: Bot },
       { id: "packs", label: "Industry Packs", code: "GAR/FMCG", icon: BrainCircuit },
     ],
   },

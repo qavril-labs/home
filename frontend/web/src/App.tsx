@@ -16,7 +16,16 @@ import { CrmPipelinePage } from "./pages/CrmPipelinePage";
 import { BankReconciliationPage } from "./pages/BankReconciliationPage";
 import { ImportPage } from "./pages/ImportPage";
 import { GalleryPage } from "./pages/GalleryPage";
+import { HrDashboardPage } from "./pages/hrms/HrDashboardPage";
+import { OrgAndRequisitionsPage } from "./pages/hrms/OrgAndRequisitionsPage";
+import { RecruitmentPage } from "./pages/hrms/RecruitmentPage";
+import { EmployeesAndLifecyclePage } from "./pages/hrms/EmployeesAndLifecyclePage";
+import { AttendanceAndLeavePage } from "./pages/hrms/AttendanceAndLeavePage";
+import { PayrollAndStatutoryPage } from "./pages/hrms/PayrollAndStatutoryPage";
+import { SeparationsAndLoansPage } from "./pages/hrms/SeparationsAndLoansPage";
+import { SelfServicePage } from "./pages/hrms/SelfServicePage";
 import { IndustryPacksHub } from "./modules/packs/IndustryPacksHub";
+import { PmBotsHub } from "./modules/pm-bots/PmBotsHub";
 import { LedgerLou } from "./modules/bots/LedgerLou";
 import { ChaseChloe } from "./modules/bots/ChaseChloe";
 import { RestockRex } from "./modules/bots/RestockRex";
@@ -586,6 +595,10 @@ export const App: React.FC = () => {
               onToggleStatusAccount={handleToggleStatusAccount}
             />
           </div>
+        ) : activeTab === "pm-bots" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <PmBotsHub />
+          </div>
         ) : activeTab === "packs" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <IndustryPacksHub />
@@ -593,6 +606,38 @@ export const App: React.FC = () => {
         ) : activeTab === "import" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
             <ImportPage />
+          </div>
+        ) : activeTab === "hrm-dashboard" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <HrDashboardPage onNavigate={navigateToTab} />
+          </div>
+        ) : activeTab === "hrm-org" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <OrgAndRequisitionsPage />
+          </div>
+        ) : activeTab === "hrm-recruitment" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <RecruitmentPage />
+          </div>
+        ) : activeTab === "hrm-employees" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <EmployeesAndLifecyclePage />
+          </div>
+        ) : activeTab === "hrm-attendance" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <AttendanceAndLeavePage />
+          </div>
+        ) : activeTab === "hrm-payroll" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <PayrollAndStatutoryPage />
+          </div>
+        ) : activeTab === "hrm-separations" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <SeparationsAndLoansPage />
+          </div>
+        ) : activeTab === "hrm-self-service" ? (
+          <div className="max-w-[1240px] mx-auto px-4 pt-8">
+            <SelfServicePage onNavigate={navigateToTab} />
           </div>
         ) : activeTab === "gallery" ? (
           <div className="max-w-[1240px] mx-auto px-4 pt-8">
