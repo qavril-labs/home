@@ -18,7 +18,7 @@ function pgToolPresent(): boolean {
 
 async function script(name: string, args: string[], env: Record<string, string>): Promise<{ code: number; out: string; err: string }> {
   try {
-    const { stdout, stderr } = await run(process.execPath, [join(SCRIPTS, name), ...args], { env: { ...process.env, ...env } });
+    const { stdout, stderr } = await run(process.execPath, [join(SCRIPTS, name), ...args], { env: { ...process.env, NODE_NO_WARNINGS: "1", ...env } });
     return { code: 0, out: stdout, err: stderr };
   } catch (error) {
     const e = error as { code?: number; stdout?: string; stderr?: string };

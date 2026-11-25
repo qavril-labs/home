@@ -52,12 +52,18 @@ export async function tableCounts(client) {
   await client.query("SET row_security = off");
   const { rows } = await client.query("SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename");
   const counts = {};
-  for (const { tablename } of rows) {
-    const quoted = `"${tablename.replaceAll('"', '""')}"`;
-    const result = await client.query(`SELECT count(*)::text AS n FROM ${quoted}`);
-    counts[tablename] = result.rows[0].n;
-  }
-  return counts;
+  if (rows.length === 0) return counts;
+  // One statement for every table: a round trip per table is slow against a remote database (about a second
+  // each on Neon), which made the backup test time out. The names come from pg_tables and are quoted.
+  const literal = (s) => `'${s.replaceAll("'", "''")}'`;
+  const quote = (s) => `"${s.replaceAll('"', '""')}"`;
+  const sql = rows
+    .map(({ tablename }) => `SELECT ${literal(tablename)} AS t, count(*)::text AS n FROM ${quote(tablename)}`)
+    .join(" UNION ALL ");
+  const result = await client.query(sql);
+  for (const { t, n } of result.rows) counts[t] = n;
+  // Keep the same key order as before (alphabetical, as listed).
+  return Object.fromEntries(rows.map(({ tablename }) => [tablename, counts[tablename]]));
 }
 
 /**
