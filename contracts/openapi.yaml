@@ -784,6 +784,174 @@ paths:
         "200":
           description: Self-service summary
 
+  /hrms/recruitment/rejection-reasons:
+    get:
+      summary: List rejection reason codes (HRM-09)
+      responses:
+        "200":
+          description: Rejection reason codes
+
+  /hrms/recruitment/applications/{id}/stage:
+    patch:
+      summary: Move an application to a stage (HRM-09)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Application after the stage move
+
+  /hrms/recruitment/applications/{id}/scorecards:
+    post:
+      summary: Submit a scorecard (HRM-09)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Scorecard saved
+
+  /hrms/offers/{id}/send:
+    post:
+      summary: Send an offer (HRM-09)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Offer sent
+
+  /hrms/offers/{id}/accept:
+    post:
+      summary: Accept an offer; creates the employee (HRM-09, HRM-01)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Offer accepted
+
+  /hrms/offers/{id}/withdraw:
+    post:
+      summary: Withdraw an offer (HRM-09)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Offer withdrawn
+
+  /hrms/attendance/{id}/regularise:
+    post:
+      summary: Regularise an attendance day (HRM-03)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Regularisation recorded
+
+  /hrms/employees/{id}/bank-accounts/{bankId}/verify:
+    post:
+      summary: Verify a bank account change (HRM-01)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      parameters:
+        - {name: bankId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Bank account verified
+
+  /hrms/leave/requests/{id}/decision:
+    post:
+      summary: Approve or reject a leave request (HRM-04)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Decision recorded
+
+  /hrms/onboarding/tasks/{id}/complete:
+    post:
+      summary: Complete an onboarding task (HRM-10)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Task completed
+
+  /hrms/payroll/runs/{id}/approve:
+    post:
+      summary: Approve a pay run (HRM-05)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Pay run approved
+
+  /hrms/payroll/runs/{id}/post:
+    post:
+      summary: Post a pay run to the ledger (HRM-05)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Pay run posted
+
+  /hrms/payroll/runs/{id}/pay:
+    post:
+      summary: Mark a pay run paid (HRM-05)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Pay run paid
+
+  /hrms/payroll/runs/{id}/checks/{checkId}/override:
+    post:
+      summary: Override a pay run check with a reason (HRM-05)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      parameters:
+        - {name: checkId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Check overridden
+
+  /hrms/separations/{id}/clearance/{itemId}/clear:
+    post:
+      summary: Clear a clearance item (HRM-18)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      parameters:
+        - {name: itemId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Clearance item cleared
+
+  /hrms/separations/{id}/clearance/{itemId}/waive:
+    post:
+      summary: Waive a clearance item with a reason (HRM-18)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      parameters:
+        - {name: itemId, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: Clearance item waived
+
+  /hrms/separations/{id}/fnf/approve:
+    post:
+      summary: Approve the full and final settlement (HRM-18)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: F&F approved
+
+  /hrms/separations/{id}/fnf/pay:
+    post:
+      summary: Pay the full and final settlement (HRM-18)
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses:
+        "200":
+          description: F&F paid
+
 components:
   securitySchemes:
     BearerAuth:

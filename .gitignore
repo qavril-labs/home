@@ -53,3 +53,8 @@ frontend/e2e/test-results/
 .worktrees/
 *.tar.gz
 
+
+# Local environment files with live credentials
+backend/.live-env
+.env
+.env.*
