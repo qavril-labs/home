@@ -1,5 +1,12 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { z } from "zod";
+import { withTenantTransaction, type Pool } from "@erp/db";
+import type { Principal } from "@erp/identity";
+
+export interface HrmsRouteDeps {
+  pool: Pool;
+  authenticate: (req: FastifyRequest) => Promise<Principal>;
+}
 
 const RevealPiiBody = z.object({
   reason: z.string().min(1),
@@ -17,19 +24,57 @@ const WaiveClearanceBody = z.object({
   reason: z.string().min(1),
 });
 
-export function hrmsRoutes(app: FastifyInstance): void {
+export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
   // Dashboard, Onboarding & Compliance (HRM-10, HRM-14)
-  app.get("/hrms/dashboard", async () => ({
-    headcount: 142,
-    openRequisitions: 6,
-    timeToHireDays: 24,
-    offerAcceptanceRate: "88.0%",
-    attritionRate: "4.2%",
-    overdueProbationReviews: 2,
-    leaveAwaitingApproval: 4,
-    payRunsAwaitingApproval: 1,
-    fnfAwaitingPayment: 1,
-  }));
+  app.get("/hrms/dashboard", async (req) => {
+    if (!deps) {
+      return {
+        headcount: 142,
+        openRequisitions: 6,
+        timeToHireDays: 24,
+        offerAcceptanceRate: "88.0%",
+        attritionRate: "4.2%",
+        overdueProbationReviews: 2,
+        leaveAwaitingApproval: 4,
+        payRunsAwaitingApproval: 1,
+        fnfAwaitingPayment: 1,
+      };
+    }
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const empRes = await tx.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM hrm_employees WHERE tenant_id = $1 AND status = 'active'",
+        [principal.tenantId]
+      );
+      const reqRes = await tx.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM hrm_requisitions WHERE tenant_id = $1 AND state IN ('submitted', 'open')",
+        [principal.tenantId]
+      );
+      const leaveRes = await tx.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM hrm_leave_requests WHERE tenant_id = $1 AND status = 'pending'",
+        [principal.tenantId]
+      );
+      const payRes = await tx.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM hrm_pay_runs WHERE tenant_id = $1 AND state = 'verified'",
+        [principal.tenantId]
+      );
+      const fnfRes = await tx.query<{ count: string }>(
+        "SELECT COUNT(*)::text AS count FROM hrm_exit_cases WHERE tenant_id = $1 AND state = 'fnf_approved'",
+        [principal.tenantId]
+      );
+      return {
+        headcount: Number(empRes.rows[0]?.count ?? 0),
+        openRequisitions: Number(reqRes.rows[0]?.count ?? 0),
+        timeToHireDays: 24,
+        offerAcceptanceRate: "88.0%",
+        attritionRate: "4.2%",
+        overdueProbationReviews: 0,
+        leaveAwaitingApproval: Number(leaveRes.rows[0]?.count ?? 0),
+        payRunsAwaitingApproval: Number(payRes.rows[0]?.count ?? 0),
+        fnfAwaitingPayment: Number(fnfRes.rows[0]?.count ?? 0),
+      };
+    });
+  });
 
   app.get("/hrms/onboarding/tasks", async () => ({ items: [] }));
   app.post("/hrms/onboarding/tasks/:id/complete", async (req) => {
@@ -41,17 +86,72 @@ export function hrmsRoutes(app: FastifyInstance): void {
 
   // Org Structure & Requisitions (HRM-02, HRM-16)
   app.get("/hrms/org/tree", async () => ({ tree: null }));
-  app.get("/hrms/org/departments", async () => ({ items: [] }));
-  app.get("/hrms/org/positions", async () => ({ items: [] }));
+  app.get("/hrms/org/departments", async (req) => {
+    if (!deps) return { items: [] };
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const res = await tx.query(
+        "SELECT id, code, name, cost_center AS \"costCenter\" FROM hrm_departments WHERE tenant_id = $1 ORDER BY name",
+        [principal.tenantId]
+      );
+      return { items: res.rows };
+    });
+  });
+
+  app.get("/hrms/org/positions", async (req) => {
+    if (!deps) return { items: [] };
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const res = await tx.query(
+        "SELECT id, code, title, department_id AS \"departmentId\", grade, status, approved_headcount AS \"approvedHeadcount\", filled_headcount AS \"filledHeadcount\" FROM hrm_positions WHERE tenant_id = $1 ORDER BY code",
+        [principal.tenantId]
+      );
+      return { items: res.rows };
+    });
+  });
+
   app.get("/hrms/headcount-plan", async () => ({ items: [] }));
-  app.get("/hrms/requisitions", async () => ({ items: [] }));
+
+  app.get("/hrms/requisitions", async (req) => {
+    if (!deps) return { items: [] };
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const res = await tx.query(
+        "SELECT id, requisition_number AS \"requisitionNumber\", position_id AS \"positionId\", reason, leaving_separation_date AS \"leavingSeparationDate\", target_start_date AS \"targetStartDate\", priority, budgeted_cost::text AS \"budgetedCost\", state, requester_id AS \"requesterId\" FROM hrm_requisitions WHERE tenant_id = $1 ORDER BY created_at DESC",
+        [principal.tenantId]
+      );
+      return {
+        items: res.rows.map((r) => ({
+          ...r,
+          canApprove: r.state === "submitted" && r.requesterId !== principal.userId,
+        })),
+      };
+    });
+  });
+
   app.post("/hrms/requisitions", async (req, reply) => {
     reply.code(201);
     return { id: `req-${Date.now()}`, ...(req.body as object), state: "submitted", canApprove: false };
   });
-  app.post("/hrms/requisitions/:id/approve", async (req) => {
+
+  app.post("/hrms/requisitions/:id/approve", async (req, reply) => {
     const { id } = req.params as { id: string };
-    return { id, state: "approved" };
+    if (!deps) return { id, state: "approved" };
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const check = await tx.query<{ requester_id: string }>(
+        "SELECT requester_id FROM hrm_requisitions WHERE id = $1 AND tenant_id = $2",
+        [id, principal.tenantId]
+      );
+      if (check.rows[0]?.requester_id === principal.userId) {
+        return reply.code(403).send({ error: "Requester cannot approve their own requisition" });
+      }
+      await tx.query(
+        "UPDATE hrm_requisitions SET state = 'approved' WHERE id = $1 AND tenant_id = $2",
+        [id, principal.tenantId]
+      );
+      return { id, state: "approved" };
+    });
   });
 
   // Recruitment & Offers (HRM-09)
@@ -95,15 +195,36 @@ export function hrmsRoutes(app: FastifyInstance): void {
   });
 
   // Employees & Lifecycle Events (HRM-01, HRM-17)
-  app.get("/hrms/employees", async () => ({ items: [], total: 0 }));
+  app.get("/hrms/employees", async (req) => {
+    if (!deps) return { items: [], total: 0 };
+    const principal = await deps.authenticate(req);
+    return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+      const res = await tx.query(
+        "SELECT id, code, name, branch, status, national_id_masked AS \"nationalIdMasked\", tax_id_masked AS \"taxIdMasked\", dob_masked AS \"dobMasked\", joining_date AS \"joiningDate\" FROM hrm_employees WHERE tenant_id = $1 ORDER BY code LIMIT 50",
+        [principal.tenantId]
+      );
+      return { items: res.rows, total: res.rows.length };
+    });
+  });
+
   app.post("/hrms/employees/:id/reveal-pii", async (req, reply) => {
     const parsed = RevealPiiBody.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "Reason is required for PII audit log" });
     }
     const { id } = req.params as { id: string };
+    if (deps) {
+      const principal = await deps.authenticate(req);
+      await withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
+        await tx.query(
+          "INSERT INTO hrm_pii_audit_log (tenant_id, employee_id, actor_id, field_name, reason) VALUES ($1, $2, $3, $4, $5)",
+          [principal.tenantId, id, principal.userId, "pii", parsed.data.reason]
+        );
+      });
+    }
     return { employeeId: id, audited: true };
   });
+
   app.post("/hrms/employees/:id/bank-accounts/:bankId/verify", async (req) => {
     const { id, bankId } = req.params as { id: string; bankId: string };
     return { employeeId: id, bankId, verified: true };

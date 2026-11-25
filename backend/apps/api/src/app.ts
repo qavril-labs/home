@@ -338,7 +338,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
-  hrmsRoutes(app);
+  hrmsRoutes(app, { pool, authenticate });
 
   return app;
 }
