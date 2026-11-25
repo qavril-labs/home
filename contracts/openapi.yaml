@@ -2463,6 +2463,352 @@ paths:
         '403':
           $ref: '#/components/responses/ForbiddenError'
 
+  # ---- planned HRMS transitions (design gaps; x-planned until their routes ship) ----
+  /v1/hrms/requisitions/{id}/submit:
+    post:
+      summary: Submit a draft requisition for approval (HRM-16)
+      operationId: hrmsRequisitionsIdSubmit
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Requisition submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsRequisition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/requisitions/{id}/reject:
+    post:
+      summary: Reject a submitted requisition with a reason code (HRM-16)
+      operationId: hrmsRequisitionsIdReject
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsDecisionInput'
+      responses:
+        '200':
+          description: Requisition rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsRequisition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/requisitions/{id}/hold:
+    post:
+      summary: Put an approved or open requisition on hold (HRM-16)
+      operationId: hrmsRequisitionsIdHold
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsDecisionInput'
+      responses:
+        '200':
+          description: Requisition on hold
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsRequisition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/requisitions/{id}/cancel:
+    post:
+      summary: Cancel a requisition; refused for an open requisition while an offer is out (HRM-16)
+      operationId: hrmsRequisitionsIdCancel
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsDecisionInput'
+      responses:
+        '200':
+          description: Requisition cancelled
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsRequisition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/offers/{id}/submit:
+    post:
+      summary: Submit a draft offer for approval; band check is server-side (HRM-09)
+      operationId: hrmsOffersIdSubmit
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Offer submitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsOffer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/offers/{id}/approve:
+    post:
+      summary: Approve an offer; the approver cannot be the drafter (HRM-09)
+      operationId: hrmsOffersIdApprove
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Offer approved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsOffer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/offers/{id}/decline:
+    post:
+      summary: Record a candidate's decline with a reason code (HRM-09)
+      operationId: hrmsOffersIdDecline
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsDecisionInput'
+      responses:
+        '200':
+          description: Offer declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsOffer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/offers/{id}/expire:
+    post:
+      summary: Mark an offer expired after its expiry date (HRM-09)
+      operationId: hrmsOffersIdExpire
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Offer expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsOffer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/payroll/runs/{id}/calculate:
+    post:
+      summary: Calculate a draft pay run from approved inputs; refused without the statutory pack for the period (HRM-05)
+      operationId: hrmsPayrollRunsIdCalculate
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Pay run calculated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsPayRun'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/payroll/runs/{id}/verify:
+    post:
+      summary: Run verification checks on a calculated pay run (HRM-05)
+      operationId: hrmsPayrollRunsIdVerify
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Pay run verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HrmsPayRun'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+
 components:
   securitySchemes:
     BearerAuth:
@@ -4679,3 +5025,14 @@ components:
         reasonCode:
           type: string
           maxLength: 64
+    HrmsDecisionInput:
+      type: object
+      properties:
+        reasonCode:
+          type: string
+          maxLength: 64
+          description: Required for reject, decline and cancel (where the API demands
+            it). Codes come from the reason code lists.
+        reason:
+          type: string
+          maxLength: 500
