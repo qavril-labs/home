@@ -178,6 +178,8 @@ function head(prefix, title, description, canonicalPath) {
   <meta name="twitter:description" content="${esc(description)}">
   <meta name="twitter:image" content="${BASE}/og-image.png">
   <link rel="icon" href="${prefix}favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="${prefix}img/logo-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="${prefix}apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Unbounded:wght@800&display=swap" media="print" onload="this.media='all'">
@@ -193,7 +195,7 @@ function header(prefix) {
   return `  <header class="topbar">
     <div class="wrap nav">
       <a class="logo" href="${prefix}index.html">
-        <span class="logo-mark" aria-hidden="true">Q</span>
+        <img class="logo-mark" src="${prefix}img/logo-96.png" alt="" width="40" height="40">
         <span class="logo-text">QAVRIL<span class="slash">/</span>LABS</span>
       </a>
       <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-links">

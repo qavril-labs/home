@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import qavrilLogo from "../../assets/qavril-logo.png";
 import {
   LayoutDashboard,
   Users,
@@ -132,9 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
           className="flex items-center gap-2 group text-text no-underline"
         >
-          <span className="w-8 h-8 rounded-none bg-lime border-line flex items-center justify-center font-display font-black text-ink text-lg shadow-[2px_2px_0_var(--q-ink)] group-hover:scale-105 transition-transform">
-            Q
-          </span>
+          <img src={qavrilLogo} alt="" className="w-9 h-9 rounded-full shrink-0 group-hover:scale-105 transition-transform" />
           <div className="flex flex-col">
             <span className="font-display font-extrabold text-sm tracking-tight uppercase leading-none">
               QAVRIL<span className="text-pink">/</span>LABS
