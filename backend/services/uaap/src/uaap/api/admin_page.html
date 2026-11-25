@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>UAAP Admin</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --surface: #ffffff; --text: #1d1d1b; --muted: #5f5f5a; --border: #dcdcd6;
+    --ok: #1f7a3a; --warn: #8a5a00; --fail: #b3261e; --accent: #2d4f9e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151514; --surface: #1f1f1d; --text: #ececea; --muted: #a3a39d; --border: #383835;
+      --ok: #6ccf8a; --warn: #e5b04a; --fail: #f2847b; --accent: #8fb0f5;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+  header, main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  h1 { font-size: 20px; margin: 0; }
+  h2 { font-size: 16px; margin: 0 0 8px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; }
+  input { min-width: 260px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+          background: var(--surface); color: var(--text); font: inherit; }
+  button { padding: 8px 14px; border: 1px solid var(--accent); border-radius: 6px; background: var(--accent);
+           color: #fff; font: inherit; cursor: pointer; }
+  button.secondary { background: transparent; color: var(--accent); }
+  button.danger { background: transparent; border-color: var(--fail); color: var(--fail); }
+  nav { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 12px; }
+  nav button { background: transparent; color: var(--text); border-color: var(--border); }
+  nav button[aria-selected="true"] { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  section { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  .scroll { overflow-x: auto; }
+  .ok { color: var(--ok); } .warn { color: var(--warn); } .fail { color: var(--fail); }
+  .muted { color: var(--muted); }
+  pre { white-space: pre-wrap; word-break: break-word; margin: 0; font-size: 13px; }
+  ul { margin: 4px 0 8px 18px; padding: 0; }
+  #status { min-height: 1.5em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>UAAP Admin</h1>
+  <form id="login" autocomplete="off">
+    <label for="key" class="muted">Admin key</label>
+    <input id="key" type="password" autocomplete="off" spellcheck="false" required>
+    <button type="submit">Load</button>
+  </form>
+</header>
+<main>
+  <p id="status" role="status" class="muted">Enter the admin key (UAAP_ADMIN_KEY). It stays in this page's memory only.</p>
+  <nav role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="checks" aria-selected="true">Health checks</button>
+    <button role="tab" data-tab="config" aria-selected="false">Configuration</button>
+    <button role="tab" data-tab="agents" aria-selected="false">Agents</button>
+    <button role="tab" data-tab="metrics" aria-selected="false">Metrics</button>
+    <button role="tab" data-tab="tools" aria-selected="false">Tools</button>
+  </nav>
+  <div id="view"></div>
+</main>
+<script>
+"use strict";
+let adminKey = "";
+let current = "checks";
+const view = document.getElementById("view");
+const statusEl = document.getElementById("status");
+
+function el(tag, attrs, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) node.setAttribute(k, v);
+  for (const c of children) node.append(c instanceof Node ? c : document.createTextNode(String(c ?? "")));
+  return node;
+}
+function section(title, ...body) { return el("section", {}, el("h2", {}, title), ...body); }
+function table(headers, rows) {
+  const head = el("tr", {}, ...headers.map(h => el("th", { scope: "col" }, h)));
+  return el("div", { class: "scroll" }, el("table", {}, el("thead", {}, head),
+    el("tbody", {}, ...rows.map(r => el("tr", {}, ...r.map(c => el("td", {}, c)))))));
+}
+function kv(obj) {
+  return table(["Setting", "Value"], Object.entries(obj).map(([k, v]) =>
+    [k, typeof v === "object" && v !== null ? el("pre", {}, JSON.stringify(v, null, 2)) : String(v)]));
+}
+function list(items) { return el("ul", {}, ...items.map(i => el("li", {}, i))); }
+
+async function api(path, method) {
+  const res = await fetch(path, { method: method || "GET", headers: { "X-Admin-Key": adminKey }, cache: "no-store" });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((body.error && body.error.message) || ("HTTP " + res.status));
+  return body;
+}
+
+const renderers = {
+  async checks() {
+    const data = await api("/v1/admin/checks");
+    return section("Overall: " + data.overall.toUpperCase(),
+      table(["Status", "Check", "Category", "Detail"], data.checks.map(c =>
+        [el("span", { class: c.status }, c.status.toUpperCase()), c.name, c.category, c.detail])));
+  },
+  async config() {
+    const data = await api("/v1/admin/config");
+    return el("div", {}, ...Object.entries(data).map(([k, v]) =>
+      section(k.replace(/_/g, " "), typeof v === "object" ? kv(v) : String(v))));
+  },
+  async agents() {
+    const data = await api("/v1/admin/agents");
+    const out = [section("Mandatory guardrails (every agent)", list(data.mandatory_guardrails))];
+    for (const a of data.agents) {
+      const c = a.card;
+      const disable = el("button", { class: "danger", type: "button" }, "Disable agent");
+      disable.disabled = !a.enabled;
+      disable.addEventListener("click", async () => {
+        if (!confirm("Disable " + a.agent_id + "? It stops answering and cannot call tools.")) return;
+        try { await api("/v1/admin/agents/" + encodeURIComponent(a.agent_id) + "/disable", "POST"); load(); }
+        catch (e) { statusEl.textContent = e.message; }
+      });
+      out.push(section(c.name + " (" + a.agent_id + ") v" + c.version,
+        el("p", {}, c.purpose),
+        el("p", { class: a.enabled ? "ok" : "fail" }, a.enabled ? "Enabled" : "Disabled"), disable,
+        el("h2", {}, "Grants and tools"), list([...a.grants.map(g => "grant: " + g), ...a.tools.map(t => "tool: " + t)]),
+        el("h2", {}, "Use cases"), table(["Use case", "Example", "Outcome", "Tool", "Tier"],
+          c.use_cases.map(u => [u.title, u.example, u.outcome, u.tool || "none", u.tier ?? "none"])),
+        el("h2", {}, "Case stories"), ...c.case_stories.map(s => el("div", {},
+          el("strong", {}, s.title + " (" + s.actor + ")"), el("p", {}, s.situation), list(s.steps), el("p", { class: "muted" }, s.outcome))),
+        el("h2", {}, "Edge cases"), table(["Situation", "Expected", "Test"], c.edge_cases.map(e => [e.situation, e.expected, e.test])),
+        el("h2", {}, "Error handling"), table(["Code", "User sees"], Object.entries(c.error_handling)),
+        el("h2", {}, "Out of scope"), list(c.out_of_scope),
+        el("h2", {}, "KPIs"), table(["KPI", "Description", "Target"], c.kpis.map(k => [k.name, k.description, k.target])),
+        el("h2", {}, "Data sources"), list(c.data_sources),
+        el("h2", {}, "Live metrics"), el("pre", {}, JSON.stringify(a.metrics, null, 2))));
+    }
+    return el("div", {}, ...out);
+  },
+  async metrics() {
+    const data = await api("/v1/admin/metrics");
+    const rows = Object.entries(data.agents).map(([id, m]) => [id, m.requests, m.answer_rate, m.failure_rate,
+      m.latency_ms.p50 + " / " + m.latency_ms.p95, el("pre", {}, JSON.stringify(m.guardrail_events)), el("pre", {}, JSON.stringify(m.errors))]);
+    return section("Agent metrics (since restart)", rows.length
+      ? table(["Agent", "Requests", "Answer rate", "Failure rate", "Latency p50 / p95 ms", "Guardrail events", "Errors"], rows)
+      : el("p", { class: "muted" }, "No requests yet."));
+  },
+  async tools() {
+    const data = await api("/v1/admin/tools");
+    return section("Registered tools", table(["Tool", "Product", "Tier", "Permission", "Blocked", "Timeout s"],
+      data.tools.map(t => [t.name, t.product_id, t.tier, t.permission, t.blocked ? "yes" : "no", t.timeout_seconds])));
+  },
+};
+
+async function load() {
+  if (!adminKey) return;
+  statusEl.textContent = "Loading…";
+  try {
+    const node = await renderers[current]();
+    view.replaceChildren(node);
+    statusEl.textContent = "Loaded " + new Date().toLocaleTimeString();
+  } catch (e) {
+    view.replaceChildren();
+    statusEl.textContent = e.message;
+  }
+}
+
+document.getElementById("login").addEventListener("submit", ev => {
+  ev.preventDefault();
+  const input = document.getElementById("key");
+  adminKey = input.value;
+  input.value = "";
+  load();
+});
+for (const tab of document.querySelectorAll("nav button")) {
+  tab.addEventListener("click", () => {
+    current = tab.dataset.tab;
+    for (const t of document.querySelectorAll("nav button")) t.setAttribute("aria-selected", String(t === tab));
+    load();
+  });
+}
+</script>
+</body>
+</html>

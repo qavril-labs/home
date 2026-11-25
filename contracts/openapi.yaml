@@ -1,24 +1,22 @@
 openapi: 3.1.0
 info:
   title: QAVRIL LABS Platform API
-  version: 1.0.0
-  description: >
-    The HTTP contract between the frontend web app/marketing site and the backend core services.
-    Every figure on screen comes from these endpoints. Money amounts are always formatted decimal strings.
+  version: 1.1.0
+  description: 'The HTTP contract between the frontend web app/marketing site and the backend core services. Every figure on screen comes from these endpoints. Money amounts are always formatted decimal strings.
 
+    '
 servers:
-  - url: http://localhost:3002
-    description: Local development API server
-  - url: https://api.qavrillabs.com
-    description: Production API
-
+- url: http://localhost:3002
+  description: Local development API server
+- url: https://api.qavrillabs.com
+  description: Production API
 paths:
   /health:
     get:
       summary: Health check
       operationId: getHealth
       responses:
-        "200":
+        '200':
           description: Service is healthy
           content:
             application/json:
@@ -27,10 +25,9 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: "ok"
+                    example: ok
                 required:
-                  - status
-
+                - status
   /v1/public/leads:
     post:
       summary: Submit marketing site lead or demo request
@@ -40,9 +37,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LeadSubmission"
+              $ref: '#/components/schemas/LeadSubmission'
       responses:
-        "201":
+        '201':
           description: Lead received successfully
           content:
             application/json:
@@ -51,14 +48,13 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: "received"
+                    example: received
                 required:
-                  - status
-        "400":
-          $ref: "#/components/responses/ValidationError"
-        "429":
-          $ref: "#/components/responses/RateLimitedError"
-
+                - status
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitedError'
   /v1/public/signup:
     post:
       summary: Self-service workspace sign-up
@@ -68,19 +64,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SignUpRequest"
+              $ref: '#/components/schemas/SignUpRequest'
       responses:
-        "201":
+        '201':
           description: Workspace provisioned and owner signed in
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SignUpResponse"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-        "429":
-          $ref: "#/components/responses/RateLimitedError"
-
+                $ref: '#/components/schemas/SignUpResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitedError'
   /v1/auth/login:
     post:
       summary: Sign in with workspace credentials
@@ -90,37 +85,105 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/LoginRequest"
+              $ref: '#/components/schemas/LoginRequest'
       responses:
-        "200":
+        '200':
           description: Session created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SessionResponse"
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-        "429":
-          $ref: "#/components/responses/RateLimitedError"
-
+                $ref: '#/components/schemas/SessionResponse'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '429':
+          $ref: '#/components/responses/RateLimitedError'
   /v1/auth/logout:
     post:
       summary: Sign out and invalidate current session
       operationId: logout
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "204":
+        '204':
           description: Successfully signed out
-
+  /v1/auth/forgot-password:
+    post:
+      summary: Request password reset email instructions (PLT-01)
+      operationId: forgotPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - tenantSlug
+              - email
+              properties:
+                tenantSlug:
+                  type: string
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Password reset request accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - message
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type: string
+  /v1/auth/reset-password:
+    post:
+      summary: Reset account password with one-time token (PLT-01)
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - token
+              - newPassword
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Password successfully updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - message
+                properties:
+                  ok:
+                    type: boolean
+                  message:
+                    type: string
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
   /v1/me:
     get:
       summary: Get current authenticated principal and permissions
       operationId: getMe
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "200":
+        '200':
           description: Current user principal
           content:
             application/json:
@@ -128,54 +191,51 @@ paths:
                 type: object
                 properties:
                   principal:
-                    $ref: "#/components/schemas/Principal"
+                    $ref: '#/components/schemas/Principal'
                 required:
-                  - principal
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-
+                - principal
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
   /v1/workspace/overview:
     get:
       summary: Get signed-in workspace dashboard figures, totals, and monthly trends
       operationId: getWorkspaceOverview
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "200":
+        '200':
           description: Full workspace ledger overview and metrics
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkspaceOverview"
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-        "403":
-          $ref: "#/components/responses/ForbiddenError"
-
+                $ref: '#/components/schemas/WorkspaceOverview'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /v1/workspace/insights:
     get:
       summary: Get autonomous bot findings and draft actions for workspace
       operationId: getWorkspaceInsights
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "200":
+        '200':
           description: Bot crew findings and recommendations
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/WorkspaceInsights"
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-
+                $ref: '#/components/schemas/WorkspaceInsights'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
   /v1/workspace/starter-books:
     post:
       summary: Open starter chart of accounts and initial fiscal year
       operationId: setUpStarterBooks
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "200":
+        '200':
           description: Books opened successfully
           content:
             application/json:
@@ -184,303 +244,321 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: "ok"
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-
+                    example: ok
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
   /v1/workspace/quick-entries:
     post:
       summary: Post a double-entry journal transaction from plain user inputs
       operationId: postQuickEntry
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: 'Optional. Send a unique key (8 to 128 letters, digits, dots, colons, dashes or underscores) per submission. A retry with the same key and body returns the first response; the same key with a different
+          body returns 409.
+
+          '
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[A-Za-z0-9._:-]{8,128}$
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/QuickEntryRequest"
+              $ref: '#/components/schemas/QuickEntryRequest'
       responses:
-        "201":
+        '201':
           description: Transaction recorded into ledger
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/QuickEntryResponse"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-        "401":
-          $ref: "#/components/responses/UnauthenticatedError"
-
+                $ref: '#/components/schemas/QuickEntryResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '409':
+          description: The Idempotency-Key was used for a different request, or the first request is still running.
   /v1/master-data/parties:
     get:
       summary: List customers and suppliers (MDM-01)
       operationId: listParties
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: partyType
-          in: query
-          schema:
-            type: string
-            enum: ["customer", "supplier", "both"]
-        - name: status
-          in: query
-          schema:
-            type: string
-            enum: ["active", "hold", "archived", "inactive"]
-        - name: search
-          in: query
-          schema:
-            type: string
+      - name: partyType
+        in: query
+        schema:
+          type: string
+          enum:
+          - customer
+          - supplier
+          - both
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - active
+          - hold
+          - archived
+          - inactive
+      - name: search
+        in: query
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Party listing
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Party"
+                  $ref: '#/components/schemas/Party'
     post:
       summary: Create a new customer or supplier
       operationId: createParty
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreatePartyRequest"
+              $ref: '#/components/schemas/CreatePartyRequest'
       responses:
-        "201":
+        '201':
           description: Party created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Party"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-
+                $ref: '#/components/schemas/Party'
+        '400':
+          $ref: '#/components/responses/ValidationError'
   /v1/master-data/parties/{id}:
     get:
       summary: Get party details
       operationId: getParty
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Party details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Party"
-        "404":
+                $ref: '#/components/schemas/Party'
+        '404':
           description: Party not found
     put:
       summary: Update party details
       operationId: updateParty
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdatePartyRequest"
+              $ref: '#/components/schemas/UpdatePartyRequest'
       responses:
-        "200":
+        '200':
           description: Party updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Party"
+                $ref: '#/components/schemas/Party'
     delete:
       summary: Delete or archive party
       operationId: deleteParty
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "204":
+        '204':
           description: Party deleted
-
   /v1/master-data/items:
     get:
       summary: List inventory items and goods/services catalog (MDM-02)
       operationId: listItems
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: itemType
-          in: query
-          schema:
-            type: string
-            enum: ["goods", "service", "bundle"]
-        - name: category
-          in: query
-          schema:
-            type: string
-        - name: status
-          in: query
-          schema:
-            type: string
-        - name: search
-          in: query
-          schema:
-            type: string
+      - name: itemType
+        in: query
+        schema:
+          type: string
+          enum:
+          - goods
+          - service
+          - bundle
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: status
+        in: query
+        schema:
+          type: string
+      - name: search
+        in: query
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Item listing
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/ProductItem"
+                  $ref: '#/components/schemas/ProductItem'
     post:
       summary: Create a catalog or inventory item
       operationId: createItem
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateItemRequest"
+              $ref: '#/components/schemas/CreateItemRequest'
       responses:
-        "201":
+        '201':
           description: Item created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductItem"
-        "400":
-          $ref: "#/components/responses/ValidationError"
-
+                $ref: '#/components/schemas/ProductItem'
+        '400':
+          $ref: '#/components/responses/ValidationError'
   /v1/master-data/items/{id}:
     get:
       summary: Get item details
       operationId: getItem
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Item details
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductItem"
+                $ref: '#/components/schemas/ProductItem'
     put:
       summary: Update item details
       operationId: updateItem
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpdateItemRequest"
+              $ref: '#/components/schemas/UpdateItemRequest'
       responses:
-        "200":
+        '200':
           description: Item updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ProductItem"
+                $ref: '#/components/schemas/ProductItem'
     delete:
       summary: Delete item
       operationId: deleteItem
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "204":
+        '204':
           description: Item deleted
-
   /v1/master-data/accounts:
     get:
       summary: List chart of accounts (MDM-03)
       operationId: listMasterDataAccounts
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       responses:
-        "200":
+        '200':
           description: Account listing
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Account"
+                  $ref: '#/components/schemas/Account'
     post:
       summary: Create an account in the chart of accounts
       operationId: createMasterDataAccount
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAccountRequest"
+              $ref: '#/components/schemas/CreateAccountRequest'
       responses:
-        "201":
+        '201':
           description: Account created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
-
+                $ref: '#/components/schemas/Account'
   /v1/master-data/accounts/{code}:
     put:
       summary: Update account name or status (MDM-03)
       operationId: updateMasterDataAccount
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: code
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: code
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         required: true
         content:
@@ -493,101 +571,115 @@ paths:
                 active:
                   type: boolean
               required:
-                - name
+              - name
       responses:
-        "200":
+        '200':
           description: Account updated
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
-
+                $ref: '#/components/schemas/Account'
   /v1/ledger/accounts:
-    get:
-      summary: List chart of accounts for company
-      operationId: listAccounts
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Account listing
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Account"
     post:
       summary: Create a new account
       operationId: createAccount
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAccountRequest"
+              $ref: '#/components/schemas/CreateAccountRequest'
       responses:
-        "201":
+        '201':
           description: Account created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Account"
-
-  /v1/ledger/entries:
+                $ref: '#/components/schemas/Account'
+  /v1/ledger/journal-entries:
     get:
       summary: List ledger journal entries
       operationId: listEntries
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 50
+      - name: companyId
+        in: query
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
       responses:
-        "200":
+        '200':
           description: Journal entry list
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/JournalEntry"
+                  $ref: '#/components/schemas/JournalEntry'
     post:
       summary: Post a balanced double-entry journal
       operationId: postJournalEntry
       security:
-        - BearerAuth: []
+      - BearerAuth: []
+      parameters:
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: 'Optional. A retry with the same key and body returns the first response instead of posting again; the same key with a different body returns 409.
+
+          '
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[A-Za-z0-9._:-]{8,128}$
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PostJournalRequest"
+              $ref: '#/components/schemas/PostJournalRequest'
       responses:
-        "201":
+        '201':
           description: Entry posted
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JournalEntry"
-
-  /v1/ledger/entries/{id}/reverse:
+                $ref: '#/components/schemas/JournalEntry'
+  /v1/ledger/journal-entries/{id}/reverse:
     post:
       summary: Post an immutable reversal of a journal entry
       operationId: reverseJournalEntry
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: Idempotency-Key
+        in: header
+        required: false
+        description: 'Optional. A retry with the same key and body returns the first response instead of posting again; the same key with a different body returns 409.
+
+          '
+        schema:
+          type: string
+          minLength: 8
+          maxLength: 128
+          pattern: ^[A-Za-z0-9._:-]{8,128}$
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         required: false
         content:
@@ -598,50 +690,2293 @@ paths:
                 memo:
                   type: string
       responses:
-        "201":
+        '201':
           description: Reversal entry posted
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JournalEntry"
-
+                $ref: '#/components/schemas/JournalEntry'
   /v1/ledger/trial-balance:
     get:
       summary: Retrieve trial balance as of date
       operationId: getTrialBalance
       security:
-        - BearerAuth: []
+      - BearerAuth: []
       parameters:
-        - name: asOf
-          in: query
-          schema:
-            type: string
-            format: date
+      - name: asOf
+        in: query
+        schema:
+          type: string
+          format: date
       responses:
-        "200":
+        '200':
           description: Trial balance
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TrialBalance"
+                $ref: '#/components/schemas/TrialBalance'
+  /v1/banking/lines:
+    get:
+      summary: List bank feed lines with optional reconciliation status filter (FIN-04)
+      operationId: getBankLines
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - ALL
+          - Unmatched
+          - Suggested
+          - Reconciled
+      responses:
+        '200':
+          description: List of bank feed lines
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - lines
+                properties:
+                  ok:
+                    type: boolean
+                  lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BankFeedLine'
+  /v1/banking/statements/import:
+    post:
+      summary: Import bank feed lines with auto-matching against invoices/bills (FIN-04)
+      operationId: importBankStatement
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - lines
+              properties:
+                lines:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                    - postedDate
+                    - reference
+                    - description
+                    - amount
+                    - direction
+                    properties:
+                      postedDate:
+                        type: string
+                        format: date
+                      reference:
+                        type: string
+                      description:
+                        type: string
+                      amount:
+                        type: string
+                      direction:
+                        type: string
+                        enum:
+                        - IN
+                        - OUT
+      responses:
+        '201':
+          description: Bank statement imported
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - imported
+                - ambiguous
+                - lines
+                properties:
+                  ok:
+                    type: boolean
+                  imported:
+                    type: integer
+                  ambiguous:
+                    type: integer
+                    description: Lines where several documents fit. They stay unmatched; nothing is guessed.
+                  lines:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BankFeedLine'
+  /v1/banking/reconcile:
+    post:
+      summary: Reconcile bank line with matched document reference (FIN-04)
+      operationId: reconcileBankLine
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - lineId
+              - matchedRef
+              properties:
+                lineId:
+                  type: string
+                matchedRef:
+                  type: string
+      responses:
+        '200':
+          description: Bank line reconciled
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - lineId
+                - matchedRef
+                - status
+                properties:
+                  ok:
+                    type: boolean
+                  lineId:
+                    type: string
+                  matchedRef:
+                    type: string
+                  status:
+                    type: string
+                    example: Reconciled
+  /v1/banking/unreconcile:
+    post:
+      summary: Unreconcile bank line back to unmatched status (FIN-04)
+      operationId: unreconcileBankLine
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - lineId
+              properties:
+                lineId:
+                  type: string
+      responses:
+        '200':
+          description: Bank line reverted to unmatched
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - lineId
+                - status
+                properties:
+                  ok:
+                    type: boolean
+                  lineId:
+                    type: string
+                  status:
+                    type: string
+                    example: Unmatched
+  /v1/banking/rules:
+    get:
+      summary: List bank reconciliation rules in the order they run (FIN-04)
+      operationId: listBankRules
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Rules ordered by priority
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - rules
+                properties:
+                  ok:
+                    type: boolean
+                  rules:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BankRule'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      summary: Create a bank rule (FIN-04)
+      operationId: createBankRule
+      description: 'Rules only suggest a match for one open invoice (money in) or bill (money out); they never reconcile or post. A name already in use returns 409. Needs fin.journal.post. Audited.
 
+        '
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankRuleInput'
+      responses:
+        '201':
+          description: Rule created
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - rule
+                properties:
+                  ok:
+                    type: boolean
+                  rule:
+                    $ref: '#/components/schemas/BankRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/platform/leads:
+    get:
+      summary: List marketing leads for the platform workspace (B8)
+      operationId: listPlatformLeads
+      description: 'Marketing leads are platform data, not tenant data. Only users of the platform workspace (PLATFORM_TENANT_ID) holding platform.leads.read may call this; every other tenant, including tenant admins, gets
+        403. Newest first. Includes contact details, so it is read-only and never cached.
+
+        '
+      tags:
+      - Platform
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 50
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - new
+          - contacted
+          - booked
+          - closed
+      responses:
+        '200':
+          description: Leads, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - leads
+                properties:
+                  ok:
+                    type: boolean
+                  leads:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlatformLead'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/platform/leads/{id}/followup-drafts:
+    post:
+      summary: Save a follow-up draft for a lead (B8)
+      operationId: createLeadFollowupDraft
+      description: 'Stores text for a person to review. It never sends anything (sending needs PLT-10). Refused with 409 when the lead has not recorded consent, and 404 when the lead does not exist. Needs platform.leads.draft
+        in the platform workspace. Audited.
+
+        '
+      tags:
+      - Platform
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - subject
+              - body
+              properties:
+                subject:
+                  type: string
+                  minLength: 1
+                  maxLength: 200
+                body:
+                  type: string
+                  minLength: 1
+                  maxLength: 2000
+      responses:
+        '201':
+          description: Draft saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - draft
+                properties:
+                  ok:
+                    type: boolean
+                  draft:
+                    type: object
+                    required:
+                    - id
+                    - leadId
+                    - subject
+                    - body
+                    - createdAt
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      leadId:
+                        type: string
+                        format: uuid
+                      subject:
+                        type: string
+                      body:
+                        type: string
+                      createdAt:
+                        type: string
+                        format: date-time
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/banking/rules/{id}:
+    put:
+      summary: Replace a bank rule (FIN-04)
+      operationId: updateBankRule
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BankRuleInput'
+      responses:
+        '200':
+          description: Rule updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - rule
+                properties:
+                  ok:
+                    type: boolean
+                  rule:
+                    $ref: '#/components/schemas/BankRule'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    delete:
+      summary: Delete a bank rule (FIN-04)
+      operationId: deleteBankRule
+      description: Lines already suggested keep the rule name they were suggested by. The deletion is audited.
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Rule deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - id
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                    format: uuid
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/banking/rules/apply:
+    post:
+      summary: Run the rules again over lines that are not reconciled (FIN-04)
+      operationId: applyBankRules
+      description: 'Re-evaluates lines that are Unmatched or Suggested. Reconciled lines never change. Repeating the call with no change in rules or documents changes nothing.
+
+        '
+      tags:
+      - Banking
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Counts from the run
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - evaluated
+                - suggested
+                - ambiguous
+                - unmatched
+                - changed
+                properties:
+                  ok:
+                    type: boolean
+                  evaluated:
+                    type: integer
+                  suggested:
+                    type: integer
+                  ambiguous:
+                    type: integer
+                  unmatched:
+                    type: integer
+                  changed:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/agents:
+    get:
+      summary: List the bots available to the caller
+      operationId: listAgents
+      description: 'Returns the bots in service for the caller''s tenant, with their purpose, example requests and out-of-scope items. Disabled bots are listed with enabled=false. A bot that needs specific permissions is listed
+        only to callers who hold at least one of them (for example `lead-nurturing`, which is for the platform workspace); bots with no required permissions are listed to everyone. The service still checks permissions on every
+        call.
+
+        '
+      servers:
+      - url: http://localhost:8090
+        description: UAAP agent service (local development)
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      responses:
+        '200':
+          description: Bots available to the caller
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentList'
+        '400':
+          $ref: '#/components/responses/UaapError'
+        '401':
+          $ref: '#/components/responses/UaapUnauthenticatedError'
+  /v1/agents/{agentId}/messages:
+    post:
+      summary: Send a message to a bot
+      operationId: sendAgentMessage
+      description: 'Runs the bot on one message. The HTTP status is 200 for every outcome the bot reports; read `status` in the body to decide what to show. An approval is never executed by this call: a proposal waits in the
+        approvals inbox until another person decides it. The approval token is never returned.
+
+        '
+      servers:
+      - url: http://localhost:8090
+        description: UAAP agent service (local development)
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      - name: agentId
+        in: path
+        required: true
+        schema:
+          type: string
+          example: universal-finance-agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentMessageRequest'
+      responses:
+        '200':
+          description: The bot's reply, including refusals and failures it reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentReply'
+        '400':
+          $ref: '#/components/responses/UaapError'
+        '401':
+          $ref: '#/components/responses/UaapUnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/UaapError'
+        '404':
+          description: Unknown bot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UaapErrorResponse'
+  /v1/approvals:
+    get:
+      summary: List the approvals inbox for the caller's tenant
+      operationId: listApprovals
+      description: 'Proposals from bots, newest first. can_decide is false for the person who proposed the action: they can see it but cannot approve it.
+
+        '
+      servers:
+      - url: http://localhost:8090
+        description: UAAP agent service (local development)
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ApprovalStatus'
+      responses:
+        '200':
+          description: Approvals in the caller's tenant
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - approvals
+                properties:
+                  approvals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Approval'
+        '400':
+          $ref: '#/components/responses/UaapError'
+        '401':
+          $ref: '#/components/responses/UaapUnauthenticatedError'
+  /v1/approvals/{approvalId}:
+    get:
+      summary: Read one proposal with the exact payload to review
+      operationId: getApproval
+      description: 'Returns the payload and its payload_hash. Review the payload before deciding: the decision must send back the same hash.
+
+        '
+      servers:
+      - url: http://localhost:8090
+        description: UAAP agent service (local development)
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200':
+          description: The proposal
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Approval'
+        '401':
+          $ref: '#/components/responses/UaapUnauthenticatedError'
+        '404':
+          description: Proposal not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UaapErrorResponse'
+  /v1/approvals/{approvalId}/decision:
+    post:
+      summary: Approve or reject a proposal
+      operationId: decideApproval
+      description: 'Approve requires the payload_hash of the payload the approver reviewed. A mismatch is refused with VALIDATION and the proposal stays open. The approver must be a different person from the proposer and must
+        hold the permission for the action; if not, the proposal stays open (FORBIDDEN), or is marked FAILED once the action has run. A decided proposal cannot be decided again (409).
+
+        '
+      servers:
+      - url: http://localhost:8090
+        description: UAAP agent service (local development)
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/TenantHeader'
+      - $ref: '#/components/parameters/ApprovalId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecisionRequest'
+      responses:
+        '200':
+          description: Decision recorded. reply is the outcome of the approved action.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalDecisionResponse'
+        '400':
+          $ref: '#/components/responses/UaapError'
+        '401':
+          $ref: '#/components/responses/UaapUnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/UaapError'
+        '404':
+          description: Proposal not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UaapErrorResponse'
+        '409':
+          description: Proposal already decided, or its approval was already used
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UaapErrorResponse'
+        '410':
+          description: Proposal expired before a decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UaapErrorResponse'
+  /v1/events/tickets:
+    post:
+      summary: Issue a single-use ticket for one live event stream connection
+      operationId: postEventTicket
+      tags:
+      - Realtime
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Ticket issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreamTicket'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/admin/cms/articles:
+    get:
+      summary: List or read admin cms articles
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsArticles
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+    post:
+      summary: Create or run admin cms articles
+      tags:
+      - CMS (admin)
+      operationId: postAdminCmsArticles
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsArticleInput'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '400':
+          description: Invalid article
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/articles/{id}:
+    put:
+      summary: Update admin cms articles
+      tags:
+      - CMS (admin)
+      operationId: putAdminCmsArticlesId
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsArticleInput'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '400':
+          description: Invalid article
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '404':
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+    delete:
+      summary: Delete admin cms articles
+      tags:
+      - CMS (admin)
+      operationId: deleteAdminCmsArticlesId
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsStatus'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/auth/verify:
+    post:
+      summary: Create or run admin cms auth verify
+      tags:
+      - CMS (admin)
+      operationId: postAdminCmsAuthVerify
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsAuthVerifyInput'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsAuthResponse'
+        '401':
+          description: Invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsAuthResponse'
+  /v1/admin/cms/faqs:
+    get:
+      summary: List or read admin cms faqs
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsFaqs
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+    post:
+      summary: Create or run admin cms faqs
+      tags:
+      - CMS (admin)
+      operationId: postAdminCmsFaqs
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsFaqInput'
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '400':
+          description: Invalid FAQ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/faqs/{id}:
+    put:
+      summary: Update admin cms faqs
+      tags:
+      - CMS (admin)
+      operationId: putAdminCmsFaqsId
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsFaqInput'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '400':
+          description: Invalid FAQ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '404':
+          description: FAQ not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+    delete:
+      summary: Delete admin cms faqs
+      tags:
+      - CMS (admin)
+      operationId: deleteAdminCmsFaqsId
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsStatus'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/leads:
+    get:
+      summary: List or read admin cms leads
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsLeads
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/overview:
+    get:
+      summary: List or read admin cms overview
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsOverview
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsOverview'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/pages:
+    get:
+      summary: List or read admin cms pages
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsPages
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/pages/{slug}:
+    put:
+      summary: Update admin cms pages
+      tags:
+      - CMS (admin)
+      operationId: putAdminCmsPagesSlug
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsPageInput'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '400':
+          description: Invalid page
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/admin/cms/settings:
+    get:
+      summary: List or read admin cms settings
+      tags:
+      - CMS (admin)
+      operationId: getAdminCmsSettings
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsSettings'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+    put:
+      summary: Update admin cms settings
+      tags:
+      - CMS (admin)
+      operationId: putAdminCmsSettings
+      security:
+      - AdminKey: []
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CmsSettingsInput'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsStatus'
+        '400':
+          description: Missing settings object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+        '401':
+          description: Missing or invalid admin key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/events/stream:
+    get:
+      summary: List or read events stream
+      tags:
+      - Realtime
+      operationId: getEventsStream
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: ticket
+        in: query
+        required: false
+        description: 'A single-use ticket from POST /v1/events/tickets, valid for 60 seconds. Send this, not a session token.
+
+          '
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Live tenant events as server-sent events, one JSON object per data line.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/invoicing/bills:
+    get:
+      summary: List or read invoicing bills
+      tags:
+      - Invoicing
+      operationId: getInvoicingBills
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Bills
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillList'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+    post:
+      summary: Create or run invoicing bills
+      tags:
+      - Invoicing
+      operationId: postInvoicingBills
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BillInput'
+      responses:
+        '201':
+          description: Bill created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bill'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/invoicing/invoices:
+    get:
+      summary: List or read invoicing invoices
+      tags:
+      - Invoicing
+      operationId: getInvoicingInvoices
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Invoices and summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceList'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+    post:
+      summary: Create or run invoicing invoices
+      tags:
+      - Invoicing
+      operationId: postInvoicingInvoices
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceInput'
+      responses:
+        '201':
+          description: Invoice created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/invoicing/invoices/{id}:
+    get:
+      summary: List or read invoicing invoices
+      tags:
+      - Invoicing
+      operationId: getInvoicingInvoicesId
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Invoice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          description: Invoice not found
+    put:
+      summary: Update invoicing invoices
+      tags:
+      - Invoicing
+      operationId: putInvoicingInvoicesId
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoiceUpdateInput'
+      responses:
+        '200':
+          description: Invoice updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: 'The invoice is in the books (postingStatus is not NOT_POSTED) and the change touches its amounts, customer, issue date or status. details.fields lists the fields. Notes, due date, payment terms and
+            metadata can still change. Use the pay action to record payment.
+
+            '
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                        example: CONFLICT
+                      message:
+                        type: string
+                      details:
+                        type: object
+                        properties:
+                          fields:
+                            type: array
+                            items:
+                              type: string
+    delete:
+      summary: Delete invoicing invoices
+      tags:
+      - Invoicing
+      operationId: deleteInvoicingInvoicesId
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          description: The invoice is in the books and cannot be deleted. Voiding will be supported in a later release.
+  /v1/invoicing/invoices/{id}/pay:
+    post:
+      summary: Create or run invoicing invoices  pay
+      tags:
+      - Invoicing
+      operationId: postInvoicingInvoicesIdPay
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '200':
+          description: Invoice marked paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/invoicing/reminders:
+    post:
+      summary: Record a payment reminder and send it (FIN-14, PLT-10)
+      description: 'An email reminder with status sent (the default) is queued for delivery through the notifications queue, and the reply carries the notificationId. If nothing can deliver it (WhatsApp, or no queue configured),
+        it is recorded as approved instead, never as sent. A draft is recorded and not sent.
+
+        '
+      tags:
+      - Invoicing
+      operationId: postInvoicingReminders
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReminderInput'
+      responses:
+        '201':
+          description: Reminder recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentReminder'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/invoicing/statements/{partyId}:
+    get:
+      summary: List or read invoicing statements
+      tags:
+      - Invoicing
+      operationId: getInvoicingStatementsPartyId
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: partyId
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Customer statement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerStatement'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/ledger/fiscal-years:
+    post:
+      summary: Create or run ledger fiscal-years
+      tags:
+      - Other
+      operationId: postLedgerFiscalYears
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriodsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/ledger/fx-rates:
+    post:
+      summary: Create or run ledger fx-rates
+      tags:
+      - Other
+      operationId: postLedgerFxRates
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateSavedResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/platform/tenants:
+    post:
+      summary: Create or run platform tenants
+      tags:
+      - Other
+      operationId: postPlatformTenants
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantProvisionedResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/platform/tenants/{tenantId}/products:
+    post:
+      summary: Create or run platform tenants  products
+      tags:
+      - Other
+      operationId: postPlatformTenantsTenantIdProducts
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantProductsResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/public/cms/articles:
+    get:
+      summary: List or read public cms articles
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsArticles
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+  /v1/public/cms/articles/{slug}:
+    get:
+      summary: List or read public cms articles
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsArticlesSlug
+      security: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '404':
+          description: Article not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/public/cms/faqs:
+    get:
+      summary: List or read public cms faqs
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsFaqs
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+  /v1/public/cms/pages:
+    get:
+      summary: List or read public cms pages
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsPages
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsListResponse'
+  /v1/public/cms/pages/{slug}:
+    get:
+      summary: List or read public cms pages
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsPagesSlug
+      security: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsRecordResponse'
+        '404':
+          description: Page not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsError'
+  /v1/public/cms/settings:
+    get:
+      summary: List or read public cms settings
+      tags:
+      - CMS (public)
+      operationId: getPublicCmsSettings
+      security: []
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CmsSettings'
+  /v1/procurement/orders:
+    get:
+      summary: List purchase orders (PRC-01)
+      operationId: listPurchaseOrders
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/PurchaseOrderStatus'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 100
+      responses:
+        '200':
+          description: Purchase orders, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - orders
+                properties:
+                  ok:
+                    type: boolean
+                  orders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+    post:
+      summary: Create a purchase order (PRC-01)
+      operationId: createPurchaseOrder
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseOrderRequest'
+      responses:
+        '201':
+          description: The saved order
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - order
+                properties:
+                  ok:
+                    type: boolean
+                  order:
+                    $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/procurement/orders/{id}/status:
+    patch:
+      summary: Move a purchase order to a new status (PRC-01)
+      operationId: updatePurchaseOrderStatus
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/PurchaseOrderStatus'
+      responses:
+        '200':
+          description: Status saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - id
+                - status
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                  status:
+                    $ref: '#/components/schemas/PurchaseOrderStatus'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/procurement/receipts:
+    get:
+      summary: List goods receipt notes (PRC-02)
+      operationId: listGoodsReceipts
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - received
+          - inspected
+          - quarantined
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 100
+      responses:
+        '200':
+          description: Goods receipt notes, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - receipts
+                properties:
+                  ok:
+                    type: boolean
+                  receipts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/GoodsReceiptNote'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+    post:
+      summary: Record a goods receipt against a purchase order (PRC-02)
+      operationId: createGoodsReceipt
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGoodsReceiptRequest'
+      responses:
+        '201':
+          description: The saved receipt
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - receipt
+                properties:
+                  ok:
+                    type: boolean
+                  receipt:
+                    $ref: '#/components/schemas/GoodsReceiptNote'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/procurement/matches:
+    get:
+      summary: List three-way matches with summary counts (PRC-03)
+      operationId: listThreeWayMatches
+      tags:
+      - Procurement
+      description: Order, receipt and supplier bill compared line by line. All figures are computed on the server.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/ThreeWayMatchStatus'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 100
+      responses:
+        '200':
+          description: Matches and a summary
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - matches
+                - summary
+                properties:
+                  ok:
+                    type: boolean
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ThreeWayMatch'
+                  summary:
+                    $ref: '#/components/schemas/ThreeWayMatchSummary'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/procurement/matches/{id}/override:
+    post:
+      summary: Approve a match that is outside tolerance, with a note (PRC-03)
+      operationId: overrideThreeWayMatch
+      tags:
+      - Procurement
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+              - note
+              properties:
+                note:
+                  type: string
+                  minLength: 1
+      responses:
+        '200':
+          description: Override recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - match
+                properties:
+                  ok:
+                    type: boolean
+                  match:
+                    type: object
+                    required:
+                    - id
+                    - note
+                    - overrideApproved
+                    - toleranceOk
+                    properties:
+                      id:
+                        type: string
+                      note:
+                        type: string
+                      overrideApproved:
+                        type: boolean
+                      toleranceOk:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/approval-requests:
+    get:
+      summary: List approval requests in the inbox (PLT-07)
+      operationId: listApprovalRequests
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - all
+          - pending
+          - approved
+          - rejected
+          - executed
+          - cancelled
+      - name: botId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+      responses:
+        '200':
+          description: Requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - requests
+                properties:
+                  requests:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+    post:
+      summary: Create an approval request (AGT-01)
+      operationId: createApprovalRequest
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateApprovalRequestBody'
+      responses:
+        '201':
+          description: The request, waiting for a decision
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/approval-requests/audit-logs:
+    get:
+      summary: List the agent audit log (AGT-06)
+      operationId: listAgentAuditLogs
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: botId
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+      responses:
+        '200':
+          description: Audit entries, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - logs
+                properties:
+                  logs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AgentAuditLog'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/approval-requests/{id}:
+    get:
+      summary: Read one approval request (PLT-07)
+      operationId: getApprovalRequest
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/approval-requests/{id}/approve:
+    post:
+      summary: Approve a request (PLT-07)
+      operationId: approveApprovalRequest
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecisionBody'
+      responses:
+        '200':
+          description: The decided request. An audit entry is written.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/approval-requests/{id}/reject:
+    post:
+      summary: Reject a request (PLT-07)
+      operationId: rejectApprovalRequest
+      tags:
+      - Approvals
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApprovalDecisionBody'
+      responses:
+        '200':
+          description: The decided request. An audit entry is written.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApprovalRequest'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          description: No such request in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /v1/notifications:
+    get:
+      summary: List outgoing messages and their delivery state (PLT-10)
+      operationId: listNotifications
+      tags:
+      - Notifications
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - queued
+          - sent
+          - failed
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 50
+      responses:
+        '200':
+          description: Newest first. Message bodies are not returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - notifications
+                properties:
+                  notifications:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/NotificationStatus'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/notifications/{id}:
+    get:
+      summary: Read the delivery state of one message (PLT-10)
+      operationId: getNotification
+      tags:
+      - Notifications
+      description: Use the notificationId returned when a reminder was sent.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The message state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationStatus'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          description: No such message in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /v1/hrms/dashboard:
     get:
       summary: HR dashboard KPIs (HRM-01..HRM-19)
       responses:
-        "200":
+        '200':
           description: HR dashboard KPIs
   /v1/hrms/org/tree:
     get:
       summary: Org reports-to tree (HRM-02)
       responses:
-        "200":
+        '200':
           description: Org tree
   /v1/hrms/org/departments:
     get:
       summary: Departments list (HRM-02)
       responses:
-        "200":
+        '200':
           description: Departments
     post:
       summary: Create a department (HRM-02)
@@ -684,7 +3019,7 @@ paths:
     get:
       summary: Positions list (HRM-02)
       responses:
-        "200":
+        '200':
           description: Positions
     post:
       summary: Create a position (HRM-02)
@@ -725,30 +3060,30 @@ paths:
     get:
       summary: Headcount plan by department and period (HRM-16)
       responses:
-        "200":
+        '200':
           description: Headcount plan
   /v1/hrms/requisitions:
     get:
       summary: Requisitions list (HRM-16)
       responses:
-        "200":
+        '200':
           description: Requisitions
     post:
       summary: Create requisition (HRM-16)
       responses:
-        "201":
+        '201':
           description: Requisition created
   /v1/hrms/requisitions/{id}/approve:
     post:
       summary: Approve requisition (HRM-16)
       responses:
-        "200":
+        '200':
           description: Requisition approved
   /v1/hrms/recruitment/applications:
     get:
       summary: Candidate applications (HRM-09)
       responses:
-        "200":
+        '200':
           description: Applications
     post:
       summary: Apply a candidate to a requisition (HRM-09)
@@ -791,7 +3126,7 @@ paths:
     get:
       summary: Offers list (HRM-09)
       responses:
-        "200":
+        '200':
           description: Offers
     post:
       summary: Draft an offer. The band check is computed by the server against approved pay bands (HRM-13).
@@ -834,53 +3169,53 @@ paths:
     get:
       summary: Employee directory (HRM-01)
       responses:
-        "200":
+        '200':
           description: Employees
   /v1/hrms/employees/{id}/reveal-pii:
     post:
       summary: Audited PII reveal (HRM-01)
       responses:
-        "200":
+        '200':
           description: PII revealed and audited
   /v1/hrms/lifecycle-events:
     get:
       summary: Lifecycle events queue (HRM-17)
       responses:
-        "200":
+        '200':
           description: Lifecycle events
     post:
       summary: Record lifecycle event (HRM-17)
       responses:
-        "201":
+        '201':
           description: Lifecycle event recorded
   /v1/hrms/attendance:
     get:
       summary: Attendance days (HRM-03)
       responses:
-        "200":
+        '200':
           description: Attendance days
   /v1/hrms/leave/balances:
     get:
       summary: Leave balances in half-day units (HRM-04)
       responses:
-        "200":
+        '200':
           description: Leave balances
   /v1/hrms/leave/requests:
     get:
       summary: Leave requests (HRM-04)
       responses:
-        "200":
+        '200':
           description: Leave requests
     post:
       summary: Submit leave request (HRM-04)
       responses:
-        "201":
+        '201':
           description: Leave request submitted
   /v1/hrms/payroll/runs:
     get:
       summary: Pay runs list (HRM-05)
       responses:
-        "200":
+        '200':
           description: Pay runs
     post:
       summary: Create a pay run draft for a period (HRM-05)
@@ -923,31 +3258,31 @@ paths:
     get:
       summary: Posted payslips (HRM-05)
       responses:
-        "200":
+        '200':
           description: Payslips
   /v1/hrms/statutory/filings:
     get:
       summary: Statutory filing calendar (HRM-06)
       responses:
-        "200":
+        '200':
           description: Statutory filings
   /v1/hrms/onboarding/tasks:
     get:
       summary: Onboarding checklist (HRM-10)
       responses:
-        "200":
+        '200':
           description: Onboarding tasks
   /v1/hrms/compliance/expiries:
     get:
       summary: Compliance expiries 30/60/90d (HRM-14)
       responses:
-        "200":
+        '200':
           description: Compliance expiries
   /v1/hrms/separations:
     get:
       summary: Exit cases and F&F (HRM-18)
       responses:
-        "200":
+        '200':
           description: Exit cases
     post:
       summary: Start an exit case (HRM-18). Notice terms are computed from the employment's policy.
@@ -992,43 +3327,48 @@ paths:
     get:
       summary: Loans and advances (HRM-19)
       responses:
-        "200":
+        '200':
           description: Loans
     post:
       summary: Request loan (HRM-19)
       responses:
-        "201":
+        '201':
           description: Loan requested
   /v1/hrms/self-service/summary:
     get:
       summary: Employee self-service summary (HRM-07)
       responses:
-        "200":
+        '200':
           description: Self-service summary
-
   /v1/hrms/recruitment/rejection-reasons:
     get:
       summary: List rejection reason codes (HRM-09)
       responses:
-        "200":
+        '200':
           description: Rejection reason codes
-
   /v1/hrms/recruitment/applications/{id}/stage:
     patch:
       summary: Move an application to a stage (HRM-09)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Application after the stage move
-
   /v1/hrms/recruitment/applications/{id}/scorecards:
     post:
       summary: Submit a scorecard (HRM-09)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Scorecard saved
     get:
       summary: List scorecards for an application (HRM-09). Scores by other panel members are returned only once the caller has submitted their own.
@@ -1067,147 +3407,206 @@ paths:
           $ref: '#/components/responses/ForbiddenError'
         '404':
           $ref: '#/components/responses/NotFoundError'
-
   /v1/hrms/offers/{id}/send:
     post:
       summary: Send an offer (HRM-09)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Offer sent
-
   /v1/hrms/offers/{id}/accept:
     post:
       summary: Accept an offer; creates the employee (HRM-09, HRM-01)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Offer accepted
-
   /v1/hrms/offers/{id}/withdraw:
     post:
       summary: Withdraw an offer (HRM-09)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Offer withdrawn
-
   /v1/hrms/attendance/{id}/regularise:
     post:
       summary: Regularise an attendance day (HRM-03)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Regularisation recorded
-
   /v1/hrms/employees/{id}/bank-accounts/{bankId}/verify:
     post:
       summary: Verify a bank account change (HRM-01)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
-        - {name: bankId, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: bankId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Bank account verified
-
   /v1/hrms/leave/requests/{id}/decision:
     post:
       summary: Approve or reject a leave request (HRM-04)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Decision recorded
-
   /v1/hrms/onboarding/tasks/{id}/complete:
     post:
       summary: Complete an onboarding task (HRM-10)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Task completed
-
   /v1/hrms/payroll/runs/{id}/approve:
     post:
       summary: Approve a pay run (HRM-05)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Pay run approved
-
   /v1/hrms/payroll/runs/{id}/post:
     post:
       summary: Post a pay run to the ledger (HRM-05)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Pay run posted
-
   /v1/hrms/payroll/runs/{id}/pay:
     post:
       summary: Mark a pay run paid (HRM-05)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Pay run paid
-
   /v1/hrms/payroll/runs/{id}/checks/{checkId}/override:
     post:
       summary: Override a pay run check with a reason (HRM-05)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
-        - {name: checkId, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: checkId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Check overridden
-
   /v1/hrms/separations/{id}/clearance/{itemId}/clear:
     post:
       summary: Clear a clearance item (HRM-18)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
-        - {name: itemId, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Clearance item cleared
-
   /v1/hrms/separations/{id}/clearance/{itemId}/waive:
     post:
       summary: Waive a clearance item with a reason (HRM-18)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
-        - {name: itemId, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: itemId
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: Clearance item waived
-
   /v1/hrms/separations/{id}/fnf/approve:
     post:
       summary: Approve the full and final settlement (HRM-18)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: F&F approved
-
   /v1/hrms/separations/{id}/fnf/pay:
     post:
       summary: Pay the full and final settlement (HRM-18)
       parameters:
-        - {name: id, in: path, required: true, schema: {type: string}}
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       responses:
-        "200":
+        '200':
           description: F&F paid
-
-  # ---- planned HRMS operations (design target; x-planned until their routes ship) ----
   /v1/hrms/recruitment/applications/{id}/interviews:
     post:
       summary: Schedule an interview round (HRM-09)
@@ -2462,8 +4861,6 @@ paths:
           $ref: '#/components/responses/UnauthenticatedError'
         '403':
           $ref: '#/components/responses/ForbiddenError'
-
-  # ---- planned HRMS transitions (design gaps; x-planned until their routes ship) ----
   /v1/hrms/requisitions/{id}/submit:
     post:
       summary: Submit a draft requisition for approval (HRM-16)
@@ -2808,40 +5205,81 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         '409':
           $ref: '#/components/responses/ConflictError'
-
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
-
+      description: Opaque session token issued by /v1/auth/login. Only its hash is stored server-side.
+    AdminKey:
+      type: apiKey
+      in: header
+      name: x-admin-key
+      description: Operator key for the CMS admin routes.
+  parameters:
+    TenantHeader:
+      name: X-Tenant-ID
+      in: header
+      required: true
+      description: The tenant the caller belongs to. Must match the tenant in the bearer token.
+      schema:
+        type: string
+    ApprovalId:
+      name: approvalId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: appr_3f9a1c2b4d5e
   responses:
+    NotFoundError:
+      description: The record does not exist, or the caller cannot see it
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ConflictError:
+      description: The request conflicts with the current state (for example an invalid transition, a duplicate, or a closed period)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UaapError:
+      description: Request refused (see error.code)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UaapErrorResponse'
+    UaapUnauthenticatedError:
+      description: Missing, invalid or expired session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/UaapErrorResponse'
     ValidationError:
       description: Invalid input parameters
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     UnauthenticatedError:
       description: Authentication required or token expired
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     ForbiddenError:
       description: Action not permitted
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
+            $ref: '#/components/schemas/ErrorResponse'
     RateLimitedError:
       description: Too many requests
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorResponse"
-
+            $ref: '#/components/schemas/ErrorResponse'
   schemas:
     ErrorResponse:
       type: object
@@ -2851,42 +5289,45 @@ components:
           properties:
             code:
               type: string
-              example: "VALIDATION"
+              example: VALIDATION
             message:
               type: string
-              example: "Invalid request payload"
+              example: Invalid request payload
             details:
               type: array
               items:
                 type: object
           required:
-            - code
-            - message
+          - code
+          - message
       required:
-        - error
-
+      - error
     LeadSubmission:
       type: object
       properties:
         name:
           type: string
-          example: "Alex Vance"
+          example: Alex Vance
         email:
           type: string
           format: email
-          example: "alex@vancetools.com"
+          example: alex@vancetools.com
         company:
           type: string
-          example: "Vance Tools Ltd"
+          example: Vance Tools Ltd
         country:
           type: string
-          example: "United States"
+          example: United States
         interest:
           type: string
-          enum: ["early_access", "demo", "partner", "trial"]
+          enum:
+          - early_access
+          - demo
+          - partner
+          - trial
         industry:
           type: string
-          example: "Manufacturing"
+          example: Manufacturing
         message:
           type: string
         source:
@@ -2897,53 +5338,52 @@ components:
           type: string
         consent:
           type: boolean
-          enum: [true]
+          enum:
+          - true
         website:
           type: string
-          description: "Honeypot field; must remain empty"
+          description: Honeypot field; must remain empty
       required:
-        - name
-        - email
-        - interest
-        - consent
-
+      - name
+      - email
+      - interest
+      - consent
     SignUpRequest:
       type: object
       properties:
         workspace:
           type: string
-          example: "apex-tools"
+          example: apex-tools
         companyName:
           type: string
-          example: "Apex Precision Tools Ltd"
+          example: Apex Precision Tools Ltd
         country:
           type: string
-          example: "US"
+          example: US
         currency:
           type: string
-          example: "USD"
+          example: USD
         name:
           type: string
-          example: "Sarah Connor"
+          example: Sarah Connor
         email:
           type: string
           format: email
-          example: "sarah@apexprecision.com"
+          example: sarah@apexprecision.com
         password:
           type: string
           format: password
         website:
           type: string
-          description: "Honeypot field"
+          description: Honeypot field
       required:
-        - workspace
-        - companyName
-        - country
-        - currency
-        - name
-        - email
-        - password
-
+      - workspace
+      - companyName
+      - country
+      - currency
+      - name
+      - email
+      - password
     SignUpResponse:
       type: object
       properties:
@@ -2959,31 +5399,29 @@ components:
             name:
               type: string
         session:
-          $ref: "#/components/schemas/SessionInfo"
+          $ref: '#/components/schemas/SessionInfo'
       required:
-        - workspace
-        - tenantId
-        - company
-        - session
-
+      - workspace
+      - tenantId
+      - company
+      - session
     LoginRequest:
       type: object
       properties:
         tenantSlug:
           type: string
-          example: "apex-tools"
+          example: apex-tools
         email:
           type: string
           format: email
-          example: "sarah@apexprecision.com"
+          example: sarah@apexprecision.com
         password:
           type: string
           format: password
       required:
-        - tenantSlug
-        - email
-        - password
-
+      - tenantSlug
+      - email
+      - password
     SessionInfo:
       type: object
       properties:
@@ -2993,20 +5431,18 @@ components:
           type: string
           format: date-time
       required:
-        - token
-        - expiresAt
-
+      - token
+      - expiresAt
     SessionResponse:
       type: object
       properties:
         session:
-          $ref: "#/components/schemas/SessionInfo"
+          $ref: '#/components/schemas/SessionInfo'
         principal:
-          $ref: "#/components/schemas/Principal"
+          $ref: '#/components/schemas/Principal'
       required:
-        - session
-        - principal
-
+      - session
+      - principal
     Principal:
       type: object
       properties:
@@ -3021,49 +5457,46 @@ components:
           items:
             type: string
       required:
-        - id
-        - tenantId
-        - email
-        - permissions
-
+      - id
+      - tenantId
+      - email
+      - permissions
     WorkspaceTotals:
       type: object
       properties:
         cash:
           type: string
-          example: "42150.00"
+          example: '42150.00'
         revenue:
           type: string
-          example: "128420.50"
+          example: '128420.50'
         expenses:
           type: string
-          example: "86270.50"
+          example: '86270.50'
         profit:
           type: string
-          example: "42150.00"
+          example: '42150.00'
       required:
-        - cash
-        - revenue
-        - expenses
-        - profit
-
+      - cash
+      - revenue
+      - expenses
+      - profit
     MonthlyTrendRow:
       type: object
       properties:
         month:
           type: string
-          example: "2026-11"
+          example: 2026-11
         revenue:
           type: string
-          example: "23500.00"
+          example: '23500.00'
         expenses:
           type: string
-          example: "10100.00"
+          example: '10100.00'
       required:
-        - month
-        - revenue
-        - expenses
-
+      - month
+      - revenue
+      - expenses
     WorkspaceOverview:
       type: object
       properties:
@@ -3085,44 +5518,47 @@ components:
         booksReady:
           type: boolean
         totals:
-          $ref: "#/components/schemas/WorkspaceTotals"
+          $ref: '#/components/schemas/WorkspaceTotals'
         trend:
           type: array
           items:
-            $ref: "#/components/schemas/MonthlyTrendRow"
+            $ref: '#/components/schemas/MonthlyTrendRow'
         recent:
           type: array
           items:
-            $ref: "#/components/schemas/RecentEntry"
+            $ref: '#/components/schemas/RecentEntry'
       required:
-        - company
-        - workspace
-        - asOf
-        - booksReady
-        - totals
-        - trend
-
+      - company
+      - workspace
+      - asOf
+      - booksReady
+      - totals
+      - trend
     BotInsight:
       type: object
       properties:
         id:
           type: string
-          example: "lou"
+          example: lou
         name:
           type: string
-          example: "Ledger Lou"
+          example: Ledger Lou
         role:
           type: string
-          example: "Month-end checker"
+          example: Month-end checker
         color:
           type: string
-          example: "cyan"
+          example: cyan
         status:
           type: string
-          enum: ["good", "watch", "act", "idle"]
+          enum:
+          - good
+          - watch
+          - act
+          - idle
         statusText:
           type: string
-          example: "All good"
+          example: All good
         foundText:
           type: string
         nextText:
@@ -3136,15 +5572,14 @@ components:
         actionVerb:
           type: string
       required:
-        - id
-        - name
-        - role
-        - color
-        - status
-        - statusText
-        - foundText
-        - nextText
-
+      - id
+      - name
+      - role
+      - color
+      - status
+      - statusText
+      - foundText
+      - nextText
     WorkspaceInsights:
       type: object
       properties:
@@ -3157,87 +5592,96 @@ components:
         asOf:
           type: string
         totals:
-          $ref: "#/components/schemas/WorkspaceTotals"
+          $ref: '#/components/schemas/WorkspaceTotals'
         trend:
           type: array
           items:
-            $ref: "#/components/schemas/MonthlyTrendRow"
+            $ref: '#/components/schemas/MonthlyTrendRow'
         bots:
           type: array
           items:
-            $ref: "#/components/schemas/BotInsight"
+            $ref: '#/components/schemas/BotInsight'
       required:
-        - company
-        - workspaceName
-        - currency
-        - asOf
-        - totals
-        - trend
-        - bots
-
+      - company
+      - workspaceName
+      - currency
+      - asOf
+      - totals
+      - trend
+      - bots
     QuickEntryRequest:
       type: object
       properties:
         kind:
           type: string
-          enum: ["sale", "expense", "owner_investment", "customer_payment"]
+          enum:
+          - sale
+          - expense
+          - owner_investment
+          - customer_payment
         amount:
           type: string
-          pattern: "^\\d{1,13}(\\.\\d{1,3})?$"
-          example: "1250.00"
+          pattern: ^\d{1,13}(\.\d{1,3})?$
+          example: '1250.00'
         date:
           type: string
           format: date
-          example: "2026-11-14"
+          example: '2026-11-14'
         account:
           type: string
-          example: "4000"
+          example: '4000'
         via:
           type: string
-          enum: ["1000", "1100", "1200", "2000"]
-          example: "1100"
+          enum:
+          - '1000'
+          - '1100'
+          - '1200'
+          - '2000'
+          example: '1100'
         memo:
           type: string
-          example: "Custom Machining Batch #42"
+          example: 'Custom Machining Batch #42'
       required:
-        - kind
-        - amount
-        - date
-        - via
-
+      - kind
+      - amount
+      - date
+      - via
     QuickEntryResponse:
       type: object
       properties:
         reference:
           type: string
-          example: "QE-2026-00042"
+          example: QE-2026-00042
         date:
           type: string
         amount:
           type: string
       required:
-        - reference
-
+      - reference
     Account:
       type: object
       properties:
         code:
           type: string
-          example: "1100"
+          example: '1100'
         name:
           type: string
-          example: "Operating Bank Account"
+          example: Operating Bank Account
         type:
           type: string
-          enum: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]
+          enum:
+          - ASSET
+          - LIABILITY
+          - EQUITY
+          - REVENUE
+          - EXPENSE
         balance:
           type: string
-          example: "42150.00"
+          example: '42150.00'
       required:
-        - code
-        - name
-        - type
-
+      - code
+      - name
+      - type
     CreateAccountRequest:
       type: object
       properties:
@@ -3247,12 +5691,16 @@ components:
           type: string
         type:
           type: string
-          enum: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]
+          enum:
+          - ASSET
+          - LIABILITY
+          - EQUITY
+          - REVENUE
+          - EXPENSE
       required:
-        - code
-        - name
-        - type
-
+      - code
+      - name
+      - type
     JournalLine:
       type: object
       properties:
@@ -3260,14 +5708,15 @@ components:
           type: string
         side:
           type: string
-          enum: ["DEBIT", "CREDIT"]
+          enum:
+          - DEBIT
+          - CREDIT
         amount:
           type: string
       required:
-        - account
-        - side
-        - amount
-
+      - account
+      - side
+      - amount
     JournalEntry:
       type: object
       properties:
@@ -3283,15 +5732,14 @@ components:
         lines:
           type: array
           items:
-            $ref: "#/components/schemas/JournalLine"
+            $ref: '#/components/schemas/JournalLine'
         reversalOf:
           type: string
       required:
-        - id
-        - reference
-        - date
-        - lines
-
+      - id
+      - reference
+      - date
+      - lines
     PostJournalRequest:
       type: object
       properties:
@@ -3305,11 +5753,10 @@ components:
         lines:
           type: array
           items:
-            $ref: "#/components/schemas/JournalLine"
+            $ref: '#/components/schemas/JournalLine'
       required:
-        - date
-        - lines
-
+      - date
+      - lines
     TrialBalance:
       type: object
       properties:
@@ -3325,74 +5772,79 @@ components:
         accounts:
           type: array
           items:
-            $ref: "#/components/schemas/Account"
+            $ref: '#/components/schemas/Account'
       required:
-        - asOf
-        - balanced
-        - debitTotal
-        - creditTotal
-        - accounts
-
+      - asOf
+      - balanced
+      - debitTotal
+      - creditTotal
+      - accounts
     RecentEntry:
       type: object
       properties:
         id:
           type: string
-          example: "ENT-1049"
+          example: ENT-1049
         date:
           type: string
-          example: "2026-11-14"
+          example: '2026-11-14'
         kind:
           type: string
-          example: "Sale"
+          example: Sale
         description:
           type: string
-          example: "Batch CNC Work"
+          example: Batch CNC Work
         party:
           type: string
-          example: "Delta Dynamics"
+          example: Delta Dynamics
         amount:
           type: string
-          example: "3450.00"
+          example: '3450.00'
         status:
           type: string
-          example: "posted"
+          example: posted
       required:
-        - id
-        - date
-        - kind
-        - description
-        - amount
-        - status
-
+      - id
+      - date
+      - kind
+      - description
+      - amount
+      - status
     Party:
       type: object
       properties:
         id:
           type: string
-          example: "01932940-1284-7a32-9842-192847583920"
+          example: 01932940-1284-7a32-9842-192847583920
         name:
           type: string
-          example: "Delta Dynamics LLC"
+          example: Delta Dynamics LLC
         partyType:
           type: string
-          enum: ["customer", "supplier", "both"]
+          enum:
+          - customer
+          - supplier
+          - both
         email:
           type: string
-          example: "billing@deltadynamics.com"
+          example: billing@deltadynamics.com
         phone:
           type: string
-          example: "+1 555-019-2831"
+          example: +1 555-019-2831
         taxId:
           type: string
-          example: "US-8492019"
+          example: US-8492019
         status:
           type: string
-          enum: ["active", "hold", "archived", "inactive"]
-          example: "active"
+          enum:
+          - active
+          - hold
+          - archived
+          - inactive
+          example: active
         balance:
           type: string
-          example: "3450.00"
+          example: '3450.00'
         createdAt:
           type: string
           format: date-time
@@ -3400,21 +5852,23 @@ components:
           type: string
           format: date-time
       required:
-        - id
-        - name
-        - partyType
-        - status
-        - balance
-
+      - id
+      - name
+      - partyType
+      - status
+      - balance
     CreatePartyRequest:
       type: object
       properties:
         name:
           type: string
-          example: "Delta Dynamics LLC"
+          example: Delta Dynamics LLC
         partyType:
           type: string
-          enum: ["customer", "supplier", "both"]
+          enum:
+          - customer
+          - supplier
+          - both
         email:
           type: string
         phone:
@@ -3423,13 +5877,16 @@ components:
           type: string
         status:
           type: string
-          enum: ["active", "hold", "archived", "inactive"]
+          enum:
+          - active
+          - hold
+          - archived
+          - inactive
         balance:
           type: string
       required:
-        - name
-        - partyType
-
+      - name
+      - partyType
     UpdatePartyRequest:
       type: object
       properties:
@@ -3437,7 +5894,10 @@ components:
           type: string
         partyType:
           type: string
-          enum: ["customer", "supplier", "both"]
+          enum:
+          - customer
+          - supplier
+          - both
         email:
           type: string
         phone:
@@ -3446,33 +5906,39 @@ components:
           type: string
         status:
           type: string
-          enum: ["active", "hold", "archived", "inactive"]
-
+          enum:
+          - active
+          - hold
+          - archived
+          - inactive
     ProductItem:
       type: object
       properties:
         id:
           type: string
-          example: "01932940-9912-7a11-8842-102938475619"
+          example: 01932940-9912-7a11-8842-102938475619
         sku:
           type: string
-          example: "TOOL-CNC-01"
+          example: TOOL-CNC-01
         name:
           type: string
-          example: "Carbide End Mill 1/2 in 4-Flute"
+          example: Carbide End Mill 1/2 in 4-Flute
         itemType:
           type: string
-          enum: ["goods", "service", "bundle"]
-          example: "goods"
+          enum:
+          - goods
+          - service
+          - bundle
+          example: goods
         category:
           type: string
-          example: "Tooling"
+          example: Tooling
         unit:
           type: string
-          example: "pcs"
+          example: pcs
         unitPrice:
           type: string
-          example: "48.50"
+          example: '48.50'
         stockQuantity:
           type: integer
           example: 42
@@ -3481,8 +5947,12 @@ components:
           example: 20
         status:
           type: string
-          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
-          example: "in_stock"
+          enum:
+          - in_stock
+          - low_stock
+          - out_of_stock
+          - discontinued
+          example: in_stock
         createdAt:
           type: string
           format: date-time
@@ -3490,36 +5960,38 @@ components:
           type: string
           format: date-time
       required:
-        - id
-        - sku
-        - name
-        - itemType
-        - unit
-        - unitPrice
-        - stockQuantity
-        - reorderPoint
-        - status
-
+      - id
+      - sku
+      - name
+      - itemType
+      - unit
+      - unitPrice
+      - stockQuantity
+      - reorderPoint
+      - status
     CreateItemRequest:
       type: object
       properties:
         sku:
           type: string
-          example: "TOOL-CNC-01"
+          example: TOOL-CNC-01
         name:
           type: string
-          example: "Carbide End Mill 1/2 in 4-Flute"
+          example: Carbide End Mill 1/2 in 4-Flute
         itemType:
           type: string
-          enum: ["goods", "service", "bundle"]
+          enum:
+          - goods
+          - service
+          - bundle
         category:
           type: string
         unit:
           type: string
-          default: "pcs"
+          default: pcs
         unitPrice:
           type: string
-          example: "48.50"
+          example: '48.50'
         stockQuantity:
           type: integer
           default: 0
@@ -3528,11 +6000,14 @@ components:
           default: 0
         status:
           type: string
-          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+          enum:
+          - in_stock
+          - low_stock
+          - out_of_stock
+          - discontinued
       required:
-        - sku
-        - name
-
+      - sku
+      - name
     UpdateItemRequest:
       type: object
       properties:
@@ -3540,7 +6015,10 @@ components:
           type: string
         itemType:
           type: string
-          enum: ["goods", "service", "bundle"]
+          enum:
+          - goods
+          - service
+          - bundle
         category:
           type: string
         unit:
@@ -3553,7 +6031,2077 @@ components:
           type: integer
         status:
           type: string
-          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+          enum:
+          - in_stock
+          - low_stock
+          - out_of_stock
+          - discontinued
+    UaapErrorResponse:
+      description: Bot API error envelope. Unlike ErrorResponse above, details is an object and request_id is always present.
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          - details
+          - request_id
+          properties:
+            code:
+              type: string
+              enum:
+              - UNAUTHENTICATED
+              - FORBIDDEN
+              - VALIDATION
+              - NOT_FOUND
+              - CONFLICT
+              - APPROVAL_ALREADY_CONSUMED
+              - APPROVAL_EXPIRED
+              - APPROVAL_REQUIRED
+              - IDEMPOTENCY_CONFLICT
+              - TOOL_BLOCKED
+              - RATE_LIMITED
+              - QUOTA_EXCEEDED
+              - UPSTREAM_FAILED
+              - UPSTREAM_TIMEOUT
+              - UPSTREAM_INVALID_RESPONSE
+              - INTERNAL
+            message:
+              type: string
+              example: Approval not found
+            details:
+              type: object
+              additionalProperties: true
+            request_id:
+              type: string
+              example: req_8a21c4d9e0f1
+    AgentList:
+      type: object
+      required:
+      - agents
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentSummary'
+    AgentSummary:
+      type: object
+      required:
+      - agent_id
+      - name
+      - purpose
+      - enabled
+      - use_cases
+      - out_of_scope
+      properties:
+        agent_id:
+          type: string
+          example: universal-finance-agent
+        name:
+          type: string
+          example: Universal Finance Agent
+        purpose:
+          type: string
+        enabled:
+          type: boolean
+        use_cases:
+          type: array
+          items:
+            type: object
+            required:
+            - title
+            - example
+            properties:
+              title:
+                type: string
+              example:
+                type: string
+        out_of_scope:
+          type: array
+          items:
+            type: string
+    AgentMessageRequest:
+      type: object
+      required:
+      - message
+      properties:
+        message:
+          type: string
+          maxLength: 20000
+          example: What does the trial balance look like as of 2026-11-30?
+        company_id:
+          type: string
+          format: uuid
+          description: The company the request is about. Bots that need one refuse without it.
+        today:
+          type: string
+          format: date
+          description: Business date (YYYY-MM-DD). Defaults to today in UTC.
+    AgentReply:
+      type: object
+      required:
+      - status
+      - text
+      - run_id
+      - approval
+      - error_code
+      - guardrail_events
+      - data
+      properties:
+        status:
+          type: string
+          enum:
+          - answered
+          - awaiting_approval
+          - needs_clarification
+          - refused
+          - failed
+          description: 'answered: the reply is final. awaiting_approval: a proposal is in the inbox. needs_clarification: ask the user for the missing input shown in text. refused: out of scope or the bot is switched off.
+            failed: nothing was done; text says why.
+
+            '
+        text:
+          type: string
+          description: The message to show the user. Figures from the ledger are quoted from the ledger, never written by the model.
+        run_id:
+          type: string
+          nullable: true
+        approval:
+          type: object
+          nullable: true
+          description: Present when status is awaiting_approval. The approval token is never included.
+          required:
+          - approval_id
+          - summary
+          - expires_at
+          properties:
+            approval_id:
+              type: string
+            summary:
+              type: string
+            expires_at:
+              type: string
+              format: date-time
+        error_code:
+          type: string
+          nullable: true
+          description: Set when status is failed or refused. Use it to choose the message to show.
+        guardrail_events:
+          type: array
+          items:
+            type: string
+            enum:
+            - INPUT_EMPTY
+            - INPUT_TOO_LONG
+            - PII_REDACTED
+            - INJECTION_SUSPECTED
+            - UNGROUNDED_FIGURE
+            - UNGROUNDED_IDENTIFIER
+            - UNGROUNDED_REPLY
+            - OUT_OF_SCOPE
+        data:
+          type: object
+          additionalProperties: true
+          description: Structured result from the ledger when there is one, for example the trial balance rows.
+    ApprovalStatus:
+      type: string
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      - FAILED
+      - EXPIRED
+    Approval:
+      type: object
+      required:
+      - approval_id
+      - run_id
+      - agent_id
+      - initiator_id
+      - action
+      - summary
+      - payload
+      - payload_hash
+      - created_at
+      - expires_at
+      - status
+      - can_decide
+      - decided_by
+      - decided_at
+      - outcome
+      properties:
+        approval_id:
+          type: string
+        run_id:
+          type: string
+        agent_id:
+          type: string
+        initiator_id:
+          type: string
+        action:
+          type: string
+          example: ledger_post_journal_entry
+        summary:
+          type: string
+        payload:
+          type: object
+          additionalProperties: true
+          description: The exact action the approver is asked to confirm.
+        payload_hash:
+          type: string
+          description: SHA-256 of the payload. Send it back to approve.
+        created_at:
+          type: string
+          format: date-time
+        expires_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ApprovalStatus'
+        can_decide:
+          type: boolean
+          description: False for the person who proposed the action, and once the proposal is decided or expired.
+        decided_by:
+          type: string
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        outcome:
+          type: string
+          nullable: true
+    ApprovalDecisionRequest:
+      type: object
+      required:
+      - decision
+      properties:
+        decision:
+          type: string
+          enum:
+          - approve
+          - reject
+        payload_hash:
+          type: string
+          minLength: 64
+          maxLength: 64
+          description: Required to approve. Must match the payload_hash shown on the proposal.
+        reason:
+          type: string
+          maxLength: 500
+          description: Optional, for rejections.
+    ApprovalDecisionResponse:
+      type: object
+      required:
+      - approval
+      - reply
+      properties:
+        approval:
+          $ref: '#/components/schemas/Approval'
+        reply:
+          $ref: '#/components/schemas/AgentReply'
+    BankFeedLine:
+      type: object
+      required:
+      - id
+      - postedDate
+      - reference
+      - description
+      - amount
+      - direction
+      - status
+      properties:
+        id:
+          type: string
+        postedDate:
+          type: string
+          format: date
+        reference:
+          type: string
+        description:
+          type: string
+        amount:
+          type: string
+        direction:
+          type: string
+          enum:
+          - IN
+          - OUT
+        status:
+          type: string
+          enum:
+          - Unmatched
+          - Suggested
+          - Reconciled
+        matchedRef:
+          type: string
+        matchedLabel:
+          type: string
+        confidence:
+          type: number
+        ruleId:
+          type: string
+          description: Rule that produced the suggestion. Absent when the built-in default rule did.
+        ruleName:
+          type: string
+    PlatformLead:
+      type: object
+      required:
+      - id
+      - name
+      - email
+      - company
+      - country
+      - interest
+      - industry
+      - message
+      - source
+      - createdAt
+      - status
+      - consentAt
+      - lastDraftAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+        company:
+          type: string
+          nullable: true
+        country:
+          type: string
+          nullable: true
+        interest:
+          type: string
+          enum:
+          - early_access
+          - demo
+          - partner
+          - trial
+        industry:
+          type: string
+          nullable: true
+        message:
+          type: string
+          nullable: true
+        source:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - new
+          - contacted
+          - booked
+          - closed
+        consentAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the lead agreed to be contacted. Null means they have not.
+        lastDraftAt:
+          type: string
+          format: date-time
+          nullable: true
+    BankRule:
+      type: object
+      required:
+      - id
+      - name
+      - priority
+      - active
+      - direction
+      - descriptionContains
+      - amountMin
+      - amountMax
+      - matchOn
+      - amountTolerance
+      - confidence
+      - createdAt
+      - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          description: Lower runs first; ties break on id.
+        active:
+          type: boolean
+        direction:
+          type: string
+          enum:
+          - IN
+          - OUT
+          - ANY
+        descriptionContains:
+          type: string
+          nullable: true
+          description: Case-insensitive text the line description must contain.
+        amountMin:
+          type: string
+          nullable: true
+          description: Decimal string. Lines below it do not match.
+        amountMax:
+          type: string
+          nullable: true
+        matchOn:
+          type: string
+          enum:
+          - amount
+          - reference
+          - amount_and_reference
+        amountTolerance:
+          type: string
+          description: Decimal string. A document matches on amount when the difference is at most this.
+        confidence:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Reported when this rule produces a suggestion. Configured, not computed.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BankRuleInput:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        priority:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 100
+        active:
+          type: boolean
+          default: true
+        direction:
+          type: string
+          enum:
+          - IN
+          - OUT
+          - ANY
+          default: ANY
+        descriptionContains:
+          type: string
+          nullable: true
+        amountMin:
+          type: string
+          nullable: true
+        amountMax:
+          type: string
+          nullable: true
+        matchOn:
+          type: string
+          enum:
+          - amount
+          - reference
+          - amount_and_reference
+          default: amount
+        amountTolerance:
+          type: string
+          default: '0.00'
+        confidence:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 90
+    CmsAuthVerifyInput:
+      type: object
+      required:
+      - key
+      properties:
+        key:
+          type: string
+          minLength: 1
+    CmsSettingsInput:
+      type: object
+      required:
+      - settings
+      properties:
+        settings:
+          type: object
+          description: Setting key to value. Each key is saved as given.
+          additionalProperties:
+            type: string
+    CmsPageInput:
+      type: object
+      required:
+      - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        metaDescription:
+          type: string
+        kicker:
+          type: string
+        heroHeadline:
+          type: string
+        heroSubhead:
+          type: string
+        heroBadge:
+          type: string
+        contentJson:
+          type: object
+          additionalProperties: true
+        isPublished:
+          type: boolean
+          default: true
+    CmsArticleInput:
+      type: object
+      required:
+      - slug
+      - title
+      - contentMarkdown
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 160
+        type:
+          type: string
+          enum:
+          - blog
+          - case_study
+          - news
+          default: blog
+        title:
+          type: string
+          minLength: 1
+          maxLength: 255
+        excerpt:
+          type: string
+        contentMarkdown:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          maxLength: 100
+          default: QAVRIL LABS Team
+        readTime:
+          type: string
+          maxLength: 30
+          default: 5 min read
+        categoryTag:
+          type: string
+          maxLength: 60
+          default: General
+        isFeatured:
+          type: boolean
+          default: false
+        isPublished:
+          type: boolean
+          default: true
+    CmsFaqInput:
+      type: object
+      required:
+      - category
+      - question
+      - answer
+      properties:
+        category:
+          type: string
+          minLength: 1
+          maxLength: 80
+        question:
+          type: string
+          minLength: 1
+        answer:
+          type: string
+          minLength: 1
+        sortOrder:
+          type: integer
+          default: 0
+        isActive:
+          type: boolean
+          default: true
+    InvoiceLineInput:
+      type: object
+      required:
+      - sku
+      - description
+      - quantity
+      - unitPrice
+      - lineTotal
+      properties:
+        itemId:
+          type: string
+          format: uuid
+          nullable: true
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          maxLength: 20
+        unitPrice:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxRate:
+          type: string
+        taxCode:
+          type: string
+          maxLength: 50
+          nullable: true
+        lineTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+    InvoiceInput:
+      type: object
+      required:
+      - partyId
+      - invoiceNumber
+      - issueDate
+      - dueDate
+      - subtotal
+      - taxTotal
+      - total
+      - lines
+      properties:
+        partyId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+          minLength: 1
+          maxLength: 64
+        issueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+          description: YYYY-MM-DD
+        dueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+          description: YYYY-MM-DD
+        currency:
+          type: string
+          maxLength: 10
+        status:
+          type: string
+          enum:
+          - draft
+          - issued
+          - sent
+          - partially_paid
+          - paid
+          - overdue
+          - void
+        subtotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        total:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        amountPaid:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        balanceDue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        paymentTerms:
+          type: string
+          maxLength: 100
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/InvoiceLineInput'
+    InvoiceUpdateInput:
+      type: object
+      description: Any subset of InvoiceInput fields, except lines.
+      properties:
+        partyId:
+          type: string
+          format: uuid
+        invoiceNumber:
+          type: string
+          minLength: 1
+          maxLength: 64
+        issueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        dueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        currency:
+          type: string
+          maxLength: 10
+        status:
+          type: string
+          enum:
+          - draft
+          - issued
+          - sent
+          - partially_paid
+          - paid
+          - overdue
+          - void
+        subtotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        total:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        amountPaid:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        balanceDue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        paymentTerms:
+          type: string
+          maxLength: 100
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+    BillLineInput:
+      type: object
+      required:
+      - sku
+      - description
+      - quantity
+      - unitCost
+      - lineTotal
+      properties:
+        itemId:
+          type: string
+          format: uuid
+          nullable: true
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 64
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        quantity:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          maxLength: 20
+        unitCost:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        accountCode:
+          type: string
+          maxLength: 20
+          nullable: true
+        lineTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+    BillInput:
+      type: object
+      required:
+      - supplierId
+      - billNumber
+      - issueDate
+      - dueDate
+      - subtotal
+      - taxTotal
+      - total
+      - lines
+      properties:
+        supplierId:
+          type: string
+          format: uuid
+        billNumber:
+          type: string
+          minLength: 1
+          maxLength: 64
+        vendorInvoiceNumber:
+          type: string
+          maxLength: 64
+          nullable: true
+        issueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        dueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        currency:
+          type: string
+          maxLength: 10
+        status:
+          type: string
+          enum:
+          - draft
+          - pending_approval
+          - approved
+          - paid
+          - overdue
+          - disputed
+        subtotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        total:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        amountPaid:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        balanceDue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        notes:
+          type: string
+          maxLength: 2000
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/BillLineInput'
+    ReminderInput:
+      type: object
+      required:
+      - invoiceId
+      - channel
+      - recipient
+      - recipientName
+      - message
+      - tone
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - whatsapp
+          - email
+        recipient:
+          type: string
+          minLength: 1
+          maxLength: 254
+        recipientName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        subject:
+          type: string
+          maxLength: 300
+          nullable: true
+        message:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        tone:
+          type: string
+          enum:
+          - friendly
+          - firm
+          - urgent
+        status:
+          type: string
+          enum:
+          - draft
+          - approved
+          - sent
+    CmsError:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          description: A message, or the list of validation issues.
+          oneOf:
+          - type: string
+          - type: array
+            items:
+              type: object
+              additionalProperties: true
+    CmsStatus:
+      type: object
+      required:
+      - ok
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+    CmsSettings:
+      type: object
+      required:
+      - ok
+      - settings
+      properties:
+        ok:
+          type: boolean
+        settings:
+          description: Public settings are a key-value map. The admin list returns rows instead.
+          oneOf:
+          - type: object
+            additionalProperties:
+              type: string
+          - type: array
+            items:
+              type: object
+              additionalProperties: true
+    CmsRecordResponse:
+      type: object
+      required:
+      - ok
+      properties:
+        ok:
+          type: boolean
+        page:
+          type: object
+          additionalProperties: true
+        article:
+          type: object
+          additionalProperties: true
+        faq:
+          type: object
+          additionalProperties: true
+    CmsPageListItem:
+      type: object
+      required:
+      - slug
+      - title
+      properties:
+        slug:
+          type: string
+        title:
+          type: string
+        meta_description:
+          type: string
+        kicker:
+          type: string
+        hero_headline:
+          type: string
+        hero_subhead:
+          type: string
+        hero_badge:
+          type: string
+        updated_at:
+          type: string
+    CmsArticleListItem:
+      type: object
+      required:
+      - id
+      - slug
+      - type
+      - title
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        type:
+          type: string
+          enum:
+          - blog
+          - case_study
+          - news
+        title:
+          type: string
+        excerpt:
+          type: string
+        author:
+          type: string
+        read_time:
+          type: string
+        category_tag:
+          type: string
+        is_featured:
+          type: boolean
+        published_at:
+          type: string
+    CmsFaqListItem:
+      type: object
+      required:
+      - id
+      - category
+      - question
+      - answer
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        question:
+          type: string
+        answer:
+          type: string
+        sort_order:
+          type: integer
+        is_active:
+          type: boolean
+    CmsLeadListItem:
+      type: object
+      required:
+      - id
+      - email
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        company:
+          type: string
+        notes:
+          type: string
+        created_at:
+          type: string
+    CmsListResponse:
+      type: object
+      required:
+      - ok
+      properties:
+        ok:
+          type: boolean
+        pages:
+          type: array
+          items:
+            $ref: '#/components/schemas/CmsPageListItem'
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CmsArticleListItem'
+        faqs:
+          type: array
+          items:
+            $ref: '#/components/schemas/CmsFaqListItem'
+        leads:
+          type: array
+          items:
+            $ref: '#/components/schemas/CmsLeadListItem'
+    CmsOverview:
+      type: object
+      required:
+      - ok
+      - stats
+      properties:
+        ok:
+          type: boolean
+        stats:
+          type: object
+          required:
+          - totalPages
+          - totalArticles
+          - totalFaqs
+          - totalLeads
+          properties:
+            totalPages:
+              type: integer
+            totalArticles:
+              type: integer
+            totalFaqs:
+              type: integer
+            totalLeads:
+              type: integer
+    CmsAuthResponse:
+      type: object
+      required:
+      - ok
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+        error:
+          type: string
+    InvoiceLine:
+      type: object
+      additionalProperties: true
+      description: One line of an invoice, as stored. Fields follow InvoiceLineInput.
+    Invoice:
+      type: object
+      required:
+      - id
+      - invoiceNumber
+      - partyId
+      - partyName
+      - status
+      - subtotal
+      - taxTotal
+      - total
+      - amountPaid
+      - balanceDue
+      - lines
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        partyId:
+          type: string
+          format: uuid
+        partyName:
+          type: string
+        partyTaxId:
+          type: string
+          nullable: true
+        invoiceNumber:
+          type: string
+        issueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        dueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+          - draft
+          - issued
+          - sent
+          - partially_paid
+          - paid
+          - overdue
+          - void
+        subtotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        total:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        amountPaid:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        balanceDue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        paymentTerms:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLine'
+        postingStatus:
+          type: string
+          enum:
+          - NOT_POSTED
+          - PENDING
+          - POSTED
+          - FAILED
+          description: 'Whether the invoice is in the books (the ledger). Issued invoices are queued (PENDING) in the same transaction as the invoice and posted by the worker, so POSTED can lag by seconds. FAILED means the
+            posting was refused; postingError says why. NOT_POSTED covers drafts, invoices created already paid, and invoices from before posting existed.
+
+            '
+        ledgerEntryId:
+          type: string
+          nullable: true
+          description: Journal entry the invoice was posted as; null until POSTED.
+        postingError:
+          type: string
+          nullable: true
+          description: Plain-language reason when postingStatus is FAILED.
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    InvoicesSummary:
+      type: object
+      required:
+      - totalReceivable
+      - overdue
+      - overdueCount
+      - paidThisMonth
+      - invoiceCount
+      properties:
+        totalReceivable:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        overdue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        overdueCount:
+          type: integer
+        paidThisMonth:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        invoiceCount:
+          type: integer
+    InvoiceList:
+      type: object
+      required:
+      - invoices
+      - summary
+      properties:
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invoice'
+        summary:
+          $ref: '#/components/schemas/InvoicesSummary'
+    CustomerStatement:
+      type: object
+      required:
+      - partyId
+      - partyName
+      - currentBalance
+      - overdueBalance
+      - transactions
+      properties:
+        partyId:
+          type: string
+          format: uuid
+        partyName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        paymentTerms:
+          type: string
+        currentBalance:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        overdueBalance:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        transactions:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    PaymentReminder:
+      type: object
+      required:
+      - id
+      - invoiceId
+      - channel
+      - recipient
+      - recipientName
+      - message
+      - tone
+      - status
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - whatsapp
+          - email
+        recipient:
+          type: string
+        recipientName:
+          type: string
+        subject:
+          type: string
+          nullable: true
+        message:
+          type: string
+        tone:
+          type: string
+          enum:
+          - friendly
+          - firm
+          - urgent
+        status:
+          type: string
+          enum:
+          - draft
+          - approved
+          - sent
+        sentAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        notificationId:
+          type: string
+          nullable: true
+          description: Set when an email was queued; look it up in the notifications record for delivery state.
+    BillLine:
+      type: object
+      additionalProperties: true
+      description: One line of a bill, as stored. Fields follow BillLineInput.
+    Bill:
+      type: object
+      required:
+      - id
+      - billNumber
+      - supplierId
+      - supplierName
+      - status
+      - subtotal
+      - taxTotal
+      - total
+      - amountPaid
+      - balanceDue
+      - lines
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        supplierId:
+          type: string
+          format: uuid
+        supplierName:
+          type: string
+        billNumber:
+          type: string
+        vendorInvoiceNumber:
+          type: string
+          nullable: true
+        issueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        dueDate:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        currency:
+          type: string
+        status:
+          type: string
+          enum:
+          - draft
+          - pending_approval
+          - approved
+          - paid
+          - overdue
+          - disputed
+        subtotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        taxTotal:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        total:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        amountPaid:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        balanceDue:
+          type: string
+          pattern: ^\d{1,13}(\.\d{1,2})?$
+        notes:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillLine'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    BillList:
+      type: object
+      required:
+      - bills
+      properties:
+        bills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bill'
+    FiscalPeriodsResponse:
+      type: object
+      required:
+      - periods
+      properties:
+        periods:
+          type: array
+          items:
+            type: object
+            required:
+            - id
+            - startDate
+            - endDate
+            - status
+            properties:
+              id:
+                type: string
+                pattern: ^[0-9]{4}-[0-9]{2}$
+              startDate:
+                type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+              endDate:
+                type: string
+                pattern: ^\d{4}-\d{2}-\d{2}$
+              status:
+                type: string
+                enum:
+                - OPEN
+                - CLOSED
+    RateSavedResponse:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - saved
+    TenantProvisionedResponse:
+      type: object
+      required:
+      - tenant
+      - company
+      - admin
+      properties:
+        tenant:
+          type: object
+          additionalProperties: true
+          description: Slug
+          name: null
+          region: null
+          status: null
+        company:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+          description: The first user
+          with the tenant_admin role. No password.: null
+    TenantProductsResponse:
+      type: object
+      required:
+      - tenantId
+      - products
+      properties:
+        tenantId:
+          type: string
+          format: uuid
+        products:
+          type: array
+          items:
+            type: string
+    StreamTicket:
+      type: object
+      required:
+      - ticket
+      - expiresInSeconds
+      properties:
+        ticket:
+          type: string
+          minLength: 30
+        expiresInSeconds:
+          type: integer
+          enum:
+          - 60
+    PurchaseOrderStatus:
+      type: string
+      enum:
+      - draft
+      - issued
+      - partially_received
+      - received
+      - billed
+      - closed
+      - cancelled
+    PurchaseOrderLine:
+      type: object
+      required:
+      - sku
+      - description
+      - quantityOrdered
+      - unitPrice
+      properties:
+        id:
+          type: string
+        itemId:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        quantityOrdered:
+          type: number
+          exclusiveMinimum: 0
+        unitPrice:
+          type: string
+          description: Decimal string, up to two places.
+          example: '12.50'
+        lineTotal:
+          type: string
+    PurchaseOrder:
+      type: object
+      required:
+      - id
+      - supplierId
+      - supplierName
+      - orderDate
+      - expectedDeliveryDate
+      - status
+      - currency
+      - total
+      - lines
+      properties:
+        id:
+          type: string
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        orderDate:
+          type: string
+          format: date
+        expectedDeliveryDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PurchaseOrderStatus'
+        currency:
+          type: string
+          example: USD
+        total:
+          type: string
+        notes:
+          type: string
+          nullable: true
+        approvedBy:
+          type: string
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderLine'
+    CreatePurchaseOrderRequest:
+      type: object
+      required:
+      - supplierId
+      - supplierName
+      - orderDate
+      - expectedDeliveryDate
+      - lines
+      properties:
+        id:
+          type: string
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        orderDate:
+          type: string
+          format: date
+        expectedDeliveryDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PurchaseOrderStatus'
+        currency:
+          type: string
+        total:
+          type: string
+        notes:
+          type: string
+        approvedBy:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/PurchaseOrderLine'
+    GoodsReceiptLine:
+      type: object
+      required:
+      - sku
+      - description
+      - quantityReceived
+      - warehouseId
+      - warehouseName
+      properties:
+        id:
+          type: string
+        poLineId:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        quantityReceived:
+          type: number
+          exclusiveMinimum: 0
+        quantityRejected:
+          type: number
+          minimum: 0
+        batchLotNumber:
+          type: string
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+    GoodsReceiptNote:
+      type: object
+      required:
+      - id
+      - poId
+      - poRef
+      - supplierId
+      - supplierName
+      - receivedBy
+      - status
+      - lines
+      properties:
+        id:
+          type: string
+        poId:
+          type: string
+        poRef:
+          type: string
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        receiptDate:
+          type: string
+          format: date
+        receivedBy:
+          type: string
+        status:
+          type: string
+          enum:
+          - received
+          - inspected
+          - quarantined
+        carrier:
+          type: string
+          nullable: true
+        trackingNumber:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoodsReceiptLine'
+    CreateGoodsReceiptRequest:
+      type: object
+      required:
+      - poId
+      - poRef
+      - supplierId
+      - supplierName
+      - receivedBy
+      - lines
+      properties:
+        id:
+          type: string
+        poId:
+          type: string
+        poRef:
+          type: string
+        supplierId:
+          type: string
+        supplierName:
+          type: string
+        receiptDate:
+          type: string
+        receivedBy:
+          type: string
+        status:
+          type: string
+          enum:
+          - received
+          - inspected
+          - quarantined
+        carrier:
+          type: string
+        trackingNumber:
+          type: string
+        notes:
+          type: string
+        lines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/GoodsReceiptLine'
+    ThreeWayMatchStatus:
+      type: string
+      enum:
+      - MATCHED
+      - PRICE_VARIANCE
+      - QUANTITY_VARIANCE
+      - UNMATCHED_GRN
+      - UNMATCHED_BILL
+    ThreeWayMatch:
+      type: object
+      required:
+      - id
+      - poId
+      - poRef
+      - grnId
+      - grnRef
+      - billId
+      - billRef
+      - supplierName
+      - sku
+      - orderedQty
+      - receivedQty
+      - billedQty
+      - agreedUnitPrice
+      - billedUnitPrice
+      - poTotal
+      - billTotal
+      - qtyVariance
+      - priceVariance
+      - status
+      - toleranceOk
+      - overrideApproved
+      properties:
+        id:
+          type: string
+        poId:
+          type: string
+        poRef:
+          type: string
+        grnId:
+          type: string
+        grnRef:
+          type: string
+        billId:
+          type: string
+        billRef:
+          type: string
+        supplierName:
+          type: string
+        sku:
+          type: string
+        description:
+          type: string
+        orderedQty:
+          type: number
+        receivedQty:
+          type: number
+        billedQty:
+          type: number
+        agreedUnitPrice:
+          type: string
+        billedUnitPrice:
+          type: string
+        poTotal:
+          type: string
+        billTotal:
+          type: string
+        qtyVariance:
+          type: number
+        priceVariance:
+          type: string
+        status:
+          $ref: '#/components/schemas/ThreeWayMatchStatus'
+        toleranceOk:
+          type: boolean
+        overrideApproved:
+          type: boolean
+        overrideNote:
+          type: string
+          nullable: true
+        overrideBy:
+          type: string
+          nullable: true
+    ThreeWayMatchSummary:
+      type: object
+      required:
+      - totalItems
+      - matchedCount
+      - varianceCount
+      - unmatchedCount
+      - totalValueUnderReview
+      properties:
+        totalItems:
+          type: integer
+        matchedCount:
+          type: integer
+        varianceCount:
+          type: integer
+        unmatchedCount:
+          type: integer
+        totalValueUnderReview:
+          type: string
+          description: Decimal string; bills not yet matched or inside tolerance.
+    ApprovalRequest:
+      type: object
+      required:
+      - id
+      - botId
+      - botName
+      - actionType
+      - title
+      - summary
+      - currency
+      - riskLevel
+      - status
+      - payload
+      - confidenceScore
+      - requestedAt
+      properties:
+        id:
+          type: string
+        botId:
+          type: string
+        botName:
+          type: string
+        actionType:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        amount:
+          type: string
+          nullable: true
+          description: Decimal string.
+        currency:
+          type: string
+        riskLevel:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        status:
+          type: string
+          enum:
+          - pending
+          - approved
+          - rejected
+          - executed
+          - cancelled
+        payload:
+          type: object
+          additionalProperties: true
+        confidenceScore:
+          type: number
+        requestedAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        decidedBy:
+          type: string
+          nullable: true
+        decisionReason:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateApprovalRequestBody:
+      type: object
+      required:
+      - botId
+      - botName
+      - actionType
+      - title
+      - summary
+      properties:
+        id:
+          type: string
+        botId:
+          type: string
+        botName:
+          type: string
+        actionType:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+        amount:
+          type: string
+          nullable: true
+        currency:
+          type: string
+        riskLevel:
+          type: string
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+        payload:
+          type: object
+          additionalProperties: true
+        confidenceScore:
+          type: number
+    ApprovalDecisionBody:
+      type: object
+      properties:
+        reason:
+          type: string
+    AgentAuditLog:
+      type: object
+      required:
+      - id
+      - botId
+      - eventType
+      - action
+      - entityType
+      - entityId
+      - details
+      - createdAt
+      properties:
+        id:
+          type: string
+        botId:
+          type: string
+        eventType:
+          type: string
+        action:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+        hashChain:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+    NotificationStatus:
+      type: object
+      required:
+      - id
+      - channel
+      - templateKey
+      - toAddress
+      - subject
+      - status
+      - attempts
+      properties:
+        id:
+          type: string
+        channel:
+          type: string
+          enum:
+          - email
+        templateKey:
+          type: string
+        toAddress:
+          type: string
+        subject:
+          type: string
+        status:
+          type: string
+          enum:
+          - queued
+          - sent
+          - failed
+          description: sent means the provider accepted it. Bounces are not tracked yet.
+        attempts:
+          type: integer
+        providerMessageId:
+          type: string
+          nullable: true
+        error:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        sentAt:
+          type: string
+          format: date-time
+          nullable: true
     HrmsApplication:
       type: object
       required:
@@ -5031,8 +9579,7 @@ components:
         reasonCode:
           type: string
           maxLength: 64
-          description: Required for reject, decline and cancel (where the API demands
-            it). Codes come from the reason code lists.
+          description: Required for reject, decline and cancel (where the API demands it). Codes come from the reason code lists.
         reason:
           type: string
           maxLength: 500

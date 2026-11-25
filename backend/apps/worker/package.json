@@ -1,0 +1,17 @@
+{
+  "name": "@erp/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts"
+  },
+  "dependencies": {
+    "@erp/db": "*",
+    "@erp/events": "*",
+    "@erp/kernel": "*",
+    "@erp/notifications": "*",
+    "@erp/queue": "*"
+  }
+}

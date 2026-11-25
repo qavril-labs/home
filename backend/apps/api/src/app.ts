@@ -1,7 +1,7 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import { z } from "zod";
-import { IdentityService, tenantFromToken } from "@erp/identity";
+import { hashPassword, IdentityService, tenantFromToken } from "@erp/identity";
 import { missingDependencies } from "@erp/tenancy";
 import { buildRegistry, isFoundation } from "@erp/catalog";
 import {
@@ -16,9 +16,18 @@ import { RateLimiter, type RateLimitOptions } from "./rate-limit";
 import { bearerToken, createAuthenticator } from "./auth";
 import { registerLedgerRoutes } from "./ledger-routes";
 import { registerMasterDataRoutes } from "./master-data-routes";
+import { registerInvoicingRoutes } from "./invoicing-routes";
+import { registerApprovalsRoutes } from "./approvals-routes";
+import { MemoryTicketStore, type TicketStore } from "./stream-tickets";
+import { registerCmsRoutes } from "./cms-routes";
+import type { EmailJobQueue } from "@erp/notifications";
+import { registerBankingRoutes } from "./banking-routes";
+import { registerPurchasingRoutes } from "./purchasing-routes";
+import { registerPlatformLeadsRoutes } from "./platform-leads-routes";
+import { registerNotificationRoutes } from "./notifications-routes";
+import { hrmsRoutes } from "./hrms-routes";
 import { SignupBody, provisionTenant, signUp } from "./signup";
 import { registerWorkspaceRoutes } from "./workspace";
-import { hrmsRoutes } from "./hrms-routes";
 
 const ProductsBody = z.object({
   products: z.array(z.string().min(1)).min(1).max(50),
@@ -65,6 +74,16 @@ const LoginBody = z.object({
   password: z.string().min(1),
 });
 
+const ForgotPasswordBody = z.object({
+  tenantSlug: z.string().min(1),
+  email: z.string().email(),
+});
+
+const ResetPasswordBody = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(8, "Password must be at least 8 characters"),
+});
+
 export interface AppOptions {
   readonly pool: Pool;
   readonly platformKey: string;
@@ -74,11 +93,17 @@ export interface AppOptions {
   readonly corsOrigins?: readonly string[];
   /** Set when the API runs behind a proxy, so request.ip is the visitor's address. */
   readonly trustProxy?: boolean;
+  /** Queue for outgoing email (PLT-10). Without it, email reminders are recorded but not sent. */
+  readonly emailQueue?: EmailJobQueue;
   readonly leadRateLimit?: RateLimitOptions;
   /** Limits self-service sign-ups and sign-ins per IP. */
   readonly signupRateLimit?: RateLimitOptions;
   /** Optional URL that receives a JSON copy of each new lead, for example a chat or form tool. */
   readonly leadWebhookUrl?: string;
+  /** The platform workspace (QAVRIL LABS itself). Only its users may read marketing leads. */
+  readonly platformTenantId?: string;
+  /** Where stream tickets are kept. Pass a Redis store when more than one API instance runs. */
+  readonly ticketStore?: TicketStore;
 }
 
 /** Sends a copy of a new lead to the operator's webhook. A failed send is logged and the lead is kept. */
@@ -126,11 +151,66 @@ function assertPlatformKey(provided: string | string[] | undefined, expected: st
 
 export function buildApp(options: AppOptions): FastifyInstance {
   const { pool, platformKey, clock = systemClock } = options;
-  const app = Fastify({ logger: options.logger ?? false, trustProxy: options.trustProxy ?? false });
+  const app = Fastify({
+    // Request logs keep the path but never the query string, so tokens passed in a URL are not written to logs.
+    logger: options.logger
+      ? {
+          serializers: {
+            req: (req: { method: string; url: string; id: unknown; ip?: string }) => ({
+              method: req.method,
+              url: req.url.split("?")[0],
+              reqId: req.id,
+              remoteAddress: req.ip,
+            }),
+          },
+        }
+      : false,
+    trustProxy: options.trustProxy ?? false,
+    // Every request gets an id: it is logged and echoed back, so a support ticket can be traced.
+    genReqId: (request) => {
+      const incoming = request.headers["x-request-id"];
+      return typeof incoming === "string" && /^[A-Za-z0-9._-]{8,64}$/.test(incoming) ? incoming : randomUUID();
+    },
+    // Larger bodies are refused before parsing. The biggest legitimate request is a CMS article.
+    bodyLimit: 256 * 1024,
+  });
+
+  // Security headers on every response. The API serves JSON only, so nothing here may be rendered.
+  app.addHook("onSend", async (request, reply, payload) => {
+    reply.header("x-request-id", request.id);
+    reply.header("x-content-type-options", "nosniff");
+    reply.header("x-frame-options", "DENY");
+    reply.header("referrer-policy", "no-referrer");
+    reply.header("content-security-policy", "default-src 'none'; frame-ancestors 'none'");
+    reply.header("strict-transport-security", "max-age=31536000");
+    // Signed-in data must not be stored by browsers or shared caches. Public CMS content may be cached.
+    if (request.url.startsWith("/v1/") && !request.url.startsWith("/v1/public/cms/")) {
+      reply.header("cache-control", "no-store");
+    }
+    return payload;
+  });
   const corsOrigins = new Set(options.corsOrigins ?? []);
   const leadLimiter = new RateLimiter(options.leadRateLimit ?? { max: 5, windowMs: 10 * 60 * 1000 });
   const signupLimiter = new RateLimiter(options.signupRateLimit ?? { max: 5, windowMs: 60 * 60 * 1000 });
   const loginLimiter = new RateLimiter({ max: 20, windowMs: 10 * 60 * 1000 });
+  const apiLimiter = new RateLimiter({ max: 300, windowMs: 60 * 1000 });
+
+  // Global rate limiter for authenticated /v1/ API routes (PLT-21)
+  app.addHook("preHandler", async (request, reply) => {
+    if (request.url.startsWith("/v1/") && !request.url.startsWith("/v1/public/") && request.method !== "OPTIONS") {
+      const authHeader = request.headers.authorization;
+      const token = typeof authHeader === "string" && authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+      const tenantId = token ? tenantFromToken(token) : null;
+      // Keyed by tenant and address together, so a forged token for another tenant only uses up the sender's own allowance.
+      const key = `${tenantId ?? "-"}:${request.ip}`;
+      const now = clock.now().getTime();
+      if (apiLimiter.blocked(key, now)) {
+        reply.header("retry-after", "60");
+        throw new DomainError("RATE_LIMITED", "API rate limit exceeded. Please wait a moment before sending more requests.");
+      }
+      apiLimiter.hit(key, now);
+    }
+  });
 
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof DomainError) {
@@ -153,7 +233,17 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   const authenticate = createAuthenticator(pool, clock);
 
+  // Liveness: the process is up. Readiness: the process can reach its database, so a load balancer
+  // should route traffic to it. Keep the readiness check cheap; it runs on every probe.
   app.get("/health", async () => ({ status: "ok" }));
+  app.get("/ready", async (_request, reply) => {
+    try {
+      await pool.query("SELECT 1");
+      return { status: "ready" };
+    } catch {
+      return reply.status(503).send({ status: "unavailable" });
+    }
+  });
 
   /** Creates a tenant, its first company, and its administrator in one transaction. */
   app.post("/v1/platform/tenants", async (request, reply) => {
@@ -195,22 +285,84 @@ export function buildApp(options: AppOptions): FastifyInstance {
     return reply.status(204).send();
   });
 
+  app.post("/v1/auth/forgot-password", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    const body = ForgotPasswordBody.parse(request.body);
+    const tenant = await new PgTenantRepository(pool).findTenantBySlug(body.tenantSlug.toLowerCase());
+    if (tenant && tenant.status === "ACTIVE") {
+      await withTenantTransaction(pool, tenant.id, async (tx) => {
+        const user = await tx.query("SELECT id FROM users WHERE email = $1", [body.email.trim().toLowerCase()]);
+        if (user.rows.length > 0) {
+          const rawToken = randomUUID() + "-" + randomUUID();
+          const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+          const expiresAt = new Date(clock.now().getTime() + 3600 * 1000).toISOString();
+          await tx.query(
+            "INSERT INTO password_reset_tokens (token_hash, tenant_id, user_id, expires_at) VALUES ($1, $2, $3, $4)",
+            [tokenHash, tenant.id, user.rows[0].id, expiresAt]
+          );
+        }
+      });
+    }
+    return { ok: true, message: "If an account exists with this email, password reset instructions have been generated." };
+  });
+
+  app.post("/v1/auth/reset-password", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    const body = ResetPasswordBody.parse(request.body);
+    const tokenHash = createHash("sha256").update(body.token).digest("hex");
+    const now = clock.now().toISOString();
+
+    const record = await pool.query(
+      "SELECT * FROM password_reset_tokens WHERE token_hash = $1 AND expires_at > $2",
+      [tokenHash, now]
+    );
+
+    if (record.rows.length === 0) {
+      throw new DomainError("UNAUTHENTICATED", "Password reset token is invalid or expired");
+    }
+
+    const { tenant_id: tenantId, user_id: userId } = record.rows[0];
+    const newHash = await hashPassword(body.newPassword);
+
+    await withTenantTransaction(pool, tenantId, async (tx) => {
+      await tx.query("UPDATE users SET password_hash = $1 WHERE id = $2 AND tenant_id = $3", [newHash, userId, tenantId]);
+      await tx.query("DELETE FROM password_reset_tokens WHERE user_id = $1", [userId]);
+      await tx.query("DELETE FROM sessions WHERE user_id = $1", [userId]);
+    });
+
+    return { ok: true, message: "Password has been successfully updated. Please sign in with your new password." };
+  });
+
   function allowBrowserOrigin(request: FastifyRequest, reply: FastifyReply): void {
     const origin = request.headers.origin;
     reply.header("vary", "Origin");
     if (typeof origin === "string" && corsOrigins.has(origin)) {
       reply.header("access-control-allow-origin", origin);
-      reply.header("access-control-allow-methods", "GET, POST, OPTIONS");
-      reply.header("access-control-allow-headers", "content-type, authorization");
+      reply.header("access-control-allow-methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
+      reply.header("access-control-allow-headers", "content-type, authorization, x-platform-key, x-request-id");
       reply.header("access-control-max-age", "600");
     }
   }
+
+  // Handle all CORS preflight OPTIONS requests across all API routes
+  app.options("/*", async (request, reply) => {
+    allowBrowserOrigin(request, reply);
+    return reply.status(204).send();
+  });
 
   // The signed-in app calls these from the site's origin too.
   app.addHook("onRequest", async (request, reply) => {
     if (
       request.url.startsWith("/v1/workspace/") ||
       request.url.startsWith("/v1/master-data/") ||
+      request.url.startsWith("/v1/hrms/") ||
+      request.url.startsWith("/v1/invoicing/") ||
+      request.url.startsWith("/v1/events/") ||
+      request.url.startsWith("/v1/approvals") ||
+      request.url.startsWith("/v1/approval-requests") ||
+      request.url.startsWith("/v1/procurement/") ||
+      request.url.startsWith("/v1/banking/") ||
+      request.url.startsWith("/v1/notifications") ||
       request.url === "/v1/me"
     ) {
       allowBrowserOrigin(request, reply);
@@ -338,6 +490,13 @@ export function buildApp(options: AppOptions): FastifyInstance {
   registerLedgerRoutes(app, { pool, clock, authenticate });
   registerWorkspaceRoutes(app, { pool, clock, authenticate });
   registerMasterDataRoutes(app, { pool, clock, authenticate });
+  registerInvoicingRoutes(app, { pool, clock, authenticate, tickets: options.ticketStore ?? new MemoryTicketStore(), emailQueue: options.emailQueue });
+  registerApprovalsRoutes(app, { pool, clock, authenticateRequest: authenticate });
+  registerBankingRoutes(app, { pool, clock, authenticate });
+  registerPurchasingRoutes(app, { pool, clock, authenticate });
+  registerNotificationRoutes(app, { pool, authenticate });
+  registerPlatformLeadsRoutes(app, { pool, clock, authenticate, platformTenantId: options.platformTenantId });
+  registerCmsRoutes(app, pool, platformKey);
   hrmsRoutes(app, { pool, authenticate });
 
   return app;
