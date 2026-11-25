@@ -26,7 +26,7 @@ const WaiveClearanceBody = z.object({
 
 export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
   // Dashboard, Onboarding & Compliance (HRM-10, HRM-14)
-  app.get("/hrms/dashboard", async (req) => {
+  app.get("/v1/hrms/dashboard", async (req) => {
     if (!deps) {
       return {
         headcount: 142,
@@ -76,17 +76,17 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     });
   });
 
-  app.get("/hrms/onboarding/tasks", async () => ({ items: [] }));
-  app.post("/hrms/onboarding/tasks/:id/complete", async (req) => {
+  app.get("/v1/hrms/onboarding/tasks", async () => ({ items: [] }));
+  app.post("/v1/hrms/onboarding/tasks/:id/complete", async (req) => {
     const { id } = req.params as { id: string };
     return { id, status: "completed" };
   });
 
-  app.get("/hrms/compliance/expiries", async () => ({ items: [] }));
+  app.get("/v1/hrms/compliance/expiries", async () => ({ items: [] }));
 
   // Org Structure & Requisitions (HRM-02, HRM-16)
-  app.get("/hrms/org/tree", async () => ({ tree: null }));
-  app.get("/hrms/org/departments", async (req) => {
+  app.get("/v1/hrms/org/tree", async () => ({ tree: null }));
+  app.get("/v1/hrms/org/departments", async (req) => {
     if (!deps) return { items: [] };
     const principal = await deps.authenticate(req);
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -98,7 +98,7 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     });
   });
 
-  app.get("/hrms/org/positions", async (req) => {
+  app.get("/v1/hrms/org/positions", async (req) => {
     if (!deps) return { items: [] };
     const principal = await deps.authenticate(req);
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -110,9 +110,9 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     });
   });
 
-  app.get("/hrms/headcount-plan", async () => ({ items: [] }));
+  app.get("/v1/hrms/headcount-plan", async () => ({ items: [] }));
 
-  app.get("/hrms/requisitions", async (req) => {
+  app.get("/v1/hrms/requisitions", async (req) => {
     if (!deps) return { items: [] };
     const principal = await deps.authenticate(req);
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -129,12 +129,12 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     });
   });
 
-  app.post("/hrms/requisitions", async (req, reply) => {
+  app.post("/v1/hrms/requisitions", async (req, reply) => {
     reply.code(201);
     return { id: `req-${Date.now()}`, ...(req.body as object), state: "submitted", canApprove: false };
   });
 
-  app.post("/hrms/requisitions/:id/approve", async (req, reply) => {
+  app.post("/v1/hrms/requisitions/:id/approve", async (req, reply) => {
     const { id } = req.params as { id: string };
     if (!deps) return { id, state: "approved" };
     const principal = await deps.authenticate(req);
@@ -155,8 +155,8 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
   });
 
   // Recruitment & Offers (HRM-09)
-  app.get("/hrms/recruitment/applications", async () => ({ items: [] }));
-  app.get("/hrms/recruitment/rejection-reasons", async () => ({
+  app.get("/v1/hrms/recruitment/applications", async () => ({ items: [] }));
+  app.get("/v1/hrms/recruitment/rejection-reasons", async () => ({
     items: [
       { code: "SKILL_GAP", label: "Technical skills below bar" },
       { code: "COMP_MISMATCH", label: "Compensation expectations outside band" },
@@ -164,7 +164,7 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
       { code: "WITHDREW", label: "Candidate withdrew application" },
     ],
   }));
-  app.patch("/hrms/recruitment/applications/:id/stage", async (req, reply) => {
+  app.patch("/v1/hrms/recruitment/applications/:id/stage", async (req, reply) => {
     const { id } = req.params as { id: string };
     const body = req.body as { stage?: string; reasonCode?: string };
     if (body.stage === "rejected") {
@@ -175,27 +175,27 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     }
     return { id, stage: body.stage ?? "updated" };
   });
-  app.post("/hrms/recruitment/applications/:id/scorecards", async (req) => {
+  app.post("/v1/hrms/recruitment/applications/:id/scorecards", async (req) => {
     const { id } = req.params as { id: string };
     return { applicationId: id, submitted: true };
   });
 
-  app.get("/hrms/offers", async () => ({ items: [] }));
-  app.post("/hrms/offers/:id/send", async (req) => {
+  app.get("/v1/hrms/offers", async () => ({ items: [] }));
+  app.post("/v1/hrms/offers/:id/send", async (req) => {
     const { id } = req.params as { id: string };
     return { id, status: "sent" };
   });
-  app.post("/hrms/offers/:id/withdraw", async (req) => {
+  app.post("/v1/hrms/offers/:id/withdraw", async (req) => {
     const { id } = req.params as { id: string };
     return { id, status: "withdrawn" };
   });
-  app.post("/hrms/offers/:id/accept", async (req) => {
+  app.post("/v1/hrms/offers/:id/accept", async (req) => {
     const { id } = req.params as { id: string };
     return { id, status: "accepted" };
   });
 
   // Employees & Lifecycle Events (HRM-01, HRM-17)
-  app.get("/hrms/employees", async (req) => {
+  app.get("/v1/hrms/employees", async (req) => {
     if (!deps) return { items: [], total: 0 };
     const principal = await deps.authenticate(req);
     return withTenantTransaction(deps.pool, principal.tenantId, async (tx) => {
@@ -207,7 +207,7 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     });
   });
 
-  app.post("/hrms/employees/:id/reveal-pii", async (req, reply) => {
+  app.post("/v1/hrms/employees/:id/reveal-pii", async (req, reply) => {
     const parsed = RevealPiiBody.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "Reason is required for PII audit log" });
@@ -225,37 +225,37 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     return { employeeId: id, audited: true };
   });
 
-  app.post("/hrms/employees/:id/bank-accounts/:bankId/verify", async (req) => {
+  app.post("/v1/hrms/employees/:id/bank-accounts/:bankId/verify", async (req) => {
     const { id, bankId } = req.params as { id: string; bankId: string };
     return { employeeId: id, bankId, verified: true };
   });
-  app.get("/hrms/lifecycle-events", async () => ({ items: [] }));
-  app.post("/hrms/lifecycle-events", async (req, reply) => {
+  app.get("/v1/hrms/lifecycle-events", async () => ({ items: [] }));
+  app.post("/v1/hrms/lifecycle-events", async (req, reply) => {
     reply.code(201);
     return { id: `le-${Date.now()}`, ...(req.body as object), status: "pending" };
   });
 
   // Attendance & Leave (HRM-03, HRM-04)
-  app.get("/hrms/attendance", async () => ({ items: [] }));
-  app.post("/hrms/attendance/:id/regularise", async (req) => {
+  app.get("/v1/hrms/attendance", async () => ({ items: [] }));
+  app.post("/v1/hrms/attendance/:id/regularise", async (req) => {
     const { id } = req.params as { id: string };
     return { id, status: "regularised" };
   });
-  app.get("/hrms/leave/balances", async () => ({ items: [] }));
-  app.get("/hrms/leave/requests", async () => ({ items: [] }));
-  app.post("/hrms/leave/requests", async (req, reply) => {
+  app.get("/v1/hrms/leave/balances", async () => ({ items: [] }));
+  app.get("/v1/hrms/leave/requests", async () => ({ items: [] }));
+  app.post("/v1/hrms/leave/requests", async (req, reply) => {
     reply.code(201);
     return { id: `lr-${Date.now()}`, ...(req.body as object), status: "pending" };
   });
-  app.post("/hrms/leave/requests/:id/decision", async (req) => {
+  app.post("/v1/hrms/leave/requests/:id/decision", async (req) => {
     const { id } = req.params as { id: string };
     const { decision } = req.body as { decision: "approved" | "rejected" };
     return { id, status: decision };
   });
 
   // Payroll & Statutory (HRM-05, HRM-06)
-  app.get("/hrms/payroll/runs", async () => ({ items: [] }));
-  app.post("/hrms/payroll/runs/:id/checks/:checkId/override", async (req, reply) => {
+  app.get("/v1/hrms/payroll/runs", async () => ({ items: [] }));
+  app.post("/v1/hrms/payroll/runs/:id/checks/:checkId/override", async (req, reply) => {
     const parsed = OverrideCheckBody.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "Override reason is required" });
@@ -263,28 +263,28 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     const { id, checkId } = req.params as { id: string; checkId: string };
     return { runId: id, checkId, overridden: true };
   });
-  app.post("/hrms/payroll/runs/:id/approve", async (req) => {
+  app.post("/v1/hrms/payroll/runs/:id/approve", async (req) => {
     const { id } = req.params as { id: string };
     return { id, state: "approved" };
   });
-  app.post("/hrms/payroll/runs/:id/post", async (req) => {
+  app.post("/v1/hrms/payroll/runs/:id/post", async (req) => {
     const { id } = req.params as { id: string };
     return { id, state: "posted" };
   });
-  app.post("/hrms/payroll/runs/:id/pay", async (req) => {
+  app.post("/v1/hrms/payroll/runs/:id/pay", async (req) => {
     const { id } = req.params as { id: string };
     return { id, state: "paid" };
   });
-  app.get("/hrms/payroll/payslips", async () => ({ items: [] }));
-  app.get("/hrms/statutory/filings", async () => ({ items: [] }));
+  app.get("/v1/hrms/payroll/payslips", async () => ({ items: [] }));
+  app.get("/v1/hrms/statutory/filings", async () => ({ items: [] }));
 
   // Separations, F&F & Loans (HRM-18, HRM-19)
-  app.get("/hrms/separations", async () => ({ items: [] }));
-  app.post("/hrms/separations/:id/clearance/:itemId/clear", async (req) => {
+  app.get("/v1/hrms/separations", async () => ({ items: [] }));
+  app.post("/v1/hrms/separations/:id/clearance/:itemId/clear", async (req) => {
     const { id, itemId } = req.params as { id: string; itemId: string };
     return { exitId: id, itemId, status: "cleared" };
   });
-  app.post("/hrms/separations/:id/clearance/:itemId/waive", async (req, reply) => {
+  app.post("/v1/hrms/separations/:id/clearance/:itemId/waive", async (req, reply) => {
     const parsed = WaiveClearanceBody.safeParse(req.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "Waiver reason is required" });
@@ -292,23 +292,23 @@ export function hrmsRoutes(app: FastifyInstance, deps?: HrmsRouteDeps): void {
     const { id, itemId } = req.params as { id: string; itemId: string };
     return { exitId: id, itemId, status: "waived" };
   });
-  app.post("/hrms/separations/:id/fnf/approve", async (req) => {
+  app.post("/v1/hrms/separations/:id/fnf/approve", async (req) => {
     const { id } = req.params as { id: string };
     return { id, state: "fnf_approved" };
   });
-  app.post("/hrms/separations/:id/fnf/pay", async (req) => {
+  app.post("/v1/hrms/separations/:id/fnf/pay", async (req) => {
     const { id } = req.params as { id: string };
     return { id, state: "fnf_paid" };
   });
 
-  app.get("/hrms/loans", async () => ({ items: [] }));
-  app.post("/hrms/loans", async (req, reply) => {
+  app.get("/v1/hrms/loans", async () => ({ items: [] }));
+  app.post("/v1/hrms/loans", async (req, reply) => {
     reply.code(201);
     return { id: `ln-${Date.now()}`, ...(req.body as object), state: "pending_approval" };
   });
 
   // Self-Service (HRM-07)
-  app.get("/hrms/self-service/summary", async () => ({
+  app.get("/v1/hrms/self-service/summary", async () => ({
     payslips: [],
     leaveBalances: [],
     attendance: [],

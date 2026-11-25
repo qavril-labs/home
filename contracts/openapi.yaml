@@ -625,37 +625,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/TrialBalance"
 
-  /hrms/dashboard:
+  /v1/hrms/dashboard:
     get:
       summary: HR dashboard KPIs (HRM-01..HRM-19)
       responses:
         "200":
           description: HR dashboard KPIs
-  /hrms/org/tree:
+  /v1/hrms/org/tree:
     get:
       summary: Org reports-to tree (HRM-02)
       responses:
         "200":
           description: Org tree
-  /hrms/org/departments:
+  /v1/hrms/org/departments:
     get:
       summary: Departments list (HRM-02)
       responses:
         "200":
           description: Departments
-  /hrms/org/positions:
+  /v1/hrms/org/positions:
     get:
       summary: Positions list (HRM-02)
       responses:
         "200":
           description: Positions
-  /hrms/headcount-plan:
+  /v1/hrms/headcount-plan:
     get:
       summary: Headcount plan by department and period (HRM-16)
       responses:
         "200":
           description: Headcount plan
-  /hrms/requisitions:
+  /v1/hrms/requisitions:
     get:
       summary: Requisitions list (HRM-16)
       responses:
@@ -666,37 +666,37 @@ paths:
       responses:
         "201":
           description: Requisition created
-  /hrms/requisitions/{id}/approve:
+  /v1/hrms/requisitions/{id}/approve:
     post:
       summary: Approve requisition (HRM-16)
       responses:
         "200":
           description: Requisition approved
-  /hrms/recruitment/applications:
+  /v1/hrms/recruitment/applications:
     get:
       summary: Candidate applications (HRM-09)
       responses:
         "200":
           description: Applications
-  /hrms/offers:
+  /v1/hrms/offers:
     get:
       summary: Offers list (HRM-09)
       responses:
         "200":
           description: Offers
-  /hrms/employees:
+  /v1/hrms/employees:
     get:
       summary: Employee directory (HRM-01)
       responses:
         "200":
           description: Employees
-  /hrms/employees/{id}/reveal-pii:
+  /v1/hrms/employees/{id}/reveal-pii:
     post:
       summary: Audited PII reveal (HRM-01)
       responses:
         "200":
           description: PII revealed and audited
-  /hrms/lifecycle-events:
+  /v1/hrms/lifecycle-events:
     get:
       summary: Lifecycle events queue (HRM-17)
       responses:
@@ -707,19 +707,19 @@ paths:
       responses:
         "201":
           description: Lifecycle event recorded
-  /hrms/attendance:
+  /v1/hrms/attendance:
     get:
       summary: Attendance days (HRM-03)
       responses:
         "200":
           description: Attendance days
-  /hrms/leave/balances:
+  /v1/hrms/leave/balances:
     get:
       summary: Leave balances in half-day units (HRM-04)
       responses:
         "200":
           description: Leave balances
-  /hrms/leave/requests:
+  /v1/hrms/leave/requests:
     get:
       summary: Leave requests (HRM-04)
       responses:
@@ -730,43 +730,43 @@ paths:
       responses:
         "201":
           description: Leave request submitted
-  /hrms/payroll/runs:
+  /v1/hrms/payroll/runs:
     get:
       summary: Pay runs list (HRM-05)
       responses:
         "200":
           description: Pay runs
-  /hrms/payroll/payslips:
+  /v1/hrms/payroll/payslips:
     get:
       summary: Posted payslips (HRM-05)
       responses:
         "200":
           description: Payslips
-  /hrms/statutory/filings:
+  /v1/hrms/statutory/filings:
     get:
       summary: Statutory filing calendar (HRM-06)
       responses:
         "200":
           description: Statutory filings
-  /hrms/onboarding/tasks:
+  /v1/hrms/onboarding/tasks:
     get:
       summary: Onboarding checklist (HRM-10)
       responses:
         "200":
           description: Onboarding tasks
-  /hrms/compliance/expiries:
+  /v1/hrms/compliance/expiries:
     get:
       summary: Compliance expiries 30/60/90d (HRM-14)
       responses:
         "200":
           description: Compliance expiries
-  /hrms/separations:
+  /v1/hrms/separations:
     get:
       summary: Exit cases and F&F (HRM-18)
       responses:
         "200":
           description: Exit cases
-  /hrms/loans:
+  /v1/hrms/loans:
     get:
       summary: Loans and advances (HRM-19)
       responses:
@@ -777,21 +777,21 @@ paths:
       responses:
         "201":
           description: Loan requested
-  /hrms/self-service/summary:
+  /v1/hrms/self-service/summary:
     get:
       summary: Employee self-service summary (HRM-07)
       responses:
         "200":
           description: Self-service summary
 
-  /hrms/recruitment/rejection-reasons:
+  /v1/hrms/recruitment/rejection-reasons:
     get:
       summary: List rejection reason codes (HRM-09)
       responses:
         "200":
           description: Rejection reason codes
 
-  /hrms/recruitment/applications/{id}/stage:
+  /v1/hrms/recruitment/applications/{id}/stage:
     patch:
       summary: Move an application to a stage (HRM-09)
       parameters:
@@ -800,7 +800,7 @@ paths:
         "200":
           description: Application after the stage move
 
-  /hrms/recruitment/applications/{id}/scorecards:
+  /v1/hrms/recruitment/applications/{id}/scorecards:
     post:
       summary: Submit a scorecard (HRM-09)
       parameters:
@@ -809,7 +809,7 @@ paths:
         "200":
           description: Scorecard saved
 
-  /hrms/offers/{id}/send:
+  /v1/hrms/offers/{id}/send:
     post:
       summary: Send an offer (HRM-09)
       parameters:
@@ -818,7 +818,7 @@ paths:
         "200":
           description: Offer sent
 
-  /hrms/offers/{id}/accept:
+  /v1/hrms/offers/{id}/accept:
     post:
       summary: Accept an offer; creates the employee (HRM-09, HRM-01)
       parameters:
@@ -827,7 +827,7 @@ paths:
         "200":
           description: Offer accepted
 
-  /hrms/offers/{id}/withdraw:
+  /v1/hrms/offers/{id}/withdraw:
     post:
       summary: Withdraw an offer (HRM-09)
       parameters:
@@ -836,7 +836,7 @@ paths:
         "200":
           description: Offer withdrawn
 
-  /hrms/attendance/{id}/regularise:
+  /v1/hrms/attendance/{id}/regularise:
     post:
       summary: Regularise an attendance day (HRM-03)
       parameters:
@@ -845,7 +845,7 @@ paths:
         "200":
           description: Regularisation recorded
 
-  /hrms/employees/{id}/bank-accounts/{bankId}/verify:
+  /v1/hrms/employees/{id}/bank-accounts/{bankId}/verify:
     post:
       summary: Verify a bank account change (HRM-01)
       parameters:
@@ -856,7 +856,7 @@ paths:
         "200":
           description: Bank account verified
 
-  /hrms/leave/requests/{id}/decision:
+  /v1/hrms/leave/requests/{id}/decision:
     post:
       summary: Approve or reject a leave request (HRM-04)
       parameters:
@@ -865,7 +865,7 @@ paths:
         "200":
           description: Decision recorded
 
-  /hrms/onboarding/tasks/{id}/complete:
+  /v1/hrms/onboarding/tasks/{id}/complete:
     post:
       summary: Complete an onboarding task (HRM-10)
       parameters:
@@ -874,7 +874,7 @@ paths:
         "200":
           description: Task completed
 
-  /hrms/payroll/runs/{id}/approve:
+  /v1/hrms/payroll/runs/{id}/approve:
     post:
       summary: Approve a pay run (HRM-05)
       parameters:
@@ -883,7 +883,7 @@ paths:
         "200":
           description: Pay run approved
 
-  /hrms/payroll/runs/{id}/post:
+  /v1/hrms/payroll/runs/{id}/post:
     post:
       summary: Post a pay run to the ledger (HRM-05)
       parameters:
@@ -892,7 +892,7 @@ paths:
         "200":
           description: Pay run posted
 
-  /hrms/payroll/runs/{id}/pay:
+  /v1/hrms/payroll/runs/{id}/pay:
     post:
       summary: Mark a pay run paid (HRM-05)
       parameters:
@@ -901,7 +901,7 @@ paths:
         "200":
           description: Pay run paid
 
-  /hrms/payroll/runs/{id}/checks/{checkId}/override:
+  /v1/hrms/payroll/runs/{id}/checks/{checkId}/override:
     post:
       summary: Override a pay run check with a reason (HRM-05)
       parameters:
@@ -912,7 +912,7 @@ paths:
         "200":
           description: Check overridden
 
-  /hrms/separations/{id}/clearance/{itemId}/clear:
+  /v1/hrms/separations/{id}/clearance/{itemId}/clear:
     post:
       summary: Clear a clearance item (HRM-18)
       parameters:
@@ -923,7 +923,7 @@ paths:
         "200":
           description: Clearance item cleared
 
-  /hrms/separations/{id}/clearance/{itemId}/waive:
+  /v1/hrms/separations/{id}/clearance/{itemId}/waive:
     post:
       summary: Waive a clearance item with a reason (HRM-18)
       parameters:
@@ -934,7 +934,7 @@ paths:
         "200":
           description: Clearance item waived
 
-  /hrms/separations/{id}/fnf/approve:
+  /v1/hrms/separations/{id}/fnf/approve:
     post:
       summary: Approve the full and final settlement (HRM-18)
       parameters:
@@ -943,7 +943,7 @@ paths:
         "200":
           description: F&F approved
 
-  /hrms/separations/{id}/fnf/pay:
+  /v1/hrms/separations/{id}/fnf/pay:
     post:
       summary: Pay the full and final settlement (HRM-18)
       parameters:
