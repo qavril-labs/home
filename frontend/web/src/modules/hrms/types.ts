@@ -1,5 +1,5 @@
 // HRMS Types (HRM-01 to HRM-19)
-// MOCK: Shaped after docs/hrms-end-to-end-design.md until contracts/openapi.yaml publishes /hrms/* paths.
+// MOCK: Shaped after docs/hrms-end-to-end-design.md until contracts/openapi.yaml publishes /v1/hrms/* paths.
 
 export type HrDashboardKpis = {
   headcount: number;

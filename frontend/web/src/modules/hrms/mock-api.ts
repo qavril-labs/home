@@ -1,5 +1,5 @@
 // MOCK: HRMS API client and stateful in-memory store.
-// Shaped after docs/hrms-end-to-end-design.md until contracts/openapi.yaml publishes /hrms/* paths.
+// Shaped after docs/hrms-end-to-end-design.md until contracts/openapi.yaml publishes /v1/hrms/* paths.
 
 import type {
   AttendanceDay,
