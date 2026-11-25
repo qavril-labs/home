@@ -1,0 +1,1531 @@
+openapi: 3.1.0
+info:
+  title: QAVRIL LABS Platform API
+  version: 1.0.0
+  description: >
+    The HTTP contract between the frontend web app/marketing site and the backend core services.
+    Every figure on screen comes from these endpoints. Money amounts are always formatted decimal strings.
+
+servers:
+  - url: http://localhost:3002
+    description: Local development API server
+  - url: https://api.qavrillabs.com
+    description: Production API
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                required:
+                  - status
+
+  /v1/public/leads:
+    post:
+      summary: Submit marketing site lead or demo request
+      operationId: submitLead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadSubmission"
+      responses:
+        "201":
+          description: Lead received successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "received"
+                required:
+                  - status
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimitedError"
+
+  /v1/public/signup:
+    post:
+      summary: Self-service workspace sign-up
+      operationId: signUp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpRequest"
+      responses:
+        "201":
+          description: Workspace provisioned and owner signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignUpResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "429":
+          $ref: "#/components/responses/RateLimitedError"
+
+  /v1/auth/login:
+    post:
+      summary: Sign in with workspace credentials
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionResponse"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "429":
+          $ref: "#/components/responses/RateLimitedError"
+
+  /v1/auth/logout:
+    post:
+      summary: Sign out and invalidate current session
+      operationId: logout
+      security:
+        - BearerAuth: []
+      responses:
+        "204":
+          description: Successfully signed out
+
+  /v1/me:
+    get:
+      summary: Get current authenticated principal and permissions
+      operationId: getMe
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Current user principal
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  principal:
+                    $ref: "#/components/schemas/Principal"
+                required:
+                  - principal
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
+  /v1/workspace/overview:
+    get:
+      summary: Get signed-in workspace dashboard figures, totals, and monthly trends
+      operationId: getWorkspaceOverview
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Full workspace ledger overview and metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceOverview"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
+
+  /v1/workspace/insights:
+    get:
+      summary: Get autonomous bot findings and draft actions for workspace
+      operationId: getWorkspaceInsights
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Bot crew findings and recommendations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkspaceInsights"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
+  /v1/workspace/starter-books:
+    post:
+      summary: Open starter chart of accounts and initial fiscal year
+      operationId: setUpStarterBooks
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Books opened successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
+  /v1/workspace/quick-entries:
+    post:
+      summary: Post a double-entry journal transaction from plain user inputs
+      operationId: postQuickEntry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuickEntryRequest"
+      responses:
+        "201":
+          description: Transaction recorded into ledger
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuickEntryResponse"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/UnauthenticatedError"
+
+  /v1/master-data/parties:
+    get:
+      summary: List customers and suppliers (MDM-01)
+      operationId: listParties
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: partyType
+          in: query
+          schema:
+            type: string
+            enum: ["customer", "supplier", "both"]
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ["active", "hold", "archived", "inactive"]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Party listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Party"
+    post:
+      summary: Create a new customer or supplier
+      operationId: createParty
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartyRequest"
+      responses:
+        "201":
+          description: Party created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/master-data/parties/{id}:
+    get:
+      summary: Get party details
+      operationId: getParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Party details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+        "404":
+          description: Party not found
+    put:
+      summary: Update party details
+      operationId: updateParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePartyRequest"
+      responses:
+        "200":
+          description: Party updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Party"
+    delete:
+      summary: Delete or archive party
+      operationId: deleteParty
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Party deleted
+
+  /v1/master-data/items:
+    get:
+      summary: List inventory items and goods/services catalog (MDM-02)
+      operationId: listItems
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: itemType
+          in: query
+          schema:
+            type: string
+            enum: ["goods", "service", "bundle"]
+        - name: category
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductItem"
+    post:
+      summary: Create a catalog or inventory item
+      operationId: createItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateItemRequest"
+      responses:
+        "201":
+          description: Item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+
+  /v1/master-data/items/{id}:
+    get:
+      summary: Get item details
+      operationId: getItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Item details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+    put:
+      summary: Update item details
+      operationId: updateItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateItemRequest"
+      responses:
+        "200":
+          description: Item updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductItem"
+    delete:
+      summary: Delete item
+      operationId: deleteItem
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Item deleted
+
+  /v1/master-data/accounts:
+    get:
+      summary: List chart of accounts (MDM-03)
+      operationId: listMasterDataAccounts
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Account listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+    post:
+      summary: Create an account in the chart of accounts
+      operationId: createMasterDataAccount
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
+  /v1/master-data/accounts/{code}:
+    put:
+      summary: Update account name or status (MDM-03)
+      operationId: updateMasterDataAccount
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                active:
+                  type: boolean
+              required:
+                - name
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
+  /v1/ledger/accounts:
+    get:
+      summary: List chart of accounts for company
+      operationId: listAccounts
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Account listing
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Account"
+    post:
+      summary: Create a new account
+      operationId: createAccount
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+
+  /v1/ledger/entries:
+    get:
+      summary: List ledger journal entries
+      operationId: listEntries
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Journal entry list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/JournalEntry"
+    post:
+      summary: Post a balanced double-entry journal
+      operationId: postJournalEntry
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostJournalRequest"
+      responses:
+        "201":
+          description: Entry posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+
+  /v1/ledger/entries/{id}/reverse:
+    post:
+      summary: Post an immutable reversal of a journal entry
+      operationId: reverseJournalEntry
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                memo:
+                  type: string
+      responses:
+        "201":
+          description: Reversal entry posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JournalEntry"
+
+  /v1/ledger/trial-balance:
+    get:
+      summary: Retrieve trial balance as of date
+      operationId: getTrialBalance
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: asOf
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Trial balance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrialBalance"
+
+  /hrms/dashboard:
+    get:
+      summary: HR dashboard KPIs (HRM-01..HRM-19)
+      responses:
+        "200":
+          description: HR dashboard KPIs
+  /hrms/org/tree:
+    get:
+      summary: Org reports-to tree (HRM-02)
+      responses:
+        "200":
+          description: Org tree
+  /hrms/org/departments:
+    get:
+      summary: Departments list (HRM-02)
+      responses:
+        "200":
+          description: Departments
+  /hrms/org/positions:
+    get:
+      summary: Positions list (HRM-02)
+      responses:
+        "200":
+          description: Positions
+  /hrms/headcount-plan:
+    get:
+      summary: Headcount plan by department and period (HRM-16)
+      responses:
+        "200":
+          description: Headcount plan
+  /hrms/requisitions:
+    get:
+      summary: Requisitions list (HRM-16)
+      responses:
+        "200":
+          description: Requisitions
+    post:
+      summary: Create requisition (HRM-16)
+      responses:
+        "201":
+          description: Requisition created
+  /hrms/requisitions/{id}/approve:
+    post:
+      summary: Approve requisition (HRM-16)
+      responses:
+        "200":
+          description: Requisition approved
+  /hrms/recruitment/applications:
+    get:
+      summary: Candidate applications (HRM-09)
+      responses:
+        "200":
+          description: Applications
+  /hrms/offers:
+    get:
+      summary: Offers list (HRM-09)
+      responses:
+        "200":
+          description: Offers
+  /hrms/employees:
+    get:
+      summary: Employee directory (HRM-01)
+      responses:
+        "200":
+          description: Employees
+  /hrms/employees/{id}/reveal-pii:
+    post:
+      summary: Audited PII reveal (HRM-01)
+      responses:
+        "200":
+          description: PII revealed and audited
+  /hrms/lifecycle-events:
+    get:
+      summary: Lifecycle events queue (HRM-17)
+      responses:
+        "200":
+          description: Lifecycle events
+    post:
+      summary: Record lifecycle event (HRM-17)
+      responses:
+        "201":
+          description: Lifecycle event recorded
+  /hrms/attendance:
+    get:
+      summary: Attendance days (HRM-03)
+      responses:
+        "200":
+          description: Attendance days
+  /hrms/leave/balances:
+    get:
+      summary: Leave balances in half-day units (HRM-04)
+      responses:
+        "200":
+          description: Leave balances
+  /hrms/leave/requests:
+    get:
+      summary: Leave requests (HRM-04)
+      responses:
+        "200":
+          description: Leave requests
+    post:
+      summary: Submit leave request (HRM-04)
+      responses:
+        "201":
+          description: Leave request submitted
+  /hrms/payroll/runs:
+    get:
+      summary: Pay runs list (HRM-05)
+      responses:
+        "200":
+          description: Pay runs
+  /hrms/payroll/payslips:
+    get:
+      summary: Posted payslips (HRM-05)
+      responses:
+        "200":
+          description: Payslips
+  /hrms/statutory/filings:
+    get:
+      summary: Statutory filing calendar (HRM-06)
+      responses:
+        "200":
+          description: Statutory filings
+  /hrms/onboarding/tasks:
+    get:
+      summary: Onboarding checklist (HRM-10)
+      responses:
+        "200":
+          description: Onboarding tasks
+  /hrms/compliance/expiries:
+    get:
+      summary: Compliance expiries 30/60/90d (HRM-14)
+      responses:
+        "200":
+          description: Compliance expiries
+  /hrms/separations:
+    get:
+      summary: Exit cases and F&F (HRM-18)
+      responses:
+        "200":
+          description: Exit cases
+  /hrms/loans:
+    get:
+      summary: Loans and advances (HRM-19)
+      responses:
+        "200":
+          description: Loans
+    post:
+      summary: Request loan (HRM-19)
+      responses:
+        "201":
+          description: Loan requested
+  /hrms/self-service/summary:
+    get:
+      summary: Employee self-service summary (HRM-07)
+      responses:
+        "200":
+          description: Self-service summary
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  responses:
+    ValidationError:
+      description: Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthenticatedError:
+      description: Authentication required or token expired
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ForbiddenError:
+      description: Action not permitted
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    RateLimitedError:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION"
+            message:
+              type: string
+              example: "Invalid request payload"
+            details:
+              type: array
+              items:
+                type: object
+          required:
+            - code
+            - message
+      required:
+        - error
+
+    LeadSubmission:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Alex Vance"
+        email:
+          type: string
+          format: email
+          example: "alex@vancetools.com"
+        company:
+          type: string
+          example: "Vance Tools Ltd"
+        country:
+          type: string
+          example: "United States"
+        interest:
+          type: string
+          enum: ["early_access", "demo", "partner", "trial"]
+        industry:
+          type: string
+          example: "Manufacturing"
+        message:
+          type: string
+        source:
+          type: string
+        slot:
+          type: string
+        timezone:
+          type: string
+        consent:
+          type: boolean
+          enum: [true]
+        website:
+          type: string
+          description: "Honeypot field; must remain empty"
+      required:
+        - name
+        - email
+        - interest
+        - consent
+
+    SignUpRequest:
+      type: object
+      properties:
+        workspace:
+          type: string
+          example: "apex-tools"
+        companyName:
+          type: string
+          example: "Apex Precision Tools Ltd"
+        country:
+          type: string
+          example: "US"
+        currency:
+          type: string
+          example: "USD"
+        name:
+          type: string
+          example: "Sarah Connor"
+        email:
+          type: string
+          format: email
+          example: "sarah@apexprecision.com"
+        password:
+          type: string
+          format: password
+        website:
+          type: string
+          description: "Honeypot field"
+      required:
+        - workspace
+        - companyName
+        - country
+        - currency
+        - name
+        - email
+        - password
+
+    SignUpResponse:
+      type: object
+      properties:
+        workspace:
+          type: string
+        tenantId:
+          type: string
+        company:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+        session:
+          $ref: "#/components/schemas/SessionInfo"
+      required:
+        - workspace
+        - tenantId
+        - company
+        - session
+
+    LoginRequest:
+      type: object
+      properties:
+        tenantSlug:
+          type: string
+          example: "apex-tools"
+        email:
+          type: string
+          format: email
+          example: "sarah@apexprecision.com"
+        password:
+          type: string
+          format: password
+      required:
+        - tenantSlug
+        - email
+        - password
+
+    SessionInfo:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+      required:
+        - token
+        - expiresAt
+
+    SessionResponse:
+      type: object
+      properties:
+        session:
+          $ref: "#/components/schemas/SessionInfo"
+        principal:
+          $ref: "#/components/schemas/Principal"
+      required:
+        - session
+        - principal
+
+    Principal:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        email:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - tenantId
+        - email
+        - permissions
+
+    WorkspaceTotals:
+      type: object
+      properties:
+        cash:
+          type: string
+          example: "42150.00"
+        revenue:
+          type: string
+          example: "128420.50"
+        expenses:
+          type: string
+          example: "86270.50"
+        profit:
+          type: string
+          example: "42150.00"
+      required:
+        - cash
+        - revenue
+        - expenses
+        - profit
+
+    MonthlyTrendRow:
+      type: object
+      properties:
+        month:
+          type: string
+          example: "2026-11"
+        revenue:
+          type: string
+          example: "23500.00"
+        expenses:
+          type: string
+          example: "10100.00"
+      required:
+        - month
+        - revenue
+        - expenses
+
+    WorkspaceOverview:
+      type: object
+      properties:
+        company:
+          type: object
+          properties:
+            name:
+              type: string
+            currency:
+              type: string
+        workspace:
+          type: object
+          properties:
+            slug:
+              type: string
+        asOf:
+          type: string
+          format: date
+        booksReady:
+          type: boolean
+        totals:
+          $ref: "#/components/schemas/WorkspaceTotals"
+        trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyTrendRow"
+        recent:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecentEntry"
+      required:
+        - company
+        - workspace
+        - asOf
+        - booksReady
+        - totals
+        - trend
+
+    BotInsight:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "lou"
+        name:
+          type: string
+          example: "Ledger Lou"
+        role:
+          type: string
+          example: "Month-end checker"
+        color:
+          type: string
+          example: "cyan"
+        status:
+          type: string
+          enum: ["good", "watch", "act", "idle"]
+        statusText:
+          type: string
+          example: "All good"
+        foundText:
+          type: string
+        nextText:
+          type: string
+        hasDraft:
+          type: boolean
+        draftType:
+          type: string
+        draftLabel:
+          type: string
+        actionVerb:
+          type: string
+      required:
+        - id
+        - name
+        - role
+        - color
+        - status
+        - statusText
+        - foundText
+        - nextText
+
+    WorkspaceInsights:
+      type: object
+      properties:
+        company:
+          type: string
+        workspaceName:
+          type: string
+        currency:
+          type: string
+        asOf:
+          type: string
+        totals:
+          $ref: "#/components/schemas/WorkspaceTotals"
+        trend:
+          type: array
+          items:
+            $ref: "#/components/schemas/MonthlyTrendRow"
+        bots:
+          type: array
+          items:
+            $ref: "#/components/schemas/BotInsight"
+      required:
+        - company
+        - workspaceName
+        - currency
+        - asOf
+        - totals
+        - trend
+        - bots
+
+    QuickEntryRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: ["sale", "expense", "owner_investment", "customer_payment"]
+        amount:
+          type: string
+          pattern: "^\\d{1,13}(\\.\\d{1,3})?$"
+          example: "1250.00"
+        date:
+          type: string
+          format: date
+          example: "2026-11-14"
+        account:
+          type: string
+          example: "4000"
+        via:
+          type: string
+          enum: ["1000", "1100", "1200", "2000"]
+          example: "1100"
+        memo:
+          type: string
+          example: "Custom Machining Batch #42"
+      required:
+        - kind
+        - amount
+        - date
+        - via
+
+    QuickEntryResponse:
+      type: object
+      properties:
+        reference:
+          type: string
+          example: "QE-2026-00042"
+        date:
+          type: string
+        amount:
+          type: string
+      required:
+        - reference
+
+    Account:
+      type: object
+      properties:
+        code:
+          type: string
+          example: "1100"
+        name:
+          type: string
+          example: "Operating Bank Account"
+        type:
+          type: string
+          enum: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]
+        balance:
+          type: string
+          example: "42150.00"
+      required:
+        - code
+        - name
+        - type
+
+    CreateAccountRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+          enum: ["ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"]
+      required:
+        - code
+        - name
+        - type
+
+    JournalLine:
+      type: object
+      properties:
+        account:
+          type: string
+        side:
+          type: string
+          enum: ["DEBIT", "CREDIT"]
+        amount:
+          type: string
+      required:
+        - account
+        - side
+        - amount
+
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        reference:
+          type: string
+        date:
+          type: string
+          format: date
+        memo:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalLine"
+        reversalOf:
+          type: string
+      required:
+        - id
+        - reference
+        - date
+        - lines
+
+    PostJournalRequest:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        reference:
+          type: string
+        memo:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/JournalLine"
+      required:
+        - date
+        - lines
+
+    TrialBalance:
+      type: object
+      properties:
+        asOf:
+          type: string
+          format: date
+        balanced:
+          type: boolean
+        debitTotal:
+          type: string
+        creditTotal:
+          type: string
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+      required:
+        - asOf
+        - balanced
+        - debitTotal
+        - creditTotal
+        - accounts
+
+    RecentEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "ENT-1049"
+        date:
+          type: string
+          example: "2026-11-14"
+        kind:
+          type: string
+          example: "Sale"
+        description:
+          type: string
+          example: "Batch CNC Work"
+        party:
+          type: string
+          example: "Delta Dynamics"
+        amount:
+          type: string
+          example: "3450.00"
+        status:
+          type: string
+          example: "posted"
+      required:
+        - id
+        - date
+        - kind
+        - description
+        - amount
+        - status
+
+    Party:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "01932940-1284-7a32-9842-192847583920"
+        name:
+          type: string
+          example: "Delta Dynamics LLC"
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+          example: "billing@deltadynamics.com"
+        phone:
+          type: string
+          example: "+1 555-019-2831"
+        taxId:
+          type: string
+          example: "US-8492019"
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+          example: "active"
+        balance:
+          type: string
+          example: "3450.00"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - partyType
+        - status
+        - balance
+
+    CreatePartyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Delta Dynamics LLC"
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+        phone:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+        balance:
+          type: string
+      required:
+        - name
+        - partyType
+
+    UpdatePartyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        partyType:
+          type: string
+          enum: ["customer", "supplier", "both"]
+        email:
+          type: string
+        phone:
+          type: string
+        taxId:
+          type: string
+        status:
+          type: string
+          enum: ["active", "hold", "archived", "inactive"]
+
+    ProductItem:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "01932940-9912-7a11-8842-102938475619"
+        sku:
+          type: string
+          example: "TOOL-CNC-01"
+        name:
+          type: string
+          example: "Carbide End Mill 1/2 in 4-Flute"
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+          example: "goods"
+        category:
+          type: string
+          example: "Tooling"
+        unit:
+          type: string
+          example: "pcs"
+        unitPrice:
+          type: string
+          example: "48.50"
+        stockQuantity:
+          type: integer
+          example: 42
+        reorderPoint:
+          type: integer
+          example: 20
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+          example: "in_stock"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - sku
+        - name
+        - itemType
+        - unit
+        - unitPrice
+        - stockQuantity
+        - reorderPoint
+        - status
+
+    CreateItemRequest:
+      type: object
+      properties:
+        sku:
+          type: string
+          example: "TOOL-CNC-01"
+        name:
+          type: string
+          example: "Carbide End Mill 1/2 in 4-Flute"
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+        category:
+          type: string
+        unit:
+          type: string
+          default: "pcs"
+        unitPrice:
+          type: string
+          example: "48.50"
+        stockQuantity:
+          type: integer
+          default: 0
+        reorderPoint:
+          type: integer
+          default: 0
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+      required:
+        - sku
+        - name
+
+    UpdateItemRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        itemType:
+          type: string
+          enum: ["goods", "service", "bundle"]
+        category:
+          type: string
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        stockQuantity:
+          type: integer
+        reorderPoint:
+          type: integer
+        status:
+          type: string
+          enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
