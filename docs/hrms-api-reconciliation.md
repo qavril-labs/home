@@ -31,3 +31,21 @@ Recommendation: **B**. It matches CLAUDE.md and the existing gate, and it is che
 3. Restore the drift gate on the branch that holds the routes, and rerun `backend/apps/api/test/contract.test.ts`.
 4. Antigravity switches the mocks in `frontend/web/src/modules/hrms/mock-api.ts` to the chosen paths and regenerates the client.
 5. Remove `x-planned` from each operation as its route ships.
+
+## Outcome (2026-11-25)
+
+The contract now uses `/v1/hrms` throughout.
+
+- **Served:** 45 operations, one for each route in `hrms-routes.ts`. Parity holds (45 and 45).
+- **Planned:** 38 further operations, marked `x-planned: true`, for resources or actions the backend does not serve yet. Names follow the served families where one exists (for example `/v1/hrms/recruitment/...`, `/v1/hrms/org/...`, `/v1/hrms/payroll/runs`, `/v1/hrms/separations`), so there is one surface.
+- **Skipped as overlapping a served operation** (served operation kept): the planned list, employee detail, offers and pay-run transitions, clearance items, and the settlement transitions, where the served approve, accept, clear, waive and pay operations already cover the step.
+
+Gaps still in the design but not in the contract:
+
+- Requisitions: submit, reject, hold and cancel. The served route covers approve only.
+- Offers: submit, approve, decline and expire. The served routes cover send, accept and withdraw.
+- Pay runs: calculate and verify. The served routes cover approve, post and pay.
+
+Those gaps are design decisions. Add them as planned operations when their routes are designed.
+
+Also fixed: four operations in the committed contract declared `parameters:` twice, so the second block silently dropped the `id` path parameter. Merged into one block each.

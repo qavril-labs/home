@@ -643,12 +643,84 @@ paths:
       responses:
         "200":
           description: Departments
+    post:
+      summary: Create a department (HRM-02)
+      operationId: hrmsCreateDepartment
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsDepartmentInput'
+      responses:
+        '201':
+          description: The saved department
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - department
+                properties:
+                  ok:
+                    type: boolean
+                  department:
+                    $ref: '#/components/schemas/HrmsDepartment'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /v1/hrms/org/positions:
     get:
       summary: Positions list (HRM-02)
       responses:
         "200":
           description: Positions
+    post:
+      summary: Create a position (HRM-02)
+      operationId: hrmsCreatePosition
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsPositionInput'
+      responses:
+        '201':
+          description: The saved position
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - position
+                properties:
+                  ok:
+                    type: boolean
+                  position:
+                    $ref: '#/components/schemas/HrmsPosition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
   /v1/hrms/headcount-plan:
     get:
       summary: Headcount plan by department and period (HRM-16)
@@ -678,12 +750,86 @@ paths:
       responses:
         "200":
           description: Applications
+    post:
+      summary: Apply a candidate to a requisition (HRM-09)
+      operationId: hrmsCreateApplication
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsApplicationInput'
+      responses:
+        '201':
+          description: The application
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - application
+                properties:
+                  ok:
+                    type: boolean
+                  application:
+                    $ref: '#/components/schemas/HrmsApplication'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /v1/hrms/offers:
     get:
       summary: Offers list (HRM-09)
       responses:
         "200":
           description: Offers
+    post:
+      summary: Draft an offer. The band check is computed by the server against approved pay bands (HRM-13).
+      operationId: hrmsCreateOffer
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsOfferInput'
+      responses:
+        '201':
+          description: The draft offer with band status
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - offer
+                properties:
+                  ok:
+                    type: boolean
+                  offer:
+                    $ref: '#/components/schemas/HrmsOffer'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /v1/hrms/employees:
     get:
       summary: Employee directory (HRM-01)
@@ -736,6 +882,43 @@ paths:
       responses:
         "200":
           description: Pay runs
+    post:
+      summary: Create a pay run draft for a period (HRM-05)
+      operationId: hrmsCreatePayRun
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsPayRunInput'
+      responses:
+        '201':
+          description: The draft pay run
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - payRun
+                properties:
+                  ok:
+                    type: boolean
+                  payRun:
+                    $ref: '#/components/schemas/HrmsPayRun'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /v1/hrms/payroll/payslips:
     get:
       summary: Posted payslips (HRM-05)
@@ -766,6 +949,45 @@ paths:
       responses:
         "200":
           description: Exit cases
+    post:
+      summary: Start an exit case (HRM-18). Notice terms are computed from the employment's policy.
+      operationId: hrmsCreateExitCase
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsExitCaseInput'
+      responses:
+        '201':
+          description: The exit case
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - exitCase
+                properties:
+                  ok:
+                    type: boolean
+                  exitCase:
+                    $ref: '#/components/schemas/HrmsExitCase'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /v1/hrms/loans:
     get:
       summary: Loans and advances (HRM-19)
@@ -808,6 +1030,43 @@ paths:
       responses:
         "200":
           description: Scorecard saved
+    get:
+      summary: List scorecards for an application (HRM-09). Scores by other panel members are returned only once the caller has submitted their own.
+      operationId: hrmsListScorecards
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Scorecards visible to the caller
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsScorecard'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /v1/hrms/offers/{id}/send:
     post:
@@ -850,7 +1109,6 @@ paths:
       summary: Verify a bank account change (HRM-01)
       parameters:
         - {name: id, in: path, required: true, schema: {type: string}}
-      parameters:
         - {name: bankId, in: path, required: true, schema: {type: string}}
       responses:
         "200":
@@ -906,7 +1164,6 @@ paths:
       summary: Override a pay run check with a reason (HRM-05)
       parameters:
         - {name: id, in: path, required: true, schema: {type: string}}
-      parameters:
         - {name: checkId, in: path, required: true, schema: {type: string}}
       responses:
         "200":
@@ -917,7 +1174,6 @@ paths:
       summary: Clear a clearance item (HRM-18)
       parameters:
         - {name: id, in: path, required: true, schema: {type: string}}
-      parameters:
         - {name: itemId, in: path, required: true, schema: {type: string}}
       responses:
         "200":
@@ -928,7 +1184,6 @@ paths:
       summary: Waive a clearance item with a reason (HRM-18)
       parameters:
         - {name: id, in: path, required: true, schema: {type: string}}
-      parameters:
         - {name: itemId, in: path, required: true, schema: {type: string}}
       responses:
         "200":
@@ -951,6 +1206,1262 @@ paths:
       responses:
         "200":
           description: F&F paid
+
+  # ---- planned HRMS operations (design target; x-planned until their routes ship) ----
+  /v1/hrms/recruitment/applications/{id}/interviews:
+    post:
+      summary: Schedule an interview round (HRM-09)
+      operationId: hrmsCreateInterview
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsInterviewInput'
+      responses:
+        '201':
+          description: The scheduled interview
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - interview
+                properties:
+                  ok:
+                    type: boolean
+                  interview:
+                    $ref: '#/components/schemas/HrmsInterview'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/recruitment/candidates:
+    get:
+      summary: Search candidates (HRM-09). Sensitive fields are masked.
+      operationId: hrmsListCandidates
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Candidates
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsCandidate'
+                  nextCursor:
+                    type: string
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      summary: Create a candidate, or flag a duplicate for review (HRM-09). Duplicates are never merged silently.
+      operationId: hrmsCreateCandidate
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsCandidateInput'
+      responses:
+        '201':
+          description: The saved candidate; duplicateOf is set when a match exists
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - candidate
+                properties:
+                  ok:
+                    type: boolean
+                  candidate:
+                    $ref: '#/components/schemas/HrmsCandidate'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/hrms/org/positions/{id}:
+    patch:
+      summary: 'Change a position: headcount, status or reporting line (HRM-02). Rejects a reporting cycle and headcount below filled.'
+      operationId: hrmsUpdatePosition
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsPositionPatch'
+      responses:
+        '200':
+          description: The updated position
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - position
+                properties:
+                  ok:
+                    type: boolean
+                  position:
+                    $ref: '#/components/schemas/HrmsPosition'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/requisitions/{id}:
+    get:
+      summary: Get a requisition with its approval trail (HRM-16)
+      operationId: hrmsGetRequisition
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The requisition
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - requisition
+                properties:
+                  ok:
+                    type: boolean
+                  requisition:
+                    $ref: '#/components/schemas/HrmsRequisition'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/employees/{id}:
+    get:
+      summary: Get an employee record (HRM-01). Sensitive fields masked; reveal is a separate audited call.
+      operationId: hrmsGetEmployee
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The employee
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - employee
+                properties:
+                  ok:
+                    type: boolean
+                  employee:
+                    $ref: '#/components/schemas/HrmsEmployee'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    patch:
+      summary: Change employee details, effective-dated where the field requires it (HRM-01, HRM-17)
+      operationId: hrmsUpdateEmployee
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsEmployeePatch'
+      responses:
+        '200':
+          description: The updated employee
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - employee
+                properties:
+                  ok:
+                    type: boolean
+                  employee:
+                    $ref: '#/components/schemas/HrmsEmployee'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/employees/{id}/employments:
+    get:
+      summary: Employment history with effective dates (HRM-01)
+      operationId: hrmsListEmployments
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Employments, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsEmployment'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/employees/{id}/documents:
+    get:
+      summary: List employee documents with expiry and verification (HRM-01, PLT-11)
+      operationId: hrmsListEmployeeDocuments
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Documents
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsEmployeeDocument'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    post:
+      summary: Attach a document reference to an employee (HRM-01, PLT-11)
+      operationId: hrmsAttachEmployeeDocument
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsEmployeeDocumentInput'
+      responses:
+        '201':
+          description: The attached document
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - document
+                properties:
+                  ok:
+                    type: boolean
+                  document:
+                    $ref: '#/components/schemas/HrmsEmployeeDocument'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/employees/{id}/bank-accounts:
+    get:
+      summary: Bank accounts, masked, with verification state (HRM-01)
+      operationId: hrmsListBankAccounts
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Bank accounts. canVerify tells the caller whether they may verify (never the requester).
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsBankAccount'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    post:
+      summary: Request a bank account change. It becomes effective from the next pay run after a different user verifies it (HRM-01, separation of duties).
+      operationId: hrmsRequestBankAccountChange
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsBankAccountInput'
+      responses:
+        '201':
+          description: The pending bank account (masked)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - bankAccount
+                properties:
+                  ok:
+                    type: boolean
+                  bankAccount:
+                    $ref: '#/components/schemas/HrmsBankAccount'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/leave-types:
+    get:
+      summary: List leave types and their half-day rules (HRM-04)
+      operationId: hrmsListLeaveTypes
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Leave types
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsLeaveType'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/hrms/attendance/regularisations:
+    get:
+      summary: List attendance regularisation requests (HRM-03)
+      operationId: hrmsListRegularisations
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/HrmsApprovalStatus'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 200
+          default: 100
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsRegularisation'
+                  nextCursor:
+                    type: string
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/hrms/attendance/regularisations/{id}/transitions:
+    post:
+      summary: Approve or reject a regularisation (HRM-03)
+      operationId: hrmsTransitionRegularisation
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsTransition'
+      responses:
+        '200':
+          description: The regularisation after the transition
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - regularisation
+                properties:
+                  ok:
+                    type: boolean
+                  regularisation:
+                    $ref: '#/components/schemas/HrmsRegularisation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/lifecycle-events/{id}/transitions:
+    post:
+      summary: Approve, reject or apply a lifecycle event (HRM-17). The initiator cannot approve.
+      operationId: hrmsTransitionLifecycleEvent
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsTransition'
+      responses:
+        '200':
+          description: The event after the transition
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - event
+                properties:
+                  ok:
+                    type: boolean
+                  event:
+                    $ref: '#/components/schemas/HrmsLifecycleEvent'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/loans/{id}/transitions:
+    post:
+      summary: Approve, disburse or write off a loan (HRM-19). Disbursement can happen once.
+      operationId: hrmsTransitionLoan
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsTransition'
+      responses:
+        '200':
+          description: The loan after the transition
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - loan
+                properties:
+                  ok:
+                    type: boolean
+                  loan:
+                    $ref: '#/components/schemas/HrmsLoan'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/separations/{id}:
+    get:
+      summary: Get an exit case with its clearance checklist (HRM-18)
+      operationId: hrmsGetExitCase
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The exit case
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - exitCase
+                properties:
+                  ok:
+                    type: boolean
+                  exitCase:
+                    $ref: '#/components/schemas/HrmsExitCase'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/separations/{id}/notice:
+    post:
+      summary: Shorten, buy out or extend the notice period (HRM-18). Each change recomputes the notice shortfall.
+      operationId: hrmsChangeExitNotice
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsNoticeChangeInput'
+      responses:
+        '200':
+          description: The exit case with the recomputed notice
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - exitCase
+                properties:
+                  ok:
+                    type: boolean
+                  exitCase:
+                    $ref: '#/components/schemas/HrmsExitCase'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/separations/{id}/settlement:
+    get:
+      summary: Full and final statement with every line sourced. A missing input returns status blocked and names it; nothing is estimated (HRM-18).
+      operationId: hrmsGetSettlement
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The settlement
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - settlement
+                properties:
+                  ok:
+                    type: boolean
+                  settlement:
+                    $ref: '#/components/schemas/HrmsSettlement'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    post:
+      summary: Calculate the full and final settlement (HRM-18). Refused while clearance is incomplete.
+      operationId: hrmsCalculateSettlement
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '201':
+          description: The calculated settlement
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - settlement
+                properties:
+                  ok:
+                    type: boolean
+                  settlement:
+                    $ref: '#/components/schemas/HrmsSettlement'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/separations/{id}/transitions:
+    post:
+      summary: Approve, rescind, or move an exit case to its next state (HRM-18). Termination needs the statutory checklist; the initiator cannot give final approval.
+      operationId: hrmsTransitionExitCase
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsTransition'
+      responses:
+        '200':
+          description: The exit case after the transition
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - exitCase
+                properties:
+                  ok:
+                    type: boolean
+                  exitCase:
+                    $ref: '#/components/schemas/HrmsExitCase'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/onboarding/tasks/{id}:
+    patch:
+      summary: Mark an onboarding task done or waived (HRM-10). A waiver needs a reason.
+      operationId: hrmsUpdateOnboardingTask
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsOnboardingTaskPatch'
+      responses:
+        '200':
+          description: The task
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - task
+                properties:
+                  ok:
+                    type: boolean
+                  task:
+                    $ref: '#/components/schemas/HrmsOnboardingTask'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/payroll/runs/{id}:
+    get:
+      summary: Get a pay run with totals and verification checks (HRM-05)
+      operationId: hrmsGetPayRun
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The pay run
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - payRun
+                properties:
+                  ok:
+                    type: boolean
+                  payRun:
+                    $ref: '#/components/schemas/HrmsPayRun'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/payroll/runs/{id}/lines:
+    get:
+      summary: Employee lines of a pay run (HRM-05). Visible to payroll roles only.
+      operationId: hrmsListPayRunLines
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 100
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Lines
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsPayRunLine'
+                  nextCursor:
+                    type: string
+                    nullable: true
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/statutory/packs:
+    get:
+      summary: Approved statutory rule packs with versions and effective dates (HRM-06). Read-only here; packs change only by approval.
+      operationId: hrmsListStatutoryPacks
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: country
+        in: query
+        required: false
+        schema:
+          type: string
+          minLength: 2
+          maxLength: 2
+      responses:
+        '200':
+          description: Packs
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsStatutoryPack'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /v1/hrms/statutory/filings/{id}/file:
+    post:
+      summary: Record a filing with its reference number (HRM-06). Late filings are recorded as late, never hidden.
+      operationId: hrmsRecordStatutoryFiling
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsFilingInput'
+      responses:
+        '200':
+          description: The filing with status filed or late
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - filing
+                properties:
+                  ok:
+                    type: boolean
+                  filing:
+                    $ref: '#/components/schemas/HrmsStatutoryFiling'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /v1/hrms/me/profile:
+    get:
+      summary: The signed-in employee's own profile (HRM-07)
+      operationId: hrmsGetMyProfile
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Own profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - employee
+                properties:
+                  ok:
+                    type: boolean
+                  employee:
+                    $ref: '#/components/schemas/HrmsEmployee'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /v1/hrms/me/leave-balances:
+    get:
+      summary: Own leave balances (HRM-07)
+      operationId: hrmsGetMyLeaveBalances
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Own balances
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsLeaveBalance'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/hrms/me/exit-tasks:
+    get:
+      summary: Own clearance tasks during notice (HRM-18, HRM-07)
+      operationId: hrmsGetMyExitTasks
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Own clearance items, or an empty list when no exit is in progress
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - items
+                properties:
+                  ok:
+                    type: boolean
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/HrmsClearanceItem'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+  /v1/hrms/me/profile-change-requests:
+    post:
+      summary: Request a change to own contact or address details (HRM-07). Applied after the manager or HR approves.
+      operationId: hrmsCreateMyProfileChangeRequest
+      tags:
+      - HRMS
+      x-planned: true
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HrmsProfileChangeInput'
+      responses:
+        '201':
+          description: The pending request
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                - ok
+                - request
+                properties:
+                  ok:
+                    type: boolean
+                  request:
+                    $ref: '#/components/schemas/HrmsProfileChangeRequest'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
 
 components:
   securitySchemes:
@@ -1697,3 +3208,1474 @@ components:
         status:
           type: string
           enum: ["in_stock", "low_stock", "out_of_stock", "discontinued"]
+    HrmsApplication:
+      type: object
+      required:
+      - id
+      - candidateId
+      - requisitionId
+      - stage
+      properties:
+        id:
+          type: string
+        candidateId:
+          type: string
+        requisitionId:
+          type: string
+        stage:
+          $ref: '#/components/schemas/HrmsApplicationStage'
+        rejectionReasonCode:
+          type: string
+          nullable: true
+        stageHistory:
+          type: array
+          items:
+            type: object
+            required:
+            - stage
+            - at
+            properties:
+              stage:
+                $ref: '#/components/schemas/HrmsApplicationStage'
+              at:
+                type: string
+                format: date-time
+              byUserId:
+                type: string
+        scorecardsSubmitted:
+          type: integer
+          minimum: 0
+    HrmsApplicationInput:
+      type: object
+      required:
+      - candidateId
+      - requisitionId
+      properties:
+        candidateId:
+          type: string
+        requisitionId:
+          type: string
+    HrmsApplicationStage:
+      type: string
+      enum:
+      - applied
+      - screened
+      - shortlisted
+      - interviewing
+      - selected
+      - offer_stage
+      - hired
+      - rejected
+      - withdrawn
+    HrmsApprovalStatus:
+      type: string
+      enum:
+      - pending
+      - approved
+      - rejected
+    HrmsApprovalStep:
+      type: object
+      required:
+      - label
+      - decision
+      properties:
+        label:
+          type: string
+        decision:
+          $ref: '#/components/schemas/HrmsApprovalStatus'
+        decidedBy:
+          type: string
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+    HrmsBankAccount:
+      type: object
+      required:
+      - id
+      - employeeId
+      - accountMasked
+      - status
+      - requestedBy
+      - canVerify
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        bankName:
+          type: string
+        accountMasked:
+          type: string
+          example: '****1234'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        status:
+          type: string
+          enum:
+          - pending_verification
+          - verified
+          - rejected
+          - superseded
+        requestedBy:
+          type: string
+        verifiedBy:
+          type: string
+          nullable: true
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        canVerify:
+          type: boolean
+          description: False when the caller is the requester
+    HrmsBankAccountInput:
+      type: object
+      required:
+      - bankName
+      - accountNumber
+      - currency
+      properties:
+        bankName:
+          type: string
+          maxLength: 120
+        accountNumber:
+          type: string
+          writeOnly: true
+          minLength: 4
+          maxLength: 34
+          description: Never returned. Responses show accountMasked only.
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+    HrmsCandidate:
+      type: object
+      required:
+      - id
+      - displayName
+      - duplicateOf
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        emailMasked:
+          type: string
+          example: a***@example.com
+        phoneMasked:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+        duplicateOf:
+          type: string
+          nullable: true
+          description: Set when a match exists; the duplicate is flagged
+          never merged: null
+        retentionUntil:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+    HrmsCandidateInput:
+      type: object
+      required:
+      - displayName
+      - email
+      properties:
+        displayName:
+          type: string
+          maxLength: 160
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 32
+        source:
+          type: string
+          maxLength: 64
+        consentRecorded:
+          type: boolean
+    HrmsClearanceItem:
+      type: object
+      required:
+      - id
+      - label
+      - ownerRole
+      - status
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        ownerRole:
+          type: string
+        status:
+          type: string
+          enum:
+          - pending
+          - cleared
+          - waived
+        waiverReason:
+          type: string
+          nullable: true
+        approvedWaiverBy:
+          type: string
+          nullable: true
+    HrmsDate:
+      type: string
+      pattern: ^\d{4}-\d{2}-\d{2}$
+      example: '2026-12-01'
+    HrmsDepartment:
+      type: object
+      required:
+      - id
+      - code
+      - name
+      - validFrom
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        parentId:
+          type: string
+          nullable: true
+        costCenterCode:
+          type: string
+          nullable: true
+          description: FIN-08 dimension
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+        validTo:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+    HrmsDepartmentInput:
+      type: object
+      required:
+      - code
+      - name
+      - validFrom
+      properties:
+        code:
+          type: string
+          maxLength: 32
+        name:
+          type: string
+          maxLength: 120
+        parentId:
+          type: string
+          nullable: true
+        costCenterCode:
+          type: string
+          nullable: true
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsEmployee:
+      type: object
+      required:
+      - id
+      - code
+      - displayName
+      - status
+      - departmentId
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        displayName:
+          type: string
+        status:
+          $ref: '#/components/schemas/HrmsEmployeeStatus'
+        departmentId:
+          type: string
+        branchId:
+          type: string
+          nullable: true
+        positionId:
+          type: string
+          nullable: true
+        firstJoiningDate:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        probationEndsOn:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        nationalIdMasked:
+          type: string
+          nullable: true
+          example: '***-**-1234'
+        dateOfBirthMasked:
+          type: string
+          nullable: true
+          description: Always masked in lists; reveal is audited
+        canSeePay:
+          type: boolean
+          description: Whether the caller holds a payroll role for this employee
+    HrmsEmployeeDocument:
+      type: object
+      required:
+      - id
+      - employeeId
+      - type
+      - verificationStatus
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        type:
+          type: string
+        expiresOn:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        verificationStatus:
+          type: string
+          enum:
+          - pending
+          - verified
+          - rejected
+        fileId:
+          type: string
+          nullable: true
+          description: PLT-11 file reference
+    HrmsEmployeeDocumentInput:
+      type: object
+      required:
+      - type
+      - fileId
+      properties:
+        type:
+          type: string
+          maxLength: 64
+        expiresOn:
+          $ref: '#/components/schemas/HrmsDate'
+        fileId:
+          type: string
+    HrmsEmployeePatch:
+      type: object
+      properties:
+        displayName:
+          type: string
+          maxLength: 160
+        departmentId:
+          type: string
+        branchId:
+          type: string
+        personalEmail:
+          type: string
+          format: email
+        personalPhone:
+          type: string
+          maxLength: 32
+        effectiveDate:
+          $ref: '#/components/schemas/HrmsDate'
+          description: Required for changes that are effective-dated
+        reason:
+          type: string
+          maxLength: 500
+    HrmsEmployeeStatus:
+      type: string
+      enum:
+      - pre_boarding
+      - active
+      - on_leave
+      - suspended
+      - notice
+      - separated
+      - no_show
+    HrmsEmployment:
+      type: object
+      required:
+      - id
+      - employeeId
+      - type
+      - startDate
+      - validFrom
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        type:
+          type: string
+          enum:
+          - permanent
+          - fixed_term
+          - contract
+          - part_time
+          - intern
+        startDate:
+          $ref: '#/components/schemas/HrmsDate'
+        endDate:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+        validTo:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+    HrmsExitCase:
+      type: object
+      required:
+      - id
+      - number
+      - employeeId
+      - type
+      - status
+      - lastWorkingDay
+      - clearance
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          description: From NumberingService
+        employeeId:
+          type: string
+        type:
+          $ref: '#/components/schemas/HrmsExitType'
+        reasonCode:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/HrmsExitStatus'
+        requestedLastWorkingDay:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        lastWorkingDay:
+          $ref: '#/components/schemas/HrmsDate'
+        noticeRequiredDays:
+          type: integer
+          minimum: 0
+        noticeServedDays:
+          type: integer
+          minimum: 0
+        noticeShortfallAmount:
+          $ref: '#/components/schemas/HrmsMoney'
+          description: Recoverable amount when notice is short; zero otherwise
+        accessRemovalDate:
+          $ref: '#/components/schemas/HrmsDate'
+        clearance:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsClearanceItem'
+        clearanceComplete:
+          type: boolean
+        canApprove:
+          type: boolean
+          description: False for the initiator
+    HrmsExitCaseInput:
+      type: object
+      required:
+      - employeeId
+      - type
+      - reasonCode
+      properties:
+        employeeId:
+          type: string
+        type:
+          $ref: '#/components/schemas/HrmsExitType'
+        reasonCode:
+          type: string
+          maxLength: 64
+        requestedLastWorkingDay:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsExitStatus:
+      type: string
+      enum:
+      - initiated
+      - approved
+      - notice
+      - last_day
+      - clearance
+      - fnf_calculated
+      - fnf_approved
+      - fnf_paid
+      - closed
+      - cancelled
+    HrmsExitType:
+      type: string
+      enum:
+      - resignation
+      - termination_performance
+      - termination_misconduct
+      - redundancy
+      - contract_end
+      - retirement
+      - death_in_service
+      - absconding
+    HrmsFilingInput:
+      type: object
+      required:
+      - referenceNumber
+      - filedOn
+      properties:
+        referenceNumber:
+          type: string
+          minLength: 1
+          maxLength: 64
+        filedOn:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsFilingStatus:
+      type: string
+      enum:
+      - due
+      - filed
+      - late
+    HrmsInterview:
+      type: object
+      required:
+      - id
+      - applicationId
+      - round
+      - outcome
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        round:
+          type: integer
+        panelUserIds:
+          type: array
+          items:
+            type: string
+        scheduledAt:
+          type: string
+          format: date-time
+        outcome:
+          type: string
+          enum:
+          - pending
+          - pass
+          - fail
+          - no_show
+    HrmsInterviewInput:
+      type: object
+      required:
+      - round
+      - panelUserIds
+      - scheduledAt
+      properties:
+        round:
+          type: integer
+          minimum: 1
+        panelUserIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        scheduledAt:
+          type: string
+          format: date-time
+    HrmsLeaveBalance:
+      type: object
+      required:
+      - leaveTypeCode
+      - balanceHalfDays
+      - balanceDays
+      properties:
+        leaveTypeCode:
+          type: string
+        balanceHalfDays:
+          type: integer
+          description: Integer half-day units from the ledger
+        balanceDays:
+          type: string
+          pattern: ^-?\d+(\.[05])?$
+          example: '1.5'
+          description: Same value in days as a decimal string with half-day steps
+    HrmsLeaveType:
+      type: object
+      required:
+      - code
+      - name
+      - paid
+      - allowsHalfDay
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        paid:
+          type: boolean
+        allowsHalfDay:
+          type: boolean
+        requiresAttachment:
+          type: boolean
+    HrmsLifecycleEvent:
+      type: object
+      required:
+      - id
+      - employeeId
+      - type
+      - effectiveDate
+      - status
+      - steps
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        type:
+          type: string
+          enum:
+          - probation_review
+          - confirmation
+          - transfer
+          - promotion
+          - role_change
+          - leave_of_absence
+          - suspension
+          - return_from_leave
+        effectiveDate:
+          $ref: '#/components/schemas/HrmsDate'
+        reasonCode:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/HrmsLifecycleStatus'
+        steps:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsApprovalStep'
+        warning:
+          type: string
+          nullable: true
+          description: Set when the effective date falls in a closed pay period; payroll must recalculate
+        probationOutcome:
+          type: string
+          enum:
+          - confirm
+          - extend
+          - end
+          nullable: true
+    HrmsLifecycleStatus:
+      type: string
+      enum:
+      - pending
+      - approved
+      - rejected
+      - applied
+    HrmsLoan:
+      type: object
+      required:
+      - id
+      - employeeId
+      - kind
+      - principal
+      - status
+      - outstanding
+      - overLimit
+      - schedule
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        kind:
+          type: string
+          enum:
+          - loan
+          - advance
+        principal:
+          $ref: '#/components/schemas/HrmsMoney'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        instalmentCount:
+          type: integer
+          minimum: 1
+        startPeriod:
+          type: string
+          example: 2027-01
+        status:
+          $ref: '#/components/schemas/HrmsLoanStatus'
+        outstanding:
+          $ref: '#/components/schemas/HrmsMoney'
+        overLimit:
+          type: boolean
+        approvalRouteLabel:
+          type: string
+          nullable: true
+        schedule:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsLoanInstalment'
+    HrmsLoanInstalment:
+      type: object
+      required:
+      - duePeriod
+      - principal
+      - interest
+      - status
+      properties:
+        duePeriod:
+          type: string
+          example: 2027-01
+        principal:
+          $ref: '#/components/schemas/HrmsMoney'
+        interest:
+          $ref: '#/components/schemas/HrmsMoney'
+        status:
+          type: string
+          enum:
+          - due
+          - deducted
+          - paid
+    HrmsLoanStatus:
+      type: string
+      enum:
+      - requested
+      - approved
+      - disbursed
+      - repaying
+      - closed
+      - written_off
+      - rejected
+    HrmsMoney:
+      type: string
+      pattern: ^-?\d{1,13}(\.\d{1,3})?$
+      example: '1250.00'
+      description: Decimal string in minor-unit precision for the currency. Negative only where the field says so (net positions).
+    HrmsNoticeChangeInput:
+      type: object
+      required:
+      - action
+      - days
+      - effectiveDate
+      properties:
+        action:
+          type: string
+          enum:
+          - shorten
+          - buy_out
+          - extend
+        days:
+          type: integer
+          minimum: 0
+        effectiveDate:
+          $ref: '#/components/schemas/HrmsDate'
+        reason:
+          type: string
+          maxLength: 300
+    HrmsOffer:
+      type: object
+      required:
+      - id
+      - applicationId
+      - positionId
+      - status
+      - bandStatus
+      - joiningDate
+      - expiresOn
+      - payLines
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        positionId:
+          type: string
+        gradeCode:
+          type: string
+          nullable: true
+        payLines:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsOfferPayLine'
+        bandStatus:
+          type: string
+          enum:
+          - within_band
+          - outside_band
+          - not_checked
+          description: Computed by the server against approved pay bands. The browser never computes it.
+        joiningDate:
+          $ref: '#/components/schemas/HrmsDate'
+        expiresOn:
+          $ref: '#/components/schemas/HrmsDate'
+        status:
+          $ref: '#/components/schemas/HrmsOfferStatus'
+        templateVersion:
+          type: string
+          nullable: true
+        eSignatureRef:
+          type: string
+          nullable: true
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsApprovalStep'
+    HrmsOfferInput:
+      type: object
+      required:
+      - applicationId
+      - positionId
+      - joiningDate
+      - expiresOn
+      - payLines
+      properties:
+        applicationId:
+          type: string
+        positionId:
+          type: string
+        gradeCode:
+          type: string
+        payLines:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/HrmsOfferPayLine'
+        joiningDate:
+          $ref: '#/components/schemas/HrmsDate'
+        expiresOn:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsOfferPayLine:
+      type: object
+      required:
+      - componentCode
+      - amount
+      - currency
+      properties:
+        componentCode:
+          type: string
+        amount:
+          $ref: '#/components/schemas/HrmsMoney'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+    HrmsOfferStatus:
+      type: string
+      enum:
+      - draft
+      - pending_approval
+      - approved
+      - sent
+      - accepted
+      - declined
+      - expired
+      - withdrawn
+    HrmsOnboardingTask:
+      type: object
+      required:
+      - id
+      - employeeId
+      - title
+      - ownerRole
+      - dueDate
+      - status
+      - isOverdue
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        title:
+          type: string
+        ownerRole:
+          type: string
+        dueDate:
+          $ref: '#/components/schemas/HrmsDate'
+        status:
+          type: string
+          enum:
+          - open
+          - done
+          - waived
+        isOverdue:
+          type: boolean
+        waiverReason:
+          type: string
+          nullable: true
+    HrmsOnboardingTaskPatch:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - done
+          - waived
+        waiverReason:
+          type: string
+          maxLength: 300
+          description: Required when waived
+    HrmsPayRun:
+      type: object
+      required:
+      - id
+      - number
+      - periodStart
+      - periodEnd
+      - payDate
+      - status
+      - totals
+      - checks
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          description: From NumberingService
+        calendarCode:
+          type: string
+        periodStart:
+          $ref: '#/components/schemas/HrmsDate'
+        periodEnd:
+          $ref: '#/components/schemas/HrmsDate'
+        payDate:
+          $ref: '#/components/schemas/HrmsDate'
+        status:
+          $ref: '#/components/schemas/HrmsPayRunStatus'
+        totals:
+          $ref: '#/components/schemas/HrmsPayRunTotals'
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsPayRunCheck'
+        preparedBy:
+          type: string
+          nullable: true
+        approvedBy:
+          type: string
+          nullable: true
+        ledgerEntryRef:
+          type: string
+          nullable: true
+        bankFileRef:
+          type: string
+          nullable: true
+        canApprove:
+          type: boolean
+          description: False for the preparer
+    HrmsPayRunCheck:
+      type: object
+      required:
+      - code
+      - status
+      - message
+      properties:
+        code:
+          type: string
+        status:
+          type: string
+          enum:
+          - pass
+          - fail
+        message:
+          type: string
+        overrideReason:
+          type: string
+          nullable: true
+        overriddenBy:
+          type: string
+          nullable: true
+    HrmsPayRunInput:
+      type: object
+      required:
+      - calendarCode
+      - periodStart
+      - periodEnd
+      - payDate
+      properties:
+        calendarCode:
+          type: string
+        periodStart:
+          $ref: '#/components/schemas/HrmsDate'
+        periodEnd:
+          $ref: '#/components/schemas/HrmsDate'
+        payDate:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsPayRunLine:
+      type: object
+      required:
+      - id
+      - employeeId
+      - payableDays
+      - netPay
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        costCenterCode:
+          type: string
+          nullable: true
+        payableDays:
+          type: string
+          pattern: ^\d+(\.\d{1,2})?$
+        earnings:
+          type: array
+          items:
+            type: object
+            properties:
+              componentCode:
+                type: string
+              amount:
+                $ref: '#/components/schemas/HrmsMoney'
+        deductions:
+          type: array
+          items:
+            type: object
+            properties:
+              componentCode:
+                type: string
+              amount:
+                $ref: '#/components/schemas/HrmsMoney'
+        netPay:
+          $ref: '#/components/schemas/HrmsMoney'
+        carriedRecovery:
+          $ref: '#/components/schemas/HrmsMoney'
+          description: Negative net carried to the next period
+    HrmsPayRunStatus:
+      type: string
+      enum:
+      - draft
+      - calculated
+      - verified
+      - approved
+      - posted
+      - paid
+      - closed
+      - cancelled
+    HrmsPayRunTotals:
+      type: object
+      properties:
+        gross:
+          $ref: '#/components/schemas/HrmsMoney'
+        employeeDeductions:
+          $ref: '#/components/schemas/HrmsMoney'
+        employerCost:
+          $ref: '#/components/schemas/HrmsMoney'
+        net:
+          $ref: '#/components/schemas/HrmsMoney'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+    HrmsPosition:
+      type: object
+      required:
+      - id
+      - code
+      - title
+      - departmentId
+      - status
+      - approvedHeadcount
+      - filledHeadcount
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        title:
+          type: string
+        departmentId:
+          type: string
+        gradeCode:
+          type: string
+          nullable: true
+        reportsToPositionId:
+          type: string
+          nullable: true
+        approvedHeadcount:
+          type: integer
+          minimum: 0
+        filledHeadcount:
+          type: integer
+          minimum: 0
+        budgetedAnnualCost:
+          $ref: '#/components/schemas/HrmsMoney'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        status:
+          $ref: '#/components/schemas/HrmsPositionStatus'
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+        validTo:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+    HrmsPositionInput:
+      type: object
+      required:
+      - code
+      - title
+      - departmentId
+      - approvedHeadcount
+      - validFrom
+      properties:
+        code:
+          type: string
+          maxLength: 32
+        title:
+          type: string
+          maxLength: 120
+        departmentId:
+          type: string
+        gradeCode:
+          type: string
+          nullable: true
+        reportsToPositionId:
+          type: string
+          nullable: true
+        approvedHeadcount:
+          type: integer
+          minimum: 0
+        budgetedAnnualCost:
+          $ref: '#/components/schemas/HrmsMoney'
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        validFrom:
+          $ref: '#/components/schemas/HrmsDate'
+    HrmsPositionPatch:
+      type: object
+      properties:
+        approvedHeadcount:
+          type: integer
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/HrmsPositionStatus'
+        reportsToPositionId:
+          type: string
+          nullable: true
+        budgetedAnnualCost:
+          $ref: '#/components/schemas/HrmsMoney'
+        reason:
+          type: string
+          maxLength: 500
+    HrmsPositionStatus:
+      type: string
+      enum:
+      - open
+      - filled
+      - frozen
+      - closed
+    HrmsProfileChangeInput:
+      type: object
+      required:
+      - field
+      - newValue
+      properties:
+        field:
+          type: string
+          enum:
+          - personalEmail
+          - personalPhone
+          - address
+        newValue:
+          type: string
+          maxLength: 300
+    HrmsProfileChangeRequest:
+      type: object
+      required:
+      - id
+      - field
+      - status
+      properties:
+        id:
+          type: string
+        field:
+          type: string
+        status:
+          $ref: '#/components/schemas/HrmsApprovalStatus'
+    HrmsRegularisation:
+      type: object
+      required:
+      - id
+      - employeeId
+      - businessDate
+      - status
+      - reason
+      properties:
+        id:
+          type: string
+        employeeId:
+          type: string
+        businessDate:
+          $ref: '#/components/schemas/HrmsDate'
+        requestedStatus:
+          type: string
+        reason:
+          type: string
+        status:
+          $ref: '#/components/schemas/HrmsApprovalStatus'
+    HrmsRequisition:
+      type: object
+      required:
+      - id
+      - number
+      - positionId
+      - reason
+      - status
+      - targetStartDate
+      - approvals
+      properties:
+        id:
+          type: string
+        number:
+          type: string
+          description: From NumberingService
+        positionId:
+          type: string
+        reason:
+          type: string
+          enum:
+          - new
+          - backfill
+          - replacement
+          - conversion
+        targetStartDate:
+          $ref: '#/components/schemas/HrmsDate'
+        priority:
+          type: string
+          enum:
+          - low
+          - normal
+          - high
+        budgetedCost:
+          $ref: '#/components/schemas/HrmsMoney'
+        backfillSeparationDate:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+          description: Set when the leaving employee's separation is known
+        requestedBy:
+          type: string
+        status:
+          $ref: '#/components/schemas/HrmsRequisitionStatus'
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsApprovalStep'
+        canApprove:
+          type: boolean
+          description: False for the requester and when the caller has no approval step
+    HrmsRequisitionStatus:
+      type: string
+      enum:
+      - draft
+      - submitted
+      - approved
+      - open
+      - on_hold
+      - filled
+      - rejected
+      - closed
+      - cancelled
+    HrmsScorecard:
+      type: object
+      required:
+      - id
+      - applicationId
+      - interviewerId
+      - submitted
+      properties:
+        id:
+          type: string
+        applicationId:
+          type: string
+        interviewerId:
+          type: string
+        submitted:
+          type: boolean
+        submittedAt:
+          type: string
+          format: date-time
+          nullable: true
+        ratings:
+          type: array
+          items:
+            type: object
+            properties:
+              competencyCode:
+                type: string
+              rating:
+                type: integer
+                minimum: 1
+                maximum: 5
+        notes:
+          type: string
+          nullable: true
+    HrmsSettlement:
+      type: object
+      required:
+      - id
+      - exitCaseId
+      - status
+      - lines
+      - netPayable
+      - blockedReasons
+      properties:
+        id:
+          type: string
+        exitCaseId:
+          type: string
+        status:
+          type: string
+          enum:
+          - calculated
+          - blocked
+          - approved
+          - paid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/HrmsSettlementLine'
+        netPayable:
+          $ref: '#/components/schemas/HrmsMoney'
+        receivableFromEmployee:
+          $ref: '#/components/schemas/HrmsMoney'
+          description: Set when netPayable is negative; the amount owed by the employee
+        blockedReasons:
+          type: array
+          items:
+            type: string
+          description: Each missing input named. Non-empty when status is blocked.
+        paymentRef:
+          type: string
+          nullable: true
+    HrmsSettlementLine:
+      type: object
+      required:
+      - label
+      - amount
+      - sourceType
+      - sourceId
+      - calculationId
+      - ruleVersion
+      properties:
+        label:
+          type: string
+        amount:
+          $ref: '#/components/schemas/HrmsMoney'
+        sourceType:
+          type: string
+          enum:
+          - payroll
+          - leave
+          - notice
+          - bonus
+          - gratuity
+          - severance
+          - claim
+          - loan
+          - advance
+          - statutory
+          - manual
+        sourceId:
+          type: string
+        calculationId:
+          type: string
+        ruleVersion:
+          type: string
+    HrmsStatutoryFiling:
+      type: object
+      required:
+      - id
+      - packId
+      - filingCode
+      - periodLabel
+      - dueDate
+      - status
+      properties:
+        id:
+          type: string
+        packId:
+          type: string
+        filingCode:
+          type: string
+        periodLabel:
+          type: string
+        dueDate:
+          $ref: '#/components/schemas/HrmsDate'
+        status:
+          $ref: '#/components/schemas/HrmsFilingStatus'
+        filedOn:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        referenceNumber:
+          type: string
+          nullable: true
+    HrmsStatutoryPack:
+      type: object
+      required:
+      - id
+      - country
+      - version
+      - effectiveFrom
+      - approvedBy
+      properties:
+        id:
+          type: string
+        country:
+          type: string
+          minLength: 2
+          maxLength: 2
+        code:
+          type: string
+        version:
+          type: string
+        effectiveFrom:
+          $ref: '#/components/schemas/HrmsDate'
+        effectiveTo:
+          $ref: '#/components/schemas/HrmsDate'
+          nullable: true
+        approvedBy:
+          type: string
+        approvalRef:
+          type: string
+    HrmsTransition:
+      type: object
+      required:
+      - action
+      properties:
+        action:
+          type: string
+          enum:
+          - submit
+          - approve
+          - reject
+          - hold
+          - reopen
+          - cancel
+          - send
+          - accept
+          - decline
+          - expire
+          - withdraw
+          - apply
+          - file
+          - calculate
+          - verify
+          - post
+          - mark_paid
+          - pay
+          - disburse
+          - write_off
+          - rescind
+          - shorten
+          - buy_out
+          - extend
+          description: Which transition. The resource endpoint accepts only the actions listed for it; others return VALIDATION.
+        reason:
+          type: string
+          maxLength: 500
+          description: Required for reject, decline, withdraw, write_off and rescind. Reason codes come from the reason code lists.
+        reasonCode:
+          type: string
+          maxLength: 64
