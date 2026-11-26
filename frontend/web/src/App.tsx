@@ -28,13 +28,10 @@ import { Pip } from "./modules/bots/Pip";
 import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
-  initialMockAccounts,
   initialMockBills,
   initialMockInvoices,
   initialMockInvoicesSummary,
-  initialMockItems,
   initialMockJournals,
-  initialMockParties,
   initialWarehouses,
   initialWarehouseStock,
   initialStockTransfers,
@@ -86,9 +83,9 @@ export const App: React.FC = () => {
   const [isCommandBarOpen, setIsCommandBarOpen] = useState<boolean>(false);
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState<boolean>(false);
 
-  const [items, setItems] = useState<ProductItem[]>(initialMockItems);
-  const [parties, setParties] = useState<Party[]>(initialMockParties);
-  const [accounts, setAccounts] = useState<Account[]>(initialMockAccounts);
+  const [items, setItems] = useState<ProductItem[]>([]);
+  const [parties, setParties] = useState<Party[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>(initialMockInvoices);
   const [invoicesSummary, setInvoicesSummary] = useState<InvoicesSummary>(
     initialMockInvoicesSummary

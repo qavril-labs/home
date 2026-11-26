@@ -102,7 +102,7 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
               }`}
             >
               <Radio className="w-3 h-3" />
-              {isLiveApi ? "LIVE HTTP · /v1/master-data/accounts" : "CONTRACT CLIENT · /v1/master-data/accounts"}
+              {isLiveApi ? "API Connected · /v1/master-data/accounts" : "Not connected · /v1/master-data/accounts"}
             </span>
           </div>
           <h1 className="font-display font-extrabold text-3xl uppercase tracking-tight text-text leading-tight">
@@ -119,6 +119,15 @@ export const AccountsPage: React.FC<AccountsPageProps> = ({
           New Account
         </Button>
       </div>
+
+      {!isLiveApi && (
+        <div
+          role="alert"
+          className="neo-card p-3 bg-cream text-ink text-xs font-medium"
+        >
+          Not connected to the Master Data API (<code>/v1/master-data/accounts</code>). Sign in with a workspace account or start the backend API to load live accounts. Nothing shown here is a sample.
+        </div>
+      )}
 
       {/* KPI Tiles row per UI Contract */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

@@ -22,13 +22,10 @@ import type {
   WorkspaceInsights,
 } from "../types";
 import {
-  initialMockAccounts,
   initialMockBills,
   initialMockInvoices,
   initialMockInvoicesSummary,
-  initialMockItems,
   initialMockJournals,
-  initialMockParties,
   initialOverdueInvoices,
   initialMockInsights,
   mockCustomerStatements,
@@ -311,7 +308,7 @@ export const apiClient = {
       };
     } catch {
       return {
-        data: initialMockParties,
+        data: [],
         isLive: false,
         endpoint: "/v1/master-data/parties",
       };
@@ -377,7 +374,7 @@ export const apiClient = {
       };
     } catch {
       return {
-        data: initialMockItems,
+        data: [],
         isLive: false,
         endpoint: "/v1/master-data/items",
       };
@@ -433,7 +430,7 @@ export const apiClient = {
       };
     } catch {
       return {
-        data: initialMockAccounts,
+        data: [],
         isLive: false,
         endpoint,
       };

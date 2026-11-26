@@ -104,7 +104,7 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
               }`}
             >
               <Radio className="w-3 h-3" />
-              {isLiveApi ? "LIVE HTTP · /v1/master-data/parties" : "CONTRACT CLIENT · /v1/master-data/parties"}
+              {isLiveApi ? "API Connected · /v1/master-data/parties" : "Not connected · /v1/master-data/parties"}
             </span>
           </div>
           <h1 className="font-display font-extrabold text-3xl uppercase tracking-tight text-text leading-tight">
@@ -121,6 +121,15 @@ export const ContactsPage: React.FC<ContactsPageProps> = ({
           New Customer/Supplier
         </Button>
       </div>
+
+      {!isLiveApi && (
+        <div
+          role="alert"
+          className="neo-card p-3 bg-cream text-ink text-xs font-medium"
+        >
+          Not connected to the Master Data API (<code>/v1/master-data/parties</code>). Sign in with a workspace account or start the backend API to load live parties. Nothing shown here is a sample.
+        </div>
+      )}
 
       {/* KPI Tiles row per UI Contract */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
