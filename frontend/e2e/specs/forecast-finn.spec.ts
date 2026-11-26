@@ -45,12 +45,12 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
     await expect(page.getByText("EXPECTED").first()).toBeVisible();
 
     // Switch to Conservative
-    await page.getByRole("button", { name: "CONSERVATIVE" }).click();
-    await expect(page.getByText("CONSERVATIVE").first()).toBeVisible();
+    await page.getByRole("button", { name: /conservative/i }).click();
+    await expect(page.getByText(/conservative/i).first()).toBeVisible();
 
     // Switch to Optimistic
-    await page.getByRole("button", { name: "OPTIMISTIC" }).click();
-    await expect(page.getByText("OPTIMISTIC").first()).toBeVisible();
+    await page.getByRole("button", { name: /optimistic/i }).click();
+    await expect(page.getByText(/optimistic/i).first()).toBeVisible();
   });
 
   test("Renders scheduled inflow and outflow milestones table", async ({ page }) => {
