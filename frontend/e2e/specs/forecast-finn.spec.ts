@@ -1,10 +1,24 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    // Navigate to Forecast Finn screen
-    await page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first().click();
+  test.beforeEach(async ({ page, isMobile }) => {
+    await page.goto("/#forecast-finn");
+    if (isMobile) {
+      const openBtn = page.getByRole("button", { name: "Open navigation sidebar" });
+      if (await openBtn.isVisible().catch(() => false)) {
+        await openBtn.click();
+        const navBtn = page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first();
+        if (await navBtn.isVisible().catch(() => false)) {
+          await navBtn.click();
+        }
+      }
+    } else {
+      const navBtn = page.getByRole("button", { name: "Forecast Finn (AIS-02)" }).first();
+      if (await navBtn.isVisible().catch(() => false)) {
+        await navBtn.click();
+      }
+    }
+    await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
   });
 
   test("Renders Forecast Finn header, violet avatar, and live indicator", async ({ page }) => {
@@ -54,9 +68,9 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
   });
 
   test("Renders scheduled inflow and outflow milestones table", async ({ page }) => {
-    await expect(page.getByText("Today (Current)")).toBeVisible();
-    await expect(page.getByText("Day 30 (Month Close)")).toBeVisible();
-    await expect(page.getByText("Day 60 (Tax Outlay)")).toBeVisible();
-    await expect(page.getByText("Quarterly corporate tax and supplier Net 90 payment")).toBeVisible();
+    await expect(page.getByText("Today (Current)").first()).toBeVisible();
+    await expect(page.getByText("Day 30 (Month Close)").first()).toBeVisible();
+    await expect(page.getByText("Day 60 (Tax Outlay)").first()).toBeVisible();
+    await expect(page.getByText("Quarterly corporate tax and supplier Net 90 payment").first()).toBeVisible();
   });
 });

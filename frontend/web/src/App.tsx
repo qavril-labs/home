@@ -28,10 +28,7 @@ import { Pip } from "./modules/bots/Pip";
 import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
-  initialMockBills,
-  initialMockInvoices,
   initialMockInvoicesSummary,
-  initialMockJournals,
   initialWarehouses,
   initialWarehouseStock,
   initialStockTransfers,
@@ -86,12 +83,16 @@ export const App: React.FC = () => {
   const [items, setItems] = useState<ProductItem[]>([]);
   const [parties, setParties] = useState<Party[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>(initialMockInvoices);
-  const [invoicesSummary, setInvoicesSummary] = useState<InvoicesSummary>(
-    initialMockInvoicesSummary
-  );
-  const [bills, setBills] = useState<Bill[]>(initialMockBills);
-  const [journals, setJournals] = useState<JournalEntry[]>(initialMockJournals);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoicesSummary, setInvoicesSummary] = useState<InvoicesSummary>({
+    totalReceivable: "0.00",
+    overdue: "0.00",
+    overdueCount: 0,
+    paidThisMonth: "0.00",
+    invoiceCount: 0,
+  });
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
   const [warehouses] = useState<WarehouseLocation[]>(initialWarehouses);
   const [stockSlots] = useState<WarehouseStockSlot[]>(initialWarehouseStock);
   const [transfers, setTransfers] = useState<StockTransfer[]>(initialStockTransfers);

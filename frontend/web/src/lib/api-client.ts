@@ -22,10 +22,6 @@ import type {
   WorkspaceInsights,
 } from "../types";
 import {
-  initialMockBills,
-  initialMockInvoices,
-  initialMockInvoicesSummary,
-  initialMockJournals,
   initialOverdueInvoices,
   initialMockInsights,
   mockCustomerStatements,
@@ -502,8 +498,14 @@ export const apiClient = {
     } catch {
       return {
         data: {
-          invoices: initialMockInvoices,
-          summary: initialMockInvoicesSummary,
+          invoices: [],
+          summary: {
+            totalReceivable: "0.00",
+            overdue: "0.00",
+            overdueCount: 0,
+            paidThisMonth: "0.00",
+            invoiceCount: 0,
+          },
         },
         isLive: false,
         endpoint,
@@ -575,7 +577,7 @@ export const apiClient = {
         };
       }
       // Build statement from existing party + invoice records without browser arithmetic
-      const partyInvoices = (invoices || initialMockInvoices).filter(
+      const partyInvoices = (invoices || []).filter(
         (inv) => inv.partyId === partyId
       );
       const firstInv = partyInvoices[0];
@@ -676,7 +678,7 @@ export const apiClient = {
       const list = await requestJson<JournalEntry[]>(endpoint);
       return { data: list, isLive: true, endpoint };
     } catch {
-      return { data: initialMockJournals, isLive: false, endpoint };
+      return { data: [], isLive: false, endpoint };
     }
   },
 
@@ -814,7 +816,7 @@ export const apiClient = {
       const res = await requestJson<{ bills: Bill[] }>(endpoint);
       return { data: res.bills, isLive: true, endpoint };
     } catch {
-      return { data: initialMockBills, isLive: false, endpoint };
+      return { data: [], isLive: false, endpoint };
     }
   },
 

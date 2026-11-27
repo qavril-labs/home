@@ -11,13 +11,29 @@ import { useToast } from "../context/ToastContext";
 import { formatMoney } from "../lib/currency";
 import { initialMockInsights, initialMockEntries } from "../lib/api-mock";
 import { apiClient } from "../lib/api-client";
-import { is3DSupported, MoneyCityInstance } from "../scenes/MoneyCity";
+import type { MoneyCityInstance } from "../scenes/MoneyCity";
 import type { WorkspaceInsights, RecentEntry, QuickEntryPayload, BotInsight } from "../types";
 import {
   Boxes,
   BarChart3,
   RotateCw,
 } from "lucide-react";
+
+function is3DSupported(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const canvas = document.createElement("canvas");
+    const webgl = Boolean(
+      window.WebGLRenderingContext &&
+        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+    const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return webgl && finePointer && motionOk;
+  } catch {
+    return false;
+  }
+}
 
 export interface DashboardProps {
   onNavigateToBot?: (botId: string) => void;
