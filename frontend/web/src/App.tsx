@@ -28,7 +28,6 @@ import { Pip } from "./modules/bots/Pip";
 import { ApprovalsInbox } from "./modules/approvals/ApprovalsInbox";
 import { apiClient, setApiSessionToken } from "./lib/api-client";
 import {
-  initialMockInvoicesSummary,
   initialWarehouses,
   initialWarehouseStock,
   initialStockTransfers,

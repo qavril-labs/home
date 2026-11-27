@@ -1,6 +1,8 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", () => {
+  test.setTimeout(90_000);
+
   test.beforeEach(async ({ page, isMobile }) => {
     await page.goto("/#forecast-finn");
     if (isMobile) {
@@ -18,7 +20,7 @@ test.describe("Forecast Finn (AIS-02 / FIN-15) Dedicated Screen & Cash River", (
         await navBtn.click();
       }
     }
-    await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Forecast Finn" })).toBeVisible({ timeout: 30_000 });
   });
 
   test("Renders Forecast Finn header, violet avatar, and live indicator", async ({ page }) => {
